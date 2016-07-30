@@ -16,14 +16,8 @@
         }
     }
 
-# Load dependencies. TODO: Move to module dependency once the bug that
-# causes this is fixed: https://ci.appveyor.com/project/RamblingCookieMonster/buildhelpers/build/1.0.22
-# Thanks to Joel Bennett for this!
-    Import-Module $PSScriptRoot\Private\Modules\Configuration
+# Thanks to Scott Muc.  PSYaml is essentially his, had ambitions for a fully fledge yaml module, gave up.
+    Import-Module $PSScriptRoot\Private\PSYaml
 
 Export-ModuleMember -Function $Public.Basename
-Export-ModuleMember -Function Get-Metadata, Update-Metadata, Export-Metadata
 
-# Set aliases (#10)
-Set-Alias -Name Set-BuildVariable -Value $PSScriptRoot\Scripts\Set-BuildVariable.ps1
-Export-ModuleMember -Alias Set-BuildVariable
