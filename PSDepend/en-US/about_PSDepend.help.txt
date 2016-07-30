@@ -1,0 +1,11 @@
+PSTOPIC
+    about_PSDepend
+
+SHORT DESCRIPTION
+
+LONG DESCRIPTION
+
+DETAILED DESCRIPTION
+
+LINK
+    https://github.com/RamblingCookieMonster/PSDepend
