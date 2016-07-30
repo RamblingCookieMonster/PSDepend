@@ -14,6 +14,7 @@ function Get-Dependency {
     [cmdletbinding()]
     param(
         [string]$Path = $PWD.Path,
+        [string[]]$Tags,
         [switch]$Recurse
     )
 
@@ -32,7 +33,7 @@ function Get-Dependency {
         $DependencyFiles = @( $Path )
     }
 
-    foreach($DependencyFile in $DependencyFiles)
+    $DeploymentMap = foreach($DependencyFile in $DependencyFiles)
     {
 
         # Read the file
@@ -94,4 +95,6 @@ function Get-Dependency {
             }
         }
     }
+
+    $DeploymentMap = Sort-PSDependency -Dependencies $DeploymentMap
 }
