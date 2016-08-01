@@ -1,23 +1,23 @@
-﻿Function Get-TaggedDeployment {
+﻿Function Get-TaggedDependency {
     param(
-        [object[]]$Deployment,
+        [object[]]$Dependency,
         [string[]]$Tags
     )
 
     # Only return deployment with all specified tags
-    foreach($Deploy in $Deployment)
+    foreach($Depend in $Dependency)
     {
         $Include = $False
         foreach($Tag in @($Tags))
         {
-            if($Deploy.Tags -contains $Tag)
+            if($Depend.Tags -contains $Tag)
             {
                 $Include = $True
             }
         }
         If($Include)
         {
-            $Deploy
+            $Depend
         }
     }
 }

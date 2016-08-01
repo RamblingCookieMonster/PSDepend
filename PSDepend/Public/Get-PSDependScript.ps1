@@ -24,7 +24,7 @@
     [cmdletbinding()]
     param(
         [validatescript({Test-Path $_ -PathType Leaf -ErrorAction Stop})]
-        [string]$Path = $(Join-Path $ModulePath PSDepend.yml)
+        [string]$Path = $(Join-Path $ModuleRoot PSDepend.yml)
     )
 
     # Abstract out reading the yaml and verifying scripts exist
@@ -42,7 +42,7 @@
         else
         {
             # account for missing ps1
-            $ScriptPath = Join-Path $ModulePath "PSDependScripts\$($Script -replace ".ps1$").ps1"
+            $ScriptPath = Join-Path $ModuleRoot "PSDependScripts\$($Script -replace ".ps1$").ps1"
         }
 
         if(test-path $ScriptPath)

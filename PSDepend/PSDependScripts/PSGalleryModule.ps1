@@ -41,6 +41,7 @@ $params = @{
     Name = $Name
     Repository = $Repository
     Verbose = $VerbosePreference
+    Force = $True
 }
 
 if( $Version -and $Version -ne 'latest')
@@ -48,8 +49,33 @@ if( $Version -and $Version -ne 'latest')
     $Params.add('RequiredVersion',$RequiredVersion)
 }
 
-if('AllUsers', 'CurrentUser' -contains $Scope)
+# This code works for both install and save scenarios.
+$Existing = $null
+$Existing = Get-Module -ListAvailable -Name $Name
+if($Existing)
 {
+    # Thanks to Brandon Padgett!
+    $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    $GalleryVersion = Find-Module -Name $Name -Repository PSGallery | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    
+    # Version string, and equal to current
+    if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
+    {
+        return $null
+    }
+    
+    # latest, and we have latest
+    if( $Version -and
+        ($Version -eq 'latest' -or $Version -like '') -and
+        $GalleryVersion -le $ExistingVersion
+    )
+    {
+        return $null
+    }
+}
+
+if('AllUsers', 'CurrentUser' -contains $Scope)
+{   
     Install-Module @params -Scope $Scope
 }
 elseif(Test-Path $Scope -PathType Container)

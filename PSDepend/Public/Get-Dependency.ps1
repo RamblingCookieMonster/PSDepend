@@ -13,88 +13,99 @@ function Get-Dependency {
     #>
     [cmdletbinding()]
     param(
-        [string]$Path = $PWD.Path,
+        [string[]]$Path = $PWD.Path,
         [string[]]$Tags,
         [switch]$Recurse
     )
 
-    #Resolve relative paths... Thanks Oisin! http://stackoverflow.com/a/3040982/3067642
-    if($PSBoundParameters.ContainsKey('Path'))
+    foreach($DependencyPath in $Path)
     {
-        $Path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
-    }
+        #Resolve relative paths... Thanks Oisin! http://stackoverflow.com/a/3040982/3067642
+        $DependencyPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($DependencyPath)
 
-    if(Test-Path $Path -PathType Container)
-    {
-        $DependencyFiles = @( Resolve-DependScripts -Path $Path -Recurse $Recurse )
-    }
-    else
-    {
-        $DependencyFiles = @( $Path )
-    }
-
-    $DeploymentMap = foreach($DependencyFile in $DependencyFiles)
-    {
-
-        # Read the file
-        $Base = Split-Path $DependencyFile -Parent
-        $File = Split-Path $DependencyFile -Leaf
-        $Dependencies = Import-LocalizedData -BaseDirectory $Base -FileName $File
-
-        foreach($Dependency in $Dependencies.keys)
+        if(Test-Path $DependencyPath -PathType Container)
         {
-            $DependencyHash = $Dependencies.$Dependency
+            $DependencyFiles = @( Resolve-DependScripts -Path $DependencyPath -Recurse $Recurse )
+        }
+        else
+        {
+            $DependencyFiles = @( $DependencyPath )
+        }
+        $DependencyFiles = $DependencyFiles | Select -Unique
 
-            #Parse simple key=name, value=version format
-            if($DependencyHash -isnot [hashtable])
-            {
-                [pscustomobject]@{
-                    DependencyFile = $DependencyFile
-                    DependencyName = $Dependency
-                    Name = $Dependency
-                    Version = $DependencyHash
-                    Source = 'PSGalleryModule'
-                    Parameters = $null
-                    Target = $null
-                    AddToPath = $null
-                    Tags = $null
-                    Dependencies = $null
-                    PreScripts = $null
-                    PostScripts = $null
-                    Raw = $null         
-                }
-            }
-            else
-            {
-                # Parse dependency hash format
-                # A few defaults...
-                if(-not $DependencyHash.ContainsKey('Name'))
-                {
-                    $DependencyHash.add('Name', $Dependency)
-                }
-                if(-not $DependencyHash.ContainsKey('Source'))
-                {
-                    $DependencyHash.add('Source', 'PSGallery')
-                }
+        $DependencyMap = foreach($DependencyFile in $DependencyFiles)
+        {
 
-                [pscustomobject]@{
-                    DependencyFile = $DependencyFile
-                    DependencyName = $Dependency
-                    Name = $DependencyHash.Name
-                    Version = $DependencyHash.Version
-                    Source = $DependencyHash.Source
-                    Parameters = $DependencyHash.Parameters
-                    Target = $DependencyHash.Target
-                    AddToPath = $DependencyHash.AddToPath
-                    Tags = $DependencyHash.Tags
-                    Dependencies = $DependencyHash.Dependencies
-                    PreScripts = $DependencyHash.PreScripts
-                    PostScripts = $DependencyHash.PostScripts
-                    Raw = $DependencyHash
+            # Read the file
+            $Base = Split-Path $DependencyFile -Parent
+            $File = Split-Path $DependencyFile -Leaf
+            $Dependencies = Import-LocalizedData -BaseDirectory $Base -FileName $File
+
+            foreach($Dependency in $Dependencies.keys)
+            {
+                $DependencyHash = $Dependencies.$Dependency
+
+                #Parse simple key=name, value=version format
+                if($DependencyHash -isnot [hashtable])
+                {
+                    [pscustomobject]@{
+                        DependencyFile = $DependencyFile
+                        DependencyName = $Dependency
+                        Name = $Dependency
+                        Version = $DependencyHash
+                        Source = 'PSGalleryModule'
+                        Parameters = $null
+                        Target = $null
+                        AddToPath = $null
+                        Tags = $null
+                        Dependencies = $null
+                        PreScripts = $null
+                        PostScripts = $null
+                        Raw = $null         
+                    }
+                }
+                else
+                {
+                    # Parse dependency hash format
+                    # A few defaults...
+                    if(-not $DependencyHash.ContainsKey('Name'))
+                    {
+                        $DependencyHash.add('Name', $Dependency)
+                    }
+                    if(-not $DependencyHash.ContainsKey('Source'))
+                    {
+                        $DependencyHash.add('Source', 'PSGallery')
+                    }
+
+                    [pscustomobject]@{
+                        DependencyFile = $DependencyFile
+                        DependencyName = $Dependency
+                        Name = $DependencyHash.Name
+                        Version = $DependencyHash.Version
+                        Source = $DependencyHash.Source
+                        Parameters = $DependencyHash.Parameters
+                        Target = $DependencyHash.Target
+                        AddToPath = $DependencyHash.AddToPath
+                        Tags = $DependencyHash.Tags
+                        Dependencies = $DependencyHash.Dependencies
+                        PreScripts = $DependencyHash.PreScripts
+                        PostScripts = $DependencyHash.PostScripts
+                        Raw = $DependencyHash
+                    }
                 }
             }
         }
-    }
 
-    $DeploymentMap = Sort-PSDependency -Dependencies $DeploymentMap
+        If($PSBoundParameters.ContainsKey('Tags'))
+        {
+            $DependencyMap = Get-TaggedDeployment -Deployment $DependencyMap -Tags $Tags
+            if(-not $DependencyMap)
+            {
+                Write-Warning "No dependencies found with tags '$tags'"
+                return
+            }
+        }
+
+        Sort-PSDependency -Dependencies $DependencyMap
+    }
 }

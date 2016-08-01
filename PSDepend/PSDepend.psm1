@@ -20,4 +20,3 @@
     Import-Module $PSScriptRoot\Private\PSYaml
 
 Export-ModuleMember -Function $Public.Basename
-
