@@ -1,7 +1,7 @@
 ﻿@{
     'buildhelpers' = ''
     'psdeploy' = @{
-        version = '0.1.7'
+        version = '0.1.8'
         target = 'C:\Project'
     }
     'psexcel' = @{

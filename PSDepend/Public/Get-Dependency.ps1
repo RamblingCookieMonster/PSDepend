@@ -74,7 +74,7 @@ function Get-Dependency {
                     }
                     if(-not $DependencyHash.ContainsKey('Source'))
                     {
-                        $DependencyHash.add('Source', 'PSGallery')
+                        $DependencyHash.add('Source', 'PSGalleryModule')
                     }
 
                     [pscustomobject]@{

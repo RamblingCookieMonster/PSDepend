@@ -3,31 +3,48 @@
         Installs a module from a PowerShell repository like the PowerShell Gallery.
 
     .DESCRIPTION
-        Installs a module from a PowerShell repository like the PowerShell Gallery
+        Installs a module from a PowerShell repository like the PowerShell Gallery.
 
-    .PARAMETER Name
-        Module to install
+        Relevant Dependency metadata:
+            Name: The name for this module
+            Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
+            Target: Used as 'Scope' for Install-Module.  If this is a path, we use Save-Module with this path.  Defaults to 'AllUsers'
 
-    .PARAMETER Version
-        Version to install.  Defaults to latest.
-
-    .PARAMETER PSRepository
+    .PARAMETER Repository
         PSRepository to download from.  Defaults to PSGallery
 #>
 [cmdletbinding()]
 param(
-    #[ValidateScript({ $_.PSObject.TypeNames[0] -eq 'PSDepend.Dependency' })]
-    #[psobject[]]$Dependency,
+    [psobject[]]$Dependency,
 
-    [Parameter(Mandatory)]
-    [string]$Name,
-
-    [string]$Version,
-
-    [string]$Repository = 'PSGallery',
-
-    [string]$Target = 'AllUsers' # Can be allusers/currentusers, or a path to save module to
+    [string]$Repository = 'PSGallery' # From Parameters...
 )
+
+# Extract data from Dependency
+    $Name = $Dependency.Name
+    $Version = $Dependency.Version
+    if(-not $Version)
+    {
+        $Version = 'latest'
+    }
+
+    # We use target as a proxy for Scope
+    if(-not $Dependency.Target)
+    {
+        $Scope = 'AllUsers'
+    }
+    else
+    {
+        $Scope = $Dependency.Target
+    }
+    if('AllUsers', 'CurrentUser' -notcontains $Scope -and (Test-Path $Scope -PathType Container))
+    {
+        $command = 'save'
+    }
+    else
+    {
+        $command = 'install'
+    }
 
 Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
 
@@ -46,14 +63,22 @@ $params = @{
 
 if( $Version -and $Version -ne 'latest')
 {
-    $Params.add('RequiredVersion',$RequiredVersion)
+    $Params.add('RequiredVersion',$Version)
 }
 
 # This code works for both install and save scenarios.
 $Existing = $null
-$Existing = Get-Module -ListAvailable -Name $Name
+if($command -eq 'Save')
+{
+    $Existing = Get-Module -ListAvailable -Name (Join-Path $Scope $Name)
+}
+elseif ($Command -eq 'Install')
+{
+    $Existing = Get-Module -ListAvailable -Name $Name
+}
 if($Existing)
 {
+    Write-Verbose "Found existing module [$Name]"
     # Thanks to Brandon Padgett!
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
     $GalleryVersion = Find-Module -Name $Name -Repository PSGallery | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
@@ -61,6 +86,7 @@ if($Existing)
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
+        Write-Verbose "You have the requested version [$Version] of [$Name]"
         return $null
     }
     
@@ -70,8 +96,11 @@ if($Existing)
         $GalleryVersion -le $ExistingVersion
     )
     {
+        Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
         return $null
     }
+
+    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
 }
 
 if('AllUsers', 'CurrentUser' -contains $Scope)

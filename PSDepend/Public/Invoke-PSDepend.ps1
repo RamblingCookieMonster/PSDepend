@@ -73,25 +73,14 @@
         foreach( $PathItem in $Path )
         {
             # Create a map for dependencies
-            Try
+            [void]$DependencyFiles.AddRange( @( Resolve-DependScripts -Path $PathItem -Recurse $Recurse ) )
+            if ($DependencyFiles.count -gt 0)
             {
-                # Debating whether to make this a terminating error.
-                # Stop all deployments because one is misconfigured?
-                # I'm going with Copy-Item precedent.
-                # Not terminating, so try catch is superfluous. Feel free to make this strict...
-                [void]$DependencyFiles.AddRange( @( Resolve-DependScripts -Path $PathItem -Recurse $Recurse ) )
-                if ($DependencyFiles.count -gt 0)
-                {
-                    Write-Verbose "Working with $($DependencyFiles.Count) dependency files:`n$($DependencyFiles | Out-String)"
-                }
-                else
-                {
-                    Write-Warning "No *.depend.ps1 files found under '$PathItem'"
-                }
+                Write-Verbose "Working with [$($DependencyFiles.Count)] dependency files from [$PathItem]:`n$($DependencyFiles | Out-String)"
             }
-            Catch
+            else
             {
-                Throw "Error retrieving dependencies from '$PathItem':`n$_"
+                Write-Warning "No *.depend.ps1 files found under [$PathItem]"
             }
         }
 
@@ -102,90 +91,47 @@
             $GetPSDependParams.Add('Tags',$Tags)
         }
 
-        $De = Get-PSDeploymentScript
+        $DependencyScripts = Get-PSDependScript
 
         # Handle Dependencies
-        $ToDeploy = Get-PSDeployment @GetPSDeployParams
-        foreach($Deployment in $ToDeploy)
+        $ToInstall = Get-Dependency @GetPSDependParams
+        foreach($Dependency in $ToInstall)
         {
-            $Type = $Deployment.DeploymentType
+            $Type = $Dependency.Source
+            $Install = $True #anti pattern! Best I could come up with to handle both prescript fail and dependencies
 
-            $TheseParams = @{'DeploymentParameters' = @{}}
-            if($Deployment.DeploymentOptions.Keys.Count -gt 0 -and -not ($Type -eq 'Task' -and $Type.Source -is [scriptblock]))
-            {
-                # Shoehorn Deployment Options into DeploymentParameters
-                # Needed if we support both yml and ps1 definitions...
-
-                # First, get the script, parse out parameters, restrict splatting to valid params
-                $DeploymentScript = $DeploymentScripts.$Type
-                $ValidParameters = Get-ParameterName -Command $DeploymentScript
-
-                $FilteredOptions = @{}
-                foreach($key in $Deployment.DeploymentOptions.Keys)
-                {
-                    if($ValidParameters -contains $key)
-                    {
-                        $FilteredOptions.Add($key, $Deployment.DeploymentOptions.$key)
-                    }
-                    else
-                    {
-                        Write-Warning "WithOption '$Key' is not a valid parameter for '$Type'"
-                    }
-                }
-                $hash = @{$Type = $FilteredOptions}
-                $TheseParams.DeploymentParameters = $hash
-            }
-
-            $Deploy = $True #anti pattern! Best I could come up with to handle both prescript fail and dependencies
-
-            if($Deployment.Dependencies.ScriptBlock)
-            {
-                Write-Verbose "Checking dependency:`n$($Deployment.Dependencies.ScriptBlock)"
-                if( -not $( . $Deployment.Dependencies.ScriptBlock ) )
-                {
-                    $Deploy = $False
-                    Write-Warning "Skipping Deployment '$($Deployment.DeploymentName)', did not pass scriptblock`n$($Deployment.Dependencies.ScriptBlock | Out-String)"
-                }
-            }
-
-            if($Deployment.PreScript.Count -gt 0)
+            if($Deployment.PreScripts.Count -gt 0)
             {
                 $ExistingEA = $ErrorActionPreference
-                foreach($script in $Deployment.Prescript)
+                $ErrorActionPreference = 'Stop'
+                foreach($script in $Dependency.Prescripts)
                 {
-                    if($Script.SkipOnError)
+                    Try
                     {
-                        Try
-                        {
-                            Write-Verbose "Invoking pre script: $($Script.ScriptBlock)"
-                            $ErrorActionPreference = 'Stop'
-                            . $Script.ScriptBlock
-                        }
-                        Catch
-                        {
-                            $Deploy = $False
-                            Write-Error $_
-                        }
+                        Write-Verbose "Invoking pre script: [$Script]"
+                        . $Script
                     }
-                    else
+                    Catch
                     {
-                        . $Script.ScriptBlock
+                        $Install = $False
+                        "Skipping installation due to failed pre script: [$Script]"
+                        Write-Error $_
                     }
                 }
                 $ErrorActionPreference = $ExistingEA
             }
 
-            if($Deploy)
+            if($Install)
             {
-                $Deployment | Invoke-PSDeployment @TheseParams @InvokePSDeploymentParams
+                Install-Dependency -Dependency $Dependency
             }
 
-            if($Deployment.PostScript.Count -gt 0)
+            if($Dependency.PostScript.Count -gt 0)
             {
                 foreach($script in $Deployment.PostScript)
                 {
-                    Write-Verbose "Invoking post script: $($Script.ScriptBlock)"
-                    . $Script.ScriptBlock
+                    Write-Verbose "Invoking post script: $($Script)"
+                    . $Script
                 }
             }
         }
