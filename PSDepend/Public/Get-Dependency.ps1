@@ -59,7 +59,7 @@ function Get-Dependency {
                         Target = $null
                         AddToPath = $null
                         Tags = $null
-                        Dependencies = $null
+                        DependsOn = $null
                         PreScripts = $null
                         PostScripts = $null
                         Raw = $null         
@@ -86,7 +86,7 @@ function Get-Dependency {
                         Target = $DependencyHash.Target
                         AddToPath = $DependencyHash.AddToPath
                         Tags = $DependencyHash.Tags
-                        Dependencies = $DependencyHash.Dependencies
+                        DependsOn = $DependencyHash.DependsOn
                         PreScripts = $DependencyHash.PreScripts
                         PostScripts = $DependencyHash.PostScripts
                         Raw = $DependencyHash

@@ -59,10 +59,18 @@ param(
         $Path = $Target
         Write-Verbose "Using [$Path] from `$Target"
     }
-    elseif(-not (Test-Path $Target -PathType Container))
+    elseif(Test-Path $Target -PathType Leaf)
     {
-       # They gave us something that doesn't look like a new file or a container for a file. Wat?
-       Throw "Could not find target path [$Target]" 
+        # File exists.  We should download to temp spot, compare hashes, take action as appropriate.
+        # For now, skip the file.
+        Write-Verbose "Skipping existing file [$Target]"
+        return
+    }
+    elseif(-not (Test-Path $Target))
+    {
+       # They gave us something that doesn't look like a new container for a new or exisrting file. Wat?
+       Write-Error "Could not find target path [$Target]"
+       return
     }
     else
     {

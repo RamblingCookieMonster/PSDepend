@@ -30,7 +30,7 @@ DETAILED DESCRIPTION
             Target:         Optional target.  For example, a PSGalleryModule can target a path (uses Save-Module), or a scope like AllUsers (uses Install-Module)
             AddToPath:      Optional flag to specify whether to add the installed dependency to the PATH (or PSModulePath, or comparable setting)
             Tags:           Optional tags to categorize and filter dependencies
-            Dependencies:   One or more dependencies that must be satisfied before installing this one.  Uses DependencyName for reference.
+            DependsOn:      Dependency that this Dependency depends upon.  Uses DependencyName for reference.
             PreScripts:     One or more paths to scripts to process before the dependency is processed
             PostScripts:    One or more paths to scripts to process after the dependency is processed
             Raw:            Raw data from the dependency in the psd1 file
@@ -79,7 +79,7 @@ DETAILED DESCRIPTION
                     AddToPath = $True
 
                     # Make sure buildhelpers installs first
-                    Dependencies = 'buildhelpers'
+                    DependsOn = 'buildhelpers'
 
                     # Run this script after installing the module
                     PostScripts = "C:\Finalize-ProjectX.ps1"

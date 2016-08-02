@@ -7,11 +7,11 @@ function Sort-PSDependency {
     $Order = @{}
     Foreach($Dependency in $Dependencies)
     {
-        if($Dependency.Dependencies.DependencyName)
+        if($Dependency.DependsOn)
         {
             if(-not $Order.ContainsKey($Dependency.DependencyName))
             {
-                $Order.add($Dependency.DependencyName, $Dependency.Dependencies.DependencyName)
+                $Order.add($Dependency.DependencyName, $Dependency.DependsOn)
             }
         }
     }
