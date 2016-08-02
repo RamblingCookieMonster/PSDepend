@@ -7,8 +7,9 @@ PSDepend allows you to write simple *.depend.psd1 files that describe what depen
 
 **WARNING**:
 
-* Opening this up quite early.  There will be breaking changes without notice until we hit version 0.1.0
+* Opening this up quite early to get feedback and direction.  There will be breaking changes without notice until we hit version 0.1.0
 * Minimal to no testing.  This is in my backlog, but PRs would be welcome!
+* This borrows quite heavily from PSDeploy.  There may be leftover components that haven't been adapted, or have been improperly adapted
 * Would love ideas, feedback, pull requests, etc., but if you rely on this, consider pinning a specific version to avoid hitting breaking changes.
 
 ## Defining Dependencies
