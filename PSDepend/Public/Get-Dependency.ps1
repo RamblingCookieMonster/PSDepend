@@ -49,11 +49,12 @@ function Get-Dependency {
                 if($DependencyHash -isnot [hashtable])
                 {
                     [pscustomobject]@{
+                        PSTypeName = 'PSDepend.Dependency'
                         DependencyFile = $DependencyFile
                         DependencyName = $Dependency
                         Name = $Dependency
                         Version = $DependencyHash
-                        Source = 'PSGalleryModule'
+                        DependencyType = 'PSGalleryModule'
                         Parameters = $null
                         Target = $null
                         AddToPath = $null
@@ -72,17 +73,18 @@ function Get-Dependency {
                     {
                         $DependencyHash.add('Name', $Dependency)
                     }
-                    if(-not $DependencyHash.ContainsKey('Source'))
+                    if(-not $DependencyHash.ContainsKey('DependencyType'))
                     {
-                        $DependencyHash.add('Source', 'PSGalleryModule')
+                        $DependencyHash.add('DependencyType', 'PSGalleryModule')
                     }
 
                     [pscustomobject]@{
+                        PSTypeName = 'PSDepend.Dependency'
                         DependencyFile = $DependencyFile
                         DependencyName = $Dependency
                         Name = $DependencyHash.Name
                         Version = $DependencyHash.Version
-                        Source = $DependencyHash.Source
+                        DependencyType = $DependencyHash.DependencyType
                         Parameters = $DependencyHash.Parameters
                         Target = $DependencyHash.Target
                         AddToPath = $DependencyHash.AddToPath
@@ -98,7 +100,7 @@ function Get-Dependency {
 
         If($PSBoundParameters.ContainsKey('Tags'))
         {
-            $DependencyMap = Get-TaggedDeployment -Deployment $DependencyMap -Tags $Tags
+            $DependencyMap = Get-TaggedDependency -Dependency $DependencyMap -Tags $Tags
             if(-not $DependencyMap)
             {
                 Write-Warning "No dependencies found with tags '$tags'"

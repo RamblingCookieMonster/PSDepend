@@ -1,10 +1,12 @@
 ﻿@{
-    'buildhelpers' = ''
-    'psdeploy' = @{
+    psdeploy = @{
         version = '0.1.8'
-        target = 'C:\Project'
+        target = 'C:\ProjectX'
+        source = 'PSGalleryModule'
     }
-    'psexcel' = @{
-        target = 'C:\Project'
+    buildhelpers = @{
+        target = 'CurrentUser'
     }
+    pester = 'latest' 
+    psake = '4.6.0'
 }

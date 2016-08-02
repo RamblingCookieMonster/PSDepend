@@ -1,4 +1,4 @@
-﻿Function Invoke-PSDepend {
+Function Invoke-PSDepend {
     <#
     .SYNOPSIS
         Invoke PSDepend
@@ -6,7 +6,7 @@
     .DESCRIPTION
         Invoke PSDepend
 
-        Searches for .depend.psd1 files in the current and nested paths, and invokes their dependencies
+        Searches for and runs *.depend.psd1 files in the current and nested paths
 
         See Get-Help about_PSDepend for more information.
 
@@ -24,9 +24,9 @@
         Only invoke dependencies that are tagged with all of the specified Tags (-and, not -or)
 
     .PARAMETER PSDependTypePath
-        Specify a psdepend.yml file that maps DependencyTypes to their scripts.
+        Specify a PSDependMap.psd1 file that maps DependencyTypes to their scripts.
 
-        This defaults to the psdepend.yml in the PSDepend module folder
+        This defaults to the PSDependMap.psd1 in the PSDepend module folder
 
     .PARAMETER Force
         Force dependency, skipping prompts and confirmation
@@ -48,9 +48,8 @@
                     ValueFromPipelineByPropertyName = $True)]
         [string[]]$Path = '.',
 
-        # Add later. Pass on to Invoke-PSDeployment.
         [validatescript({Test-Path -Path $_ -PathType Leaf -ErrorAction Stop})]
-        [string]$PSDependTypePath = $(Join-Path $ModuleRoot PSDepend.yml),
+        [string]$PSDependTypePath = $(Join-Path $ModuleRoot PSDependMap.psd1),
 
         [string[]]$Tags,
 
@@ -60,7 +59,7 @@
     )
     Begin
     {
-        # This script reads a deployment YML, deploys files or folders as defined
+        # This script reads a depend.psd1, deploys files or folders as defined
         Write-Verbose "Running Invoke-PSDepend with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
 
         $RejectAll = $false
@@ -95,9 +94,11 @@
 
         # Handle Dependencies
         $ToInstall = Get-Dependency @GetPSDependParams
+
+        #TODO: Add ShouldProcess here.  Having it in Install-Dependency is bad.
         foreach($Dependency in $ToInstall)
         {
-            $Type = $Dependency.Source
+            $Type = $Dependency.DependencyType
             $Install = $True #anti pattern! Best I could come up with to handle both prescript fail and dependencies
 
             if($Deployment.PreScripts.Count -gt 0)
@@ -137,3 +138,6 @@
         }
     }
 }
+
+
+

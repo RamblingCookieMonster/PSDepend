@@ -1,11 +1,100 @@
-PSTOPIC
+TOPIC
     about_PSDepend
 
 SHORT DESCRIPTION
-
-LONG DESCRIPTION
+    PSDepend is a module to simplify dependency handling
 
 DETAILED DESCRIPTION
+    PSDepend is a module to simplify dependency handling
 
-LINK
+    Think of this like a simplified (Ruby) Bundler, or (Python) pip requirements files
+
+    Terminology and concepts
+    ========================
+    There are three primary concepts:
+
+        *.depend.psd1 files:    PSD1 files that tell PSDepend what you want to install
+
+        Dependency Type:        These define how to actually install something.
+                                Each type is associated with a script.
+                                The default type is PSGalleryModule.
+                                This is extensible.
+
+        Deployment Script:      These are scripts associated to a particular dependency type.
+                                They tell PSDepend how to install a dependency type.
+                                All should accept a 'Dependency' parameter.
+                                For example, the PSGalleryModule script uses PowerShellGet to find
+                                and install any dependencies specified in a depend.psd1 file.
+
+
+    Example use (*.PSDepend.ps1)
+    ===========
+
+    I want to install dependencies from C:\projectx\projectx.depend.psd1
+
+        C:\projectx\projectx.depend.psd1 looks like this:
+
+            @{
+                psdeploy = @{
+                    Version = '0.1.8'
+                    Target = 'C:\ProjectX'
+                    DependencyType = 'PSGalleryModule'
+                }
+                buildhelpers = @{
+                    Target = 'CurrentUser'
+                }
+                pester = 'latest' 
+                psake = '4.6.0'
+            }
+
+        # Install dependencies
+        cd C:\projectx
+        Invoke-PSDepend
+
+        # Alternatively
+        Invoke-PSDepend -Path C:\projectx
+
+    See about_PSDepend_Definitions for more information
+
+    Extending PSDepend
+    ==================
+    PSDepend is somewhat extensible. To add a new dependency type:
+
+        Update PSDependMap.psd1 in the PSDepend root.
+
+            The dependency type name is the root node.
+            The script node defines what script to run for these dependency types
+            The description is... not really used. But feel free to write one!
+
+            For example, I might add support for PackageManagement, and include a long and shorthand way to name these:
+
+              Package:
+                Script: Package.ps1
+                Description: Install packages via PackageManagement module
+
+              PackageManagement:
+                Script: Package.ps1
+                Description: Install packages via PackageManagement module
+
+        Create the associated script in PSDepend\PSDependScripts
+
+            For example, I would create \\Path\To\PSDepend\PSDependScripts\Package.ps1
+
+        Include a 'Dependency' parameter.
+
+            See \\Path\To\PSDepend\PSDependScripts\PSGalleryModule.ps1 for an example
+
+            Here's how I implement this:
+                param(
+                    [psobject[]]$Dependency
+                    ...
+
+        Update deploy.ps1 schema as needed.
+
+            Get-Dependency converts PSD1 files into a number of 'Dependency' objects.
+            If you need other data included, you can extend the schema and reference the
+            'Raw' property on the dependency objects: this contains the raw data from the psd1
+
+SEE ALSO
+    about_PSDepend_Definitions
     https://github.com/RamblingCookieMonster/PSDepend

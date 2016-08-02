@@ -15,7 +15,9 @@
 #>
 [cmdletbinding()]
 param(
-    [psobject[]]$Dependency,
+    [PSTypeName('PSDepend.Dependency')]
+    [psobject[]]
+    $Dependency,
 
     [string]$Repository = 'PSGallery' # From Parameters...
 )

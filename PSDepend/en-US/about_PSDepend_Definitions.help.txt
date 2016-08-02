@@ -1,0 +1,113 @@
+﻿TOPIC
+    about_PSDepend_Definitions
+
+SHORT DESCRIPTION
+    PSDepend has several configuration definitions to work with
+
+LONG DESCRIPTION
+    PSDepend has several configuration definitions to work with:
+
+        Dependency configurations:      *.PSDepend.psd1 script files
+        Dependency type configurations:  Map Dependency types to scripts that run them
+
+    Please see about_PSDepend or other general PSDepend help for clarification on terminology
+
+DETAILED DESCRIPTION
+
+    Dependency Configurations: *.PSDepend.psd1
+    =========================================
+
+        These are PowerShell data files that tell PSDepend what to install.
+
+        We use the following attributes:
+
+            DependencyFile: File that we read a dependency from
+            DependencyName: Unique name within a dependency file - this is the key, the rest of the data is stored in this key's value.
+            Name:           Name of the thing to deploy.  Optional, use this if DependencyName has a collision
+            Version:        Version to install and check for.  The dependency script author is responsible for testing whether this version already exists and installing it if not.
+            DependencyType: The dependency type.  Defaults to PSGalleryModule
+            Parameters:     Optional parameters if the dependency type's script takes parameters.  For example, the PSGalleryModule has an optional 'Repository' parameter.
+            Target:         Optional target.  For example, a PSGalleryModule can target a path (uses Save-Module), or a scope like AllUsers (uses Install-Module)
+            AddToPath:      Optional flag to specify whether to add the installed dependency to the PATH (or PSModulePath, or comparable setting)
+            Tags:           Optional tags to categorize and filter dependencies
+            Dependencies:   One or more dependencies that must be satisfied before installing this one.  Uses DependencyName for reference.
+            PreScripts:     One or more paths to scripts to process before the dependency is processed
+            PostScripts:    One or more paths to scripts to process after the dependency is processed
+            Raw:            Raw data from the dependency in the psd1 file
+
+        A *.depend.ps1 file will have one or more dependency nodes like this:
+        
+            @{
+                # This means 'install the latest copy of pester if I don't have it already, for all users, via PSGalleryModule'
+                # We treat the value as a 'Version, if it's not a hashtable
+                pester = 'latest' 
+
+                # Install a specific version of psake for all users via PSGalleryModule
+                psake = '4.6.0'
+
+                # Install the latest buildhelpers module from PSGalleryModule, for the CurrentUser only
+                buildhelpers = @{
+                    target = 'CurrentUser'
+                }
+
+                # This is a fleshed out dependency that doesn't rely on default values
+                # Maybe I need multiple copies of PSDeploy, so I give the key a unique name...
+                psdeploy_0_1_8 = @{
+
+                    # This overrides the name that typically comes from the key
+                    name = psdeploy
+                    
+                    # We want a specific version
+                    version = '0.1.8'
+                    
+                    # We want to install to a specific path
+                    target = 'C:\ProjectX'
+
+                    # This is the default, but specified for clarity...
+                    DependencyType = 'PSGalleryModule'
+
+                    # Parameters specific to our PSGalleryModule dependency type
+                    parameters = @{
+                        # We want to install from an internal repository named MyPSGalleryRepository, that I've already registered
+                        Repository = 'MyPSGalleryRepository'
+                    }
+
+                    # Tag it.  Maybe only install in certain scenarios
+                    tags = 'prod'
+
+                    # Add to the PSModulePath
+                    AddToPath = $True
+
+                    # Make sure buildhelpers installs first
+                    Dependencies = 'buildhelpers'
+
+                    # Run this script after installing the module
+                    PostScripts = "C:\Finalize-ProjectX.ps1"
+                }
+            }
+
+    Dependency type map: PSDeployMap.psd1
+    ================================
+
+    This is a file that tells PSDeploy what script to use for each DeploymentType. By default, it sits in your PSDeploy module folder.
+
+    There are two scenarios you would generally work with this:
+
+      - You want to extend PSDeploy to add more DeploymentTypes
+      - You want to move the PSDeploy.yml to a central location that multiple systems could point to
+
+    There are three attributes to each DeploymentType in this file:
+
+        DeploymentType Name:  The name of this DeploymentType
+        Script:               The name of the script to process these DeploymentTypes
+                              This looks in the PSDeploy module path, under PSDeployScripts
+                              You can theoretically specify an absolute path
+        Description:          Description for this DeploymentType. Provided to a user when they run Get-PSDeploymentType.
+
+    The PSDeploy.yml file will have one or more DeploymentType blocks like this:
+
+        Filesystem:
+          Script: Filesystem.ps1
+          Description: Uses the current session and Robocopy or Copy-Item for folder and file deployments, respectively.
+
+    See about_PSDeploy for more information

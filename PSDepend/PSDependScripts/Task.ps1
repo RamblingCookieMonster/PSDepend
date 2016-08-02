@@ -1,40 +1,45 @@
 <#
     .SYNOPSIS
-        Support deployments by handling simple tasks.
+        Support dependencies by handling simple tasks.
 
     .DESCRIPTION
-        Support deployments by handling simple tasks.
+        Support dependencies by handling simple tasks.
 
-        You can use a Task in two ways:
+        Relevant Dependency metadata:
+            Target: One or more scripts to run for this task
+            Parameters: Parameters to call against the task scripts
 
-        As a scriptblock:
+    .PARAMETER Dependency
+        Dependency to process
 
-            By Task {
-                "Run some deployment code in this scriptblock!"
-            }
-
-        As a script:
-
-            By Task {
-                FromSource "Path\To\SomeDeploymentScript.ps1"
-            }
-
-    .PARAMETER Deployment
-        Deployment to process
+    .PARAMETER Target
+        One or more Task scripts to process
 #>
 [cmdletbinding()]
 param (
-    [ValidateScript({ $_.PSObject.TypeNames[0] -eq 'PSDeploy.Deployment' })]
-    [psobject[]]$Deployment
+    [PSTypeName('PSDepend.Dependency')]
+    [psobject[]]
+    $Dependency
 )
 
-Write-Verbose "Executing $($Deployment.count) tasks"
+Write-Verbose "Executing $($Dependency.count) tasks"
 
-foreach($task in $Deployment)
+foreach($Depend in $Dependency)
 {
-    if($task.SourceExists)
+    foreach($Task in $Depend.Source)
     {
-        $param = $task.DeploymentOptions
-        . "$($task.Source)" @param
+        if(Test-Path $Task -PathType Leaf)
+        {
+            $params = @{}
+            if($Depend.Parameters)
+            {
+                $params += $Depend.Parameters
+            }
+            . $Task @params
+        }
+        else
+        {
+            Write-Warning "Could not find task file [$Task] from dependency [$($Depend.DependencyName)]"
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿Function Get-PSDependType {
+Function Get-PSDependType {
     <#
     .SYNOPSIS
         Get dependency types and related information
@@ -6,15 +6,15 @@
     .DESCRIPTION
         Get dependency types and related information
 
-        Checks PSDepend.yml for dependency types,
+        Checks PSDependMap.psd1 for dependency types,
         verifies dependency scripts exist,
         gets help content for dependency scripts,
         returns various info on each dependency type
     
     .PARAMETER Path
-        Path to PSDepend.yml defining dependency types
+        Path to PSDependMap.psd1 defining dependency types
 
-        Defaults to PSDepend.yml in the module root
+        Defaults to PSDependMap.psd1 in the module root
 
     .PARAMETER DependencyType
         Optionally limited to this DependencyType
@@ -38,13 +38,15 @@
     [cmdletbinding()]
     param(
         [validatescript({Test-Path $_ -PathType Leaf -ErrorAction Stop})]
-        [string]$Path = $(Join-Path $ModuleRoot PSDepend.yml),
+        [string]$Path = $(Join-Path $ModuleRoot PSDependMap.psd1),
         [string]$DependencyType = '*',
         [switch]$ShowHelp
     )
 
-    # Abstract out reading the yaml and verifying scripts exist
-    $DependencyDefinitions = ConvertFrom-Yaml -Path $Path
+    # Read the file
+    $Base = Split-Path $Path -Parent
+    $File = Split-Path $Path -Leaf
+    $DependencyDefinitions = Import-LocalizedData -BaseDirectory $Base -FileName $File
 
     foreach($Type in ($DependencyDefinitions.Keys | Where {$_ -like $DependencyType}))
     {
@@ -86,3 +88,6 @@
         }
     }
 }
+
+
+

@@ -16,7 +16,4 @@
         }
     }
 
-# Thanks to Scott Muc.  PSYaml is essentially his, had ambitions for a fully fledge yaml module, gave up.
-    Import-Module $PSScriptRoot\Private\PSYaml
-
 Export-ModuleMember -Function $Public.Basename
