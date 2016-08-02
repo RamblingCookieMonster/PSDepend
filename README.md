@@ -3,6 +3,10 @@ PSDepend
 
 This is a simple PowerShell dependency handler.  You might compare it to `bundle install` in the Ruby world or `pip install -r requirements.txt` in the Python world.
 
+PSDepend allows you to write simple *.depend.psd1 files that describe what dependencies you need, which you can invoke with `Invoke-PSDepend`
+
+WARNING: Opening this up quite early.  Things will change.  Would love ideas, feedback, pull requests, etc., but if you rely on this, consider pinning a specific version to avoid hitting breaking changes.
+
 ## Defining Dependencies
 
 Store dependencies in a PowerShell data file, and use *.depend.psd1 to allow Invoke-PSDepend to find your files for you.
@@ -107,13 +111,12 @@ Get-PSDependType
 ```
 
 ```
-DependencyType  Description                                                                             DependencyScript                                    
---------------  -----------                                                                             ----------------                                    
-PSGalleryModule Install a PowerShell module from the PowerShell Gallery.                                C:\...\PSDepend\PSDepen...
-Task            Support dependencies by handling simple tasks.                                          C:\...\PSDepend\PSDepen...
-Noop            Display parameters that a depends script would receive. Use for testing and validation. C:\...\PSDepend\PSDepen...
-FileDownload    Download a file                                                                         C:\...\PSDepend\PSDepen...
-Module          Install a PowerShell module from the PowerShell Gallery.                                C:\...\PSDepend\PSDepen...
+DependencyType  Description                                                 DependencyScript                                    
+--------------  -----------                                                 ----------------                                    
+PSGalleryModule Install a PowerShell module from the PowerShell Gallery.    C:\...\PSDepend\PSDepen...
+Task            Support dependencies by handling simple tasks.              C:\...\PSDepend\PSDepen...
+Noop            Display parameters that a depends script would receive...   C:\...\PSDepend\PSDepen...
+FileDownload    Download a file                                             C:\...\PSDepend\PSDepen...
 ```
 
 Now that we know what types are available, we can read the comment-based help.  Hopefully the author took their time to write this:
@@ -136,13 +139,18 @@ PARAMETERS
 ...
     -Repository <String>
         PSRepository to download from.  Defaults to PSGallery
-        
-        Required?                    false
-        Position?                    2
-        Default value                PSGallery
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
 ```
 
-In this example, we see how PSModulePath treats the Name, Version, and Target in the psd1, and we see a Parameter specific to this DependencyType, 'Repository'
+In this example, we see how PSGalleryModule treats the Name, Version, and Target in a depend.psd1, and we see a Parameter specific to this DependencyType, 'Repository'
 
+Finally, we have a few about topics, and individual commands have built in help:
+
+```
+Get-Help about_PSDepend
+Get-Help about_PSDepend_Definitions
+Get-Help Get-Dependency -Full
+```
+
+## Notes
+
+Major props to Michael Willis, who is writing [PSRequire](https://github.com/Xainey/PSRequire), a similar but more feature-full solution.
