@@ -18,8 +18,7 @@
 [cmdletbinding()]
 param (
     [PSTypeName('PSDepend.Dependency')]
-    [psobject[]]
-    $Dependency
+    [psobject[]]$Dependency
 )
 
 Write-Verbose "Executing $($Dependency.count) tasks"

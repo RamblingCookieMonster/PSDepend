@@ -6,12 +6,27 @@
         Download a file
 
         Relevant Dependency metadata:
-            Key: The key for this dependency is the URL
-            Name: Optional file name for the downloaded file.  Defaults to original file name
-            Target: The folder to download this file to
+            DependencyName (Key): The key for this dependency is used as the URL. This can be overridden by 'Source'
+            Name: Optional file name for the downloaded file.  Defaults to parsing filename from the URL
+            Target: The folder to download this file to.  If a full path to a new file is used, this overrides any other file name.
+            Source: Optional override for URL
 
-    .PARAMETER Repository
-        PSRepository to download from.  Defaults to PSGallery
+    .EXAMPLE
+        sqllite_dll = @{
+            DependencyType = 'FileDownload'
+            Source = 'https://github.com/RamblingCookieMonster/PSSQLite/blob/master/PSSQLite/x64/System.Data.SQLite.dll?raw=true'
+            Target = 'C:\temp'
+        }
+
+        # Downloads System.Data.SQLite.dll to C:\temp
+
+    .EXAMPLE
+        'https://github.com/RamblingCookieMonster/PSSQLite/blob/master/PSSQLite/x64/System.Data.SQLite.dll?raw=true' = @{
+            DependencyType = 'FileDownload'
+            Target = 'C:\temp\sqlite.dll'
+        }
+
+        # Downloads System.Data.SQLite.dll to C:\temp\sqlite.dll
 #>
 [cmdletbinding()]
 param(
@@ -21,90 +36,62 @@ param(
 )
 
 # Extract data from Dependency
+    $DependencyName = $Dependency.DependencyName
     $Name = $Dependency.Name
     $Target = $Dependency.Target
+    $Source = $Dependency.Source
 
-
-    # We use target as a proxy for Scope
-    if(-not $Dependency.Target)
+    # Pick the URL
+    if($Source)
     {
-        $Scope = 'AllUsers'
+        $URL = $Source
     }
     else
     {
-        $Scope = $Dependency.Target
+        $URL = $DependencyName
     }
-    if('AllUsers', 'CurrentUser' -notcontains $Scope -and (Test-Path $Scope -PathType Container))
+    Write-Verbose "Using URL: $URL"
+
+    $TargetParent = Split-Path $Target -Parent
+    if( (Test-Path $TargetParent) -and -not (Test-Path $Target))
     {
-        $command = 'save'
+        # They gave us a full path, don't parse the file name, use this!
+        $Path = $Target
+        Write-Verbose "Using [$Path] from `$Target"
+    }
+    elseif(-not (Test-Path $Target -PathType Container))
+    {
+       # They gave us something that doesn't look like a new file or a container for a file. Wat?
+       Throw "Could not find target path [$Target]" 
     }
     else
     {
-        $command = 'install'
+        # We have a target container, now find the name
+        If($Name)
+        {
+            # explicit name
+            $FileName = $Name
+            Write-Verbose "Parsed file name [$FileName] from `$Name"
+        }
+        else
+        {
+            # This will need work.  Assume leaf is file.  If CGI exists in leaf, assume it is after the file
+            $FileName = $URL.split('/')[-1]
+            if($FileName -match '\?')
+            {
+                $FileName = $FileName.split('?')[0]
+            }
+            Write-Verbose "Parse file name [$FileName] from `$URL"
+        }
+        $Path = Join-Path $Target $FileName
     }
+    Write-Verbose "Downloading [$URL] to [$Path]"
 
-Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
+# We have the info, check for file, download it!
+$webclient = New-Object System.Net.WebClient
 
-# Validate that $target has been setup as a valid PowerShell repository
-$validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
-if (-not $validRepo) {
-    throw "[$Repository] has not been setup as a valid PowerShell repository."
-}
+# Future considerations:
+    # Should we check for existing? And if we find it, still download file, and compare sha256 hash, replace if it does not match?
+    # We should consider credentials at some point, but PSD1 does not lend itself to securely storing passwords
 
-$params = @{
-    Name = $Name
-    Repository = $Repository
-    Verbose = $VerbosePreference
-    Force = $True
-}
-
-if( $Version -and $Version -ne 'latest')
-{
-    $Params.add('RequiredVersion',$Version)
-}
-
-# This code works for both install and save scenarios.
-$Existing = $null
-if($command -eq 'Save')
-{
-    $Existing = Get-Module -ListAvailable -Name (Join-Path $Scope $Name)
-}
-elseif ($Command -eq 'Install')
-{
-    $Existing = Get-Module -ListAvailable -Name $Name
-}
-if($Existing)
-{
-    Write-Verbose "Found existing module [$Name]"
-    # Thanks to Brandon Padgett!
-    $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $GalleryVersion = Find-Module -Name $Name -Repository PSGallery | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    
-    # Version string, and equal to current
-    if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
-    {
-        Write-Verbose "You have the requested version [$Version] of [$Name]"
-        return $null
-    }
-    
-    # latest, and we have latest
-    if( $Version -and
-        ($Version -eq 'latest' -or $Version -like '') -and
-        $GalleryVersion -le $ExistingVersion
-    )
-    {
-        Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
-        return $null
-    }
-
-    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
-}
-
-if('AllUsers', 'CurrentUser' -contains $Scope)
-{   
-    Install-Module @params -Scope $Scope
-}
-elseif(Test-Path $Scope -PathType Container)
-{
-    Save-Module @params -Path $Scope
-}
+$webclient.DownloadFile($URL, $Path)

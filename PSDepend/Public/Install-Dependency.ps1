@@ -34,12 +34,8 @@ Function Install-Dependency {
         [parameter( ValueFromPipeline = $True,
                     ParameterSetName='Map',
                     Mandatory = $True)]
-        [PSTypeName('PSDepend.Dependency')]$Dependency,
-
-        [validatescript({Test-Path -Path $_ -PathType Leaf -ErrorAction Stop})]
-        [parameter( ParameterSetName='File',
-                    Mandatory = $True)]
-        [string[]]$Path,
+        [PSTypeName('PSDepend.Dependency')]
+        [psobject[]]$Dependency,
 
         [validatescript({Test-Path -Path $_ -PathType Leaf -ErrorAction Stop})]
         [string]$PSDependTypePath = $(Join-Path $ModuleRoot PSDependMap.psd1),

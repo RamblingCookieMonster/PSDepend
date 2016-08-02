@@ -28,7 +28,7 @@ DETAILED DESCRIPTION
 
 
     Example use (*.PSDepend.ps1)
-    ===========
+    ============================
 
     I want to install dependencies from C:\projectx\projectx.depend.psd1
 
@@ -55,6 +55,40 @@ DETAILED DESCRIPTION
         Invoke-PSDepend -Path C:\projectx
 
     See about_PSDepend_Definitions for more information
+
+    Learning about Dependency Scripts
+    ================================
+    PSDepend Dependency scripts each treat Dependency details (e.g. Name, Source, Version)
+    differently.  In some cases, they may have their own Parameters.  For example,
+    a PSGalleryModule has a Repository Parameter.
+
+    It is up to authors of Dependency scripts to expose help for this information.
+
+    A few tools can assist in finding more information:
+
+    # List available PSDepend Types, and their DependencyScripts
+    Get-PSDependType
+
+    # Show comment-based help for the PSGalleryModule DependencyType:
+    Get-PSDependType -DependencyType PSGalleryModule -ShowHelp
+
+    By convention, the comment-based help DESCRIPTION field should indicate
+    how Dependency details are handled. For example, here's PSGalleryModule:
+
+        Relevant Dependency metadata:
+            Name: The name for this module
+            Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
+            Target: Used as 'Scope' for Install-Module.  If this is a path, we use Save-Module with this path.  Defaults to 'AllUsers'
+
+    Lastly, DependencyType specific parameters should be included as parameters
+    for Dependency scripts. For example, we can see the Repository parameter for PSGalleryModule:
+
+        -Repository <String>
+            PSRepository to download from.  Defaults to PSGallery
+        
+            Required?                    false
+            Position?                    2
+            Default value                PSGallery
 
     Extending PSDepend
     ==================
@@ -86,10 +120,19 @@ DETAILED DESCRIPTION
 
             Here's how I implement this:
                 param(
+                    [PSTypeName('PSDepend.Dependency')]
                     [psobject[]]$Dependency
                     ...
 
-        Update deploy.ps1 schema as needed.
+        Include details on how you use Dependency properties in the comment-based help DESCRIPTION field.
+        
+            See \\Path\To\PSDepend\PSDependScripts\PSGalleryModule.ps1 DESCRIPTION field for an example
+
+        Include parameters and comment based help for any parameters you read from the Dependency Parameter property.
+
+            See \\Path\To\PSDepend\PSDependScripts\PSGalleryModule.ps1 parameters and help for an example
+
+        Update *.depend.ps1 schema as needed.
 
             Get-Dependency converts PSD1 files into a number of 'Dependency' objects.
             If you need other data included, you can extend the schema and reference the

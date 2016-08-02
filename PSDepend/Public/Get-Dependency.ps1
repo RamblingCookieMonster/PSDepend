@@ -35,7 +35,6 @@ function Get-Dependency {
 
         $DependencyMap = foreach($DependencyFile in $DependencyFiles)
         {
-
             # Read the file
             $Base = Split-Path $DependencyFile -Parent
             $File = Split-Path $DependencyFile -Leaf
@@ -46,7 +45,7 @@ function Get-Dependency {
                 $DependencyHash = $Dependencies.$Dependency
 
                 #Parse simple key=name, value=version format
-                if($DependencyHash -isnot [hashtable])
+                if($DependencyHash -is [string])
                 {
                     [pscustomobject]@{
                         PSTypeName = 'PSDepend.Dependency'
@@ -56,6 +55,7 @@ function Get-Dependency {
                         Version = $DependencyHash
                         DependencyType = 'PSGalleryModule'
                         Parameters = $null
+                        Source = $null
                         Target = $null
                         AddToPath = $null
                         Tags = $null
@@ -68,11 +68,7 @@ function Get-Dependency {
                 else
                 {
                     # Parse dependency hash format
-                    # A few defaults...
-                    if(-not $DependencyHash.ContainsKey('Name'))
-                    {
-                        $DependencyHash.add('Name', $Dependency)
-                    }
+                    # Default type is module
                     if(-not $DependencyHash.ContainsKey('DependencyType'))
                     {
                         $DependencyHash.add('DependencyType', 'PSGalleryModule')
@@ -86,6 +82,7 @@ function Get-Dependency {
                         Version = $DependencyHash.Version
                         DependencyType = $DependencyHash.DependencyType
                         Parameters = $DependencyHash.Parameters
+                        Source = $DependencyHash.Source
                         Target = $DependencyHash.Target
                         AddToPath = $DependencyHash.AddToPath
                         Tags = $DependencyHash.Tags

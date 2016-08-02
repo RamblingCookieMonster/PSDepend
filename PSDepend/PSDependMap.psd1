@@ -2,7 +2,14 @@
 # Top level node is the dependency name
 #   Script is the script to run. These are stored in \PSDepend\PSDependScripts
 #   Description is a quick description of the dependency script
+
+# In some cases, it may be beneficial to include 'aliases'.  Just add nodes for these.
 @{
+
+    FileDownload = @{
+      Script= 'FileDownload.ps1'
+      Description = 'Download a file'
+    }
 
     Noop = @{
       Script = 'noop.ps1'
@@ -10,6 +17,10 @@
     }
 
     PSGalleryModule = @{
+      Script= 'PSGalleryModule.ps1'
+      Description = 'Install a PowerShell module from the PowerShell Gallery.'
+    }
+    Module = @{
       Script= 'PSGalleryModule.ps1'
       Description = 'Install a PowerShell module from the PowerShell Gallery.'
     }

@@ -16,14 +16,19 @@
 [cmdletbinding()]
 param(
     [PSTypeName('PSDepend.Dependency')]
-    [psobject[]]
-    $Dependency,
+    [psobject[]]$Dependency,
 
     [string]$Repository = 'PSGallery' # From Parameters...
 )
 
 # Extract data from Dependency
+    $DependencyName = $Dependency.DependencyName
     $Name = $Dependency.Name
+    if(-not $Name)
+    {
+        $Name = $DependencyName
+    }
+    
     $Version = $Dependency.Version
     if(-not $Version)
     {
