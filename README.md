@@ -5,7 +5,11 @@ This is a simple PowerShell dependency handler.  You might compare it to `bundle
 
 PSDepend allows you to write simple *.depend.psd1 files that describe what dependencies you need, which you can invoke with `Invoke-PSDepend`
 
-WARNING: Opening this up quite early.  Things will change.  Would love ideas, feedback, pull requests, etc., but if you rely on this, consider pinning a specific version to avoid hitting breaking changes.
+*WARNING*:
+
+* Opening this up quite early.  There will be breaking changes without notice until we hit version 0.1.0
+* Minimal to no testing.  This is in my backlog, but PRs would be welcome!
+* Would love ideas, feedback, pull requests, etc., but if you rely on this, consider pinning a specific version to avoid hitting breaking changes.
 
 ## Defining Dependencies
 
