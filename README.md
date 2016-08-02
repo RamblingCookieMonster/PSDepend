@@ -27,10 +27,10 @@ And what PSDepend sees:
 ```
 DependencyName DependencyType  Version Tags
 -------------- --------------  ------- ----
-psake          PSGalleryModule latest      
-BuildHelpers   PSGalleryModule 0.0.20      
-Pester         PSGalleryModule             
-PSDeploy       PSGalleryModule 0.1.21      
+psake          PSGalleryModule latest
+BuildHelpers   PSGalleryModule 0.0.20
+Pester         PSGalleryModule
+PSDeploy       PSGalleryModule 0.1.21
 ```
 
 There's a bit more behind the scenes - we assume you want PSGalleryModule's unless you specify otherwise., and we hide a few dependency properties.
@@ -40,6 +40,18 @@ There's a bit more behind the scenes - we assume you want PSGalleryModule's unle
 What else can we put in a dependency?  Here's an example using a more flexible syntax.  You can mix and match.
 
 ```
+@{
+    psdeploy = 'latest'
+    buildhelpers = @{
+        Name = 'ExampleNoop'
+        DependencyType = 'PSGalleryModule'
+        Version = '1.2.5'
+        Tags = 'prod', 'test'
+        PreScripts = 'C:\RunThisFirst.ps1'
+    }
 
-
+    task = @{
+        DependencyType = 'C:\RunThisFirst.ps1'
+    }
+}
 ```

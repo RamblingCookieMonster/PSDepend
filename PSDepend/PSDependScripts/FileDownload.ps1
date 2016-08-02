@@ -1,0 +1,110 @@
+<#
+    .SYNOPSIS
+        Download a file
+
+    .DESCRIPTION
+        Download a file
+
+        Relevant Dependency metadata:
+            Key: The key for this dependency is the URL
+            Name: Optional file name for the downloaded file.  Defaults to original file name
+            Target: The folder to download this file to
+
+    .PARAMETER Repository
+        PSRepository to download from.  Defaults to PSGallery
+#>
+[cmdletbinding()]
+param(
+    [PSTypeName('PSDepend.Dependency')]
+    [psobject[]]
+    $Dependency
+)
+
+# Extract data from Dependency
+    $Name = $Dependency.Name
+    $Target = $Dependency.Target
+
+
+    # We use target as a proxy for Scope
+    if(-not $Dependency.Target)
+    {
+        $Scope = 'AllUsers'
+    }
+    else
+    {
+        $Scope = $Dependency.Target
+    }
+    if('AllUsers', 'CurrentUser' -notcontains $Scope -and (Test-Path $Scope -PathType Container))
+    {
+        $command = 'save'
+    }
+    else
+    {
+        $command = 'install'
+    }
+
+Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
+
+# Validate that $target has been setup as a valid PowerShell repository
+$validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
+if (-not $validRepo) {
+    throw "[$Repository] has not been setup as a valid PowerShell repository."
+}
+
+$params = @{
+    Name = $Name
+    Repository = $Repository
+    Verbose = $VerbosePreference
+    Force = $True
+}
+
+if( $Version -and $Version -ne 'latest')
+{
+    $Params.add('RequiredVersion',$Version)
+}
+
+# This code works for both install and save scenarios.
+$Existing = $null
+if($command -eq 'Save')
+{
+    $Existing = Get-Module -ListAvailable -Name (Join-Path $Scope $Name)
+}
+elseif ($Command -eq 'Install')
+{
+    $Existing = Get-Module -ListAvailable -Name $Name
+}
+if($Existing)
+{
+    Write-Verbose "Found existing module [$Name]"
+    # Thanks to Brandon Padgett!
+    $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    $GalleryVersion = Find-Module -Name $Name -Repository PSGallery | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    
+    # Version string, and equal to current
+    if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
+    {
+        Write-Verbose "You have the requested version [$Version] of [$Name]"
+        return $null
+    }
+    
+    # latest, and we have latest
+    if( $Version -and
+        ($Version -eq 'latest' -or $Version -like '') -and
+        $GalleryVersion -le $ExistingVersion
+    )
+    {
+        Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
+        return $null
+    }
+
+    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
+}
+
+if('AllUsers', 'CurrentUser' -contains $Scope)
+{   
+    Install-Module @params -Scope $Scope
+}
+elseif(Test-Path $Scope -PathType Container)
+{
+    Save-Module @params -Path $Scope
+}
