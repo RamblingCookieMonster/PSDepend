@@ -1,11 +1,11 @@
 PSDepend
 ========
 
-This is a simple PowerShell dependency handler.  You might compare it to `bundle install` in the Ruby world or `pip install -r requirements.txt` in the Python world.
+This is a simple PowerShell dependency handler.  You might loosely compare it to `bundle install` in the Ruby world or `pip install -r requirements.txt` in the Python world.
 
 PSDepend allows you to write simple *.depend.psd1 files that describe what dependencies you need, which you can invoke with `Invoke-PSDepend`
 
-*WARNING*:
+**WARNING**:
 
 * Opening this up quite early.  There will be breaking changes without notice until we hit version 0.1.0
 * Minimal to no testing.  This is in my backlog, but PRs would be welcome!
