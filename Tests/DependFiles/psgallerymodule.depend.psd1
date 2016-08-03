@@ -1,0 +1,3 @@
+﻿@{
+    'buildhelpers' = 'latest'
+}

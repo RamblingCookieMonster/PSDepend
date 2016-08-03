@@ -58,7 +58,8 @@ Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$
 # Validate that $target has been setup as a valid PowerShell repository
 $validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
 if (-not $validRepo) {
-    throw "[$Repository] has not been setup as a valid PowerShell repository."
+    Write-Error "[$Repository] has not been setup as a valid PowerShell repository."
+    return
 }
 
 $params = @{

@@ -86,6 +86,13 @@ Function Invoke-PSDepend {
         $RejectAll = $false
         $ConfirmAll = $false
 
+        # Do we want force?
+        $InvokeParams = @{}
+        if($Force)
+        {
+            $InvokeParams.Add('Force', $Force)
+        }
+
         $DependencyFiles = New-Object System.Collections.ArrayList
     }
     Process
@@ -145,7 +152,7 @@ Function Invoke-PSDepend {
 
             if($Install)
             {
-                Install-Dependency -Dependency $Dependency
+                Install-Dependency @InvokeParams -Dependency $Dependency
             }
 
             if($Dependency.PostScript.Count -gt 0)

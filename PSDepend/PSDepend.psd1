@@ -96,7 +96,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'WARNING: This is a pre-release. See ProjectUri for details.'
+        ReleaseNotes = 'WARNING: This is a pre-release. See ProjectUri for details: https://github.com/RamblingCookieMonster/PSDepend/'
 
     } # End of PSData hashtable
 
