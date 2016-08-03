@@ -1,3 +1,3 @@
 ﻿@{
-    'buildhelpers' = 'latest'
+    'jenkins' = 'latest'
 }

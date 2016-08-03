@@ -1,5 +1,5 @@
 ﻿@{
     'buildhelpers' = @{
-        target = 'C:\temp'
+        target = 'C:\test'
     }
 }
