@@ -51,7 +51,7 @@ What else can we put in a dependency?  Here's an example using a more flexible s
 ```powershell
 @{
     psdeploy = 'latest'
-    
+
     buildhelpers_0_0_20 = @{
         Name = 'buildhelpers'
         DependencyType = 'PSGalleryModule'
@@ -69,7 +69,7 @@ What else can we put in a dependency?  Here's an example using a more flexible s
         Target = 'C:\RunThisFirst.ps1'
         DependsOn = 'nuget'
     }
-    
+
     nuget = @{
         DependencyType = 'FileDownload'
         Source = 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
@@ -91,9 +91,9 @@ $Dependency[2] | Select *
 ```
 DependencyFile : \\Path\To\complex.depend.psd1
 DependencyName : buildhelpers_0_0_20
+DependencyType : PSGalleryModule
 Name           : buildhelpers
 Version        : 0.0.20
-DependencyType : PSGalleryModule
 Parameters     : {Repository}
 Source         : 
 Target         : 
@@ -134,7 +134,7 @@ Get-PSDependType -DependencyType PSGalleryModule -ShowHelp
 ...
 DESCRIPTION
     Installs a module from a PowerShell repository like the PowerShell Gallery.
-    
+
     Relevant Dependency metadata:
         Name: The name for this module
         Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'

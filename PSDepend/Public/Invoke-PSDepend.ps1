@@ -34,8 +34,29 @@ Function Invoke-PSDepend {
     .EXAMPLE
         Invoke-PSDepend
 
+        # Search for and run *.deploy.psd1 files under the current path
+
+    .EXAMPLE
+        Invoke-PSDepend -Path C:\Path\To\requirements.psd1
+
+        # Install dependencies from requirements.psd1
+
+    .EXAMPLE
+        Invoke-PSDepend -Path C:\Requirements -Recurse $False
+
+        # Find and run *.depend.psd1 files under C\Requirements (but not subfolders)
+
     .LINK
         about_PSDepend
+
+    .LINK
+        about_PSDepend_Definitions
+
+    .LINK
+        Get-Dependency
+
+    .LINK
+        Install-Dependency
 
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend

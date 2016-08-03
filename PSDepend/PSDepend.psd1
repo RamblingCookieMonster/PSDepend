@@ -84,7 +84,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-         Tags = @('requirements', 'dependencies', 'dependency')
+         Tags = @('requirements', 'dependencies', 'dependency', 'bundle')
 
         # A URL to the license for this module.
          LicenseUri = 'https://github.com/RamblingCookieMonster/PSDepend/blob/master/LICENSE'
@@ -96,7 +96,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = 'WARNING: This is a pre-release. See ProjectUri for details.'
 
     } # End of PSData hashtable
 

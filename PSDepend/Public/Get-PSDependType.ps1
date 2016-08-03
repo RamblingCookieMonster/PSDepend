@@ -10,7 +10,7 @@ Function Get-PSDependType {
         verifies dependency scripts exist,
         gets help content for dependency scripts,
         returns various info on each dependency type
-    
+
     .PARAMETER Path
         Path to PSDependMap.psd1 defining dependency types
 
@@ -25,12 +25,37 @@ Function Get-PSDependType {
         Show help content for specified dependency types
 
     .EXAMPLE
-        Get-PSDependencyType -DependencyType FileSystem -ShowHelp
+        Get-PSDependType -DependencyType PSGalleryModule -ShowHelp
 
-        Show help for the FileSystem dependency type.
+        Show help for the PSGalleryModule dependency type.
+
+    .EXAMPLE
+        Get-PSDependType
+
+        # List dependency types defined in PSDependMap.psd1 in the root of your PSDepend module folder
+
+    .EXAMPLE
+        Get-PSDependType -Path \\Path\To\Central.DependencyMap.psd1
+
+        # List dependency types defined in a centralized dependency map
 
     .LINK
         about_PSDepend
+
+    .LINK
+        about_PSDepend_Definitions
+
+    .LINK
+        Get-Dependency
+
+    .LINK
+        Get-PSDependScript
+
+    .LINK
+        Install-Dependency
+
+    .LINK
+        Invoke-PSDepend
 
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend

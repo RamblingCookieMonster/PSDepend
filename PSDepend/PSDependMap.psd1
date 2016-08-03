@@ -20,10 +20,6 @@
       Script= 'PSGalleryModule.ps1'
       Description = 'Install a PowerShell module from the PowerShell Gallery.'
     }
-    Module = @{
-      Script= 'PSGalleryModule.ps1'
-      Description = 'Install a PowerShell module from the PowerShell Gallery.'
-    }
 
     Task = @{
       Script = 'Task.ps1'

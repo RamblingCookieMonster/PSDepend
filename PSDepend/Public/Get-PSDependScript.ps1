@@ -15,8 +15,33 @@ Function Get-PSDependScript {
 
         Defaults to PSDependMap.psd1 in the module root
 
+    .EXAMPLE
+        Get-PSDependScript
+
+        # List PSDepend scripts available in the PSDependMap.psd1 in the PSDepend module root
+
+    .EXAMPLE
+        Get-PSDependScript -Path \\Path\To\Central.DependencyMap.psd1
+
+        # List dependency types defined in a centralized dependency map
+
     .LINK
         about_PSDepend
+
+    .LINK
+        about_PSDepend_Definitions
+
+    .LINK
+        Get-Dependency
+
+    .LINK
+        Get-PSDependType
+
+    .LINK
+        Install-Dependency
+
+    .LINK
+        Invoke-PSDepend
 
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend

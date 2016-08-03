@@ -1,15 +1,90 @@
 function Get-Dependency {
     <#
     .SYNOPSIS
-        Read a dependency file
+        Read a dependency psd1 file
 
     .DESCRIPTION
-        Read a dependency file
+        Read a dependency psd1 file
+
+        The resulting object contains these properties
+            DependencyFile : Path to psd1 file this dependency is defined in
+            DependencyName : Unique dependency name (the key in the psd1 file)
+            DependencyType : Type of dependency.  See Get-PSDependType
+            Name           : Name for the dependency
+            Version        : Version for the dependency
+            Parameters     : Hash table of parameters to pass to dependency script
+            Source         : Source for the dependency
+            Target         : Target for the dependency
+            AddToPath      : If specified and dependency type supports it, add dependency to path (e.g. a module is added to PSModulePath)
+            Tags           : One or more tags to categorize or filter dependencies
+            DependsOn      : Dependency that must be installed before this
+            PreScripts     : One or more paths to PowerShell scripts to run before the dependency
+            PostScripts    : One or more paths to PowerShell scripts to run after the dependency
+            Raw            : Raw output for this dependency from the PSD1. May include data outside of standard items above.
+
+        These are parsed from dependency PSD1 files as follows:
+
+        Simple syntax:
+            @{
+                DependencyName = 'Version'
+            }
+
+            With the simple syntax:
+               * The DependencyName (key) is used as the Name
+               * PSGalleryModule is used as the DependencyType
+               * The Version (value) is a string, and is used as the Version
+               * Other properties are set to $null
+
+        Advanced syntax:
+            @{
+                DependencyName = @{
+                    DependencyType = 'TypeOfDependency'.  # See Get-PSDependType
+                    Name = 'NameForThisDependency'
+                    Version = '0.1.0'
+                    Parameters = @{ Example = 'Value' }  # Optional parameters for the dependency script.
+                    Source = 'Some source' # Usually optional
+                    Target = 'Some target' # Usually optional
+                    AddToPath = $True # Whether to add new dependency to path, if dependency type supports it.
+                    Tags = 'prod', 'local' # One or more tags to categorize or filter dependencies
+                    DependsOn = 'Some_Other_DependencyName' # DependencyName that must run before this
+                    PreScripts = 'C:\script.ps1' # Script(s) to run before this dependency
+                    PostScripts = 'C:\script2.ps1' # Script(s) to run after this dependency
+                }
+            }
+
+        Note that you can mix these syntax together in the same psd1.
 
     .PARAMETER Path
         Path to project root or dependency file.
 
-        If a folder is specified, we search for and process *.depend.psd1 files.    
+        If a folder is specified, we search for and process *.depend.psd1 files.
+
+    .PARAMETER Tags
+        Limit results to one or more tags defined in the Dependencies
+
+    .PARAMETER Recurse
+        If specified and path is a container, search for *.depend.psd1 files recursively under $Path
+
+    .LINK
+        about_PSDepend
+
+    .LINK
+        about_PSDepend_Definitions
+
+    .LINK
+        Get-PSDependScript
+
+    .LINK
+        Get-PSDependType
+
+    .LINK
+        Install-Dependency
+
+    .LINK
+        Invoke-PSDepend
+
+    .LINK
+        https://github.com/RamblingCookieMonster/PSDepend
     #>
     [cmdletbinding()]
     param(
@@ -51,9 +126,9 @@ function Get-Dependency {
                         PSTypeName = 'PSDepend.Dependency'
                         DependencyFile = $DependencyFile
                         DependencyName = $Dependency
+                        DependencyType = 'PSGalleryModule'
                         Name = $Dependency
                         Version = $DependencyHash
-                        DependencyType = 'PSGalleryModule'
                         Parameters = $null
                         Source = $null
                         Target = $null
@@ -62,7 +137,7 @@ function Get-Dependency {
                         DependsOn = $null
                         PreScripts = $null
                         PostScripts = $null
-                        Raw = $null         
+                        Raw = $null
                     }
                 }
                 else
@@ -78,9 +153,9 @@ function Get-Dependency {
                         PSTypeName = 'PSDepend.Dependency'
                         DependencyFile = $DependencyFile
                         DependencyName = $Dependency
+                        DependencyType = $DependencyHash.DependencyType
                         Name = $DependencyHash.Name
                         Version = $DependencyHash.Version
-                        DependencyType = $DependencyHash.DependencyType
                         Parameters = $DependencyHash.Parameters
                         Source = $DependencyHash.Source
                         Target = $DependencyHash.Target
@@ -104,7 +179,6 @@ function Get-Dependency {
                 return
             }
         }
-
         Sort-PSDependency -Dependencies $DependencyMap
     }
 }

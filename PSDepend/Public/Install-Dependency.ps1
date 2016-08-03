@@ -4,7 +4,7 @@ Function Install-Dependency {
         Install a specific dependency
 
     .DESCRIPTION
-        Install a specific dependency
+        Install a specific dependency.  Typically you would use Invoke-PSDepend rather than this.
 
         Takes output from Get-Dependency
 
@@ -26,6 +26,29 @@ Function Install-Dependency {
 
     .PARAMETER Force
         Force installation, skipping prompts and confirmation
+
+    .EXAMPLE
+        Get-Dependency -Path C:\requirements.psd1 | Install-Dependency
+
+        Get dependencies from C:\requirements.psd1 and resolve them
+
+    .LINK
+        about_PSDepend
+
+    .LINK
+        about_PSDepend_Definitions
+
+    .LINK
+        Get-Dependency
+
+    .LINK
+        Get-PSDependType
+
+    .LINK
+        Invoke-PSDepend
+
+    .LINK
+        https://github.com/RamblingCookieMonster/PSDepend
     #>
     [cmdletbinding( DefaultParameterSetName = 'Map',
                     SupportsShouldProcess = $True,

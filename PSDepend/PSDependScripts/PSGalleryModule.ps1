@@ -28,7 +28,7 @@ param(
     {
         $Name = $DependencyName
     }
-    
+
     $Version = $Dependency.Version
     if(-not $Version)
     {

@@ -7,14 +7,14 @@ SHORT DESCRIPTION
 LONG DESCRIPTION
     PSDepend has several configuration definitions to work with:
 
-        Dependency configurations:      *.PSDepend.psd1 script files
+        Dependency configurations:      *.Depend.psd1 script files
         Dependency type configurations:  Map Dependency types to scripts that run them
 
     Please see about_PSDepend or other general PSDepend help for clarification on terminology
 
 DETAILED DESCRIPTION
 
-    Dependency Configurations: *.PSDepend.psd1
+    Dependency Configurations: *.Depend.psd1
     =========================================
 
         These are PowerShell data files that tell PSDepend what to install.
@@ -23,10 +23,11 @@ DETAILED DESCRIPTION
 
             DependencyFile: File that we read a dependency from
             DependencyName: Unique name within a dependency file - this is the key, the rest of the data is stored in this key's value.
+            DependencyType: The dependency type.  Defaults to PSGalleryModule
             Name:           Name of the thing to deploy.  Optional, use this if DependencyName has a collision
             Version:        Version to install and check for.  The dependency script author is responsible for testing whether this version already exists and installing it if not.
-            DependencyType: The dependency type.  Defaults to PSGalleryModule
             Parameters:     Optional parameters if the dependency type's script takes parameters.  For example, the PSGalleryModule has an optional 'Repository' parameter.
+            Source:         Optional source.  For example, a FileDownload source is a URL
             Target:         Optional target.  For example, a PSGalleryModule can target a path (uses Save-Module), or a scope like AllUsers (uses Install-Module)
             AddToPath:      Optional flag to specify whether to add the installed dependency to the PATH (or PSModulePath, or comparable setting)
             Tags:           Optional tags to categorize and filter dependencies
@@ -36,11 +37,11 @@ DETAILED DESCRIPTION
             Raw:            Raw data from the dependency in the psd1 file
 
         A *.depend.ps1 file will have one or more dependency nodes like this:
-        
+
             @{
                 # This means 'install the latest copy of pester if I don't have it already, for all users, via PSGalleryModule'
                 # We treat the value as a 'Version, if it's not a hashtable
-                pester = 'latest' 
+                pester = 'latest'
 
                 # Install a specific version of psake for all users via PSGalleryModule
                 psake = '4.6.0'
@@ -56,10 +57,10 @@ DETAILED DESCRIPTION
 
                     # This overrides the name that typically comes from the key
                     name = psdeploy
-                    
+
                     # We want a specific version
                     version = '0.1.8'
-                    
+
                     # We want to install to a specific path
                     target = 'C:\ProjectX'
 
