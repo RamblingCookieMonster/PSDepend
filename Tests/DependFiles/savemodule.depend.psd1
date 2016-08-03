@@ -1,5 +1,5 @@
 ﻿@{
-    'buildhelpers' = @{
+    'jenkins' = @{
         target = 'C:\test'
     }
 }
