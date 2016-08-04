@@ -5,7 +5,7 @@ if(-not $ENV:BHProjectPath)
 Remove-Module $ENV:BHProjectName -ErrorAction SilentlyContinue
 Import-Module (Join-Path $ENV:BHProjectPath $ENV:BHProjectName) -Force
 
-$null = mkdir C:\test
+$null = mkdir C:\test -force
 
 InModuleScope 'PSDepend' {
 

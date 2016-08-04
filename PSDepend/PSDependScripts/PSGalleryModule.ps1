@@ -91,7 +91,7 @@ if( $Version -and $Version -ne 'latest')
 $Existing = $null
 if($command -eq 'Save')
 {
-    $Existing = Get-Module -ListAvailable -Name (Join-Path $Scope $Name)
+    $Existing = Get-Module -ListAvailable -Name (Join-Path $Scope $Name) -ErrorAction SilentlyContinue
 }
 elseif ($Command -eq 'Install')
 {
@@ -132,7 +132,7 @@ elseif(Test-Path $Scope -PathType Container)
 {
     if($Force)
     {
-        $Null = New-Item -ItemType Directory -Path $Scope -Force
+        $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
     }
     Save-Module @params -Path $Scope
 }
