@@ -17,6 +17,9 @@
 
     .PARAMETER Force
         If specified and Target is specified, create folders if needed
+
+    .PARAMETER Import
+        If specified, import the module in the global scope
 #>
 [cmdletbinding()]
 param(
@@ -25,7 +28,9 @@ param(
 
     [string]$Repository = 'PSGallery', # From Parameters...
 
-    [switch]$Force
+    [switch]$Force,
+
+    [switch]$Import
 )
 
 # Extract data from Dependency
@@ -88,15 +93,17 @@ if( $Version -and $Version -ne 'latest')
 }
 
 # This code works for both install and save scenarios.
-$Existing = $null
 if($command -eq 'Save')
 {
-    $Existing = Get-Module -ListAvailable -Name (Join-Path $Scope $Name) -ErrorAction SilentlyContinue
+    $ModuleName =  (Join-Path $Scope $Name)
 }
 elseif ($Command -eq 'Install')
 {
-    $Existing = Get-Module -ListAvailable -Name $Name
+    $ModuleName = $Name
 }
+$Existing = $null
+$Existing = Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue
+
 if($Existing)
 {
     Write-Verbose "Found existing module [$Name]"
@@ -124,6 +131,7 @@ if($Existing)
     Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
 }
 
+$ImportParam = @{}
 if('AllUsers', 'CurrentUser' -contains $Scope)
 {   
     Install-Module @params -Scope $Scope
@@ -135,4 +143,14 @@ elseif(Test-Path $Scope -PathType Container)
         $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
     }
     Save-Module @params -Path $Scope
+
+    if($Dependency.AddToPath)
+    {
+        $env:PSModulePath = $env:PSModulePath, $Scope -join ';'
+    }
+}
+
+if($Import)
+{
+    Import-Module $ModuleName -Scope Global -Force 
 }
