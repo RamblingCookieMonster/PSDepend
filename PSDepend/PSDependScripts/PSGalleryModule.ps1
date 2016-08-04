@@ -10,6 +10,8 @@
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
             Target: Used as 'Scope' for Install-Module.  If this is a path, we use Save-Module with this path.  Defaults to 'AllUsers'
 
+        If you don't have the Nuget package provider, we install it for you
+
     .PARAMETER Repository
         PSRepository to download from.  Defaults to PSGallery
 
