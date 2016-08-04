@@ -96,7 +96,7 @@ if( $Version -and $Version -ne 'latest')
 # This code works for both install and save scenarios.
 if($command -eq 'Save')
 {
-    $ModuleName =  (Join-Path $Scope $Name)
+    $ModuleName =  Join-Path $Scope $Name
 }
 elseif ($Command -eq 'Install')
 {
@@ -135,12 +135,15 @@ if($Existing)
 $ImportParam = @{}
 if('AllUsers', 'CurrentUser' -contains $Scope)
 {   
+    Write-Verbose "Installing [$Name] with scope [$Scope]"
     Install-Module @params -Scope $Scope
 }
-elseif(Test-Path $Scope -PathType Container)
+elseif(Test-Path $Scope -PathType Container -or $Force)
 {
+    Write-Verbose "Saving [$Name] with path [$Scope]"
     if($Force)
     {
+        Write-Verbose "Force creating directory path to [$Scope]"
         $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
     }
     Save-Module @params -Path $Scope
