@@ -146,11 +146,13 @@ elseif(Test-Path $Scope -PathType Container)
 
     if($Dependency.AddToPath)
     {
+        Write-Verbose "Setting PSModulePath to`n$($env:PSModulePath, $Scope -join ';' | Out-String)"
         $env:PSModulePath = $env:PSModulePath, $Scope -join ';'
     }
 }
 
 if($Import)
 {
+    Write-Verbose "Importing [$ModuleName]"
     Import-Module $ModuleName -Scope Global -Force 
 }
