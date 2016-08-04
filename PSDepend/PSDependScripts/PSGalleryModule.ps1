@@ -23,7 +23,9 @@ param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]$Dependency,
 
-    [string]$Repository = 'PSGallery' # From Parameters...
+    [string]$Repository = 'PSGallery', # From Parameters...
+
+    [switch]$Force
 )
 
 # Extract data from Dependency
