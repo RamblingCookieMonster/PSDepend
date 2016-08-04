@@ -63,7 +63,7 @@ Task Build -Depends Test {
     Set-ModuleFunctions
 
     # Bump the module version
-    $Version = Get-NextPSGalleryVersion -Name PSDeploy
+    $Version = Get-NextPSGalleryVersion -Name $env:BHProjectName
     Update-Metadata -Path $env:BHPSModuleManifest -PropertyName ModuleVersion -Value $Version
 }
 
