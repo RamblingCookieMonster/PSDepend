@@ -56,6 +56,12 @@ param(
         $command = 'install'
     }
 
+if(-not (Get-PackageProvider -Name Nuget))
+{
+    # Grab nuget bits.
+    $null = Get-PackageProvider -Name NuGet -ForceBootstrap | Out-Null
+}
+
 Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
 
 # Validate that $target has been setup as a valid PowerShell repository
