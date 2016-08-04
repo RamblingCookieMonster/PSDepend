@@ -58,7 +58,13 @@ Task Test -Depends Init  {
 
 Task Build -Depends Test {
     $lines
-    #Set-ModuleFunctions
+    
+    # Load the module, read the exported functions, update the psd1 FunctionsToExport
+    Set-ModuleFunctions
+
+    # Bump the module version
+    $Version = Get-NextPSGalleryVersion -Name PSDeploy
+    Update-Metadata -Path $env:BHPSModuleManifest -PropertyName ModuleVersion -Value $Version
 }
 
 Task Deploy -Depends Build {
