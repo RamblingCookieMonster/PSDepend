@@ -138,7 +138,7 @@ if('AllUsers', 'CurrentUser' -contains $Scope)
     Write-Verbose "Installing [$Name] with scope [$Scope]"
     Install-Module @params -Scope $Scope
 }
-elseif(Test-Path $Scope -PathType Container -or $Force)
+elseif((Test-Path $Scope -PathType Container) -or $Force)
 {
     Write-Verbose "Saving [$Name] with path [$Scope]"
     if($Force)
