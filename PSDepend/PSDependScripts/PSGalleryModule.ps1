@@ -12,6 +12,9 @@
 
     .PARAMETER Repository
         PSRepository to download from.  Defaults to PSGallery
+
+    .PARAMETER Force
+        If specified and Target is specified, create folders if needed
 #>
 [cmdletbinding()]
 param(
@@ -117,5 +120,9 @@ if('AllUsers', 'CurrentUser' -contains $Scope)
 }
 elseif(Test-Path $Scope -PathType Container)
 {
+    if($Force)
+    {
+        $Null = New-Item -ItemType Directory -Path $Scope -Force
+    }
     Save-Module @params -Path $Scope
 }
