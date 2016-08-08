@@ -6,7 +6,7 @@ Function Invoke-PSDepend {
     .DESCRIPTION
         Invoke PSDepend
 
-        Searches for and runs *.depend.psd1 files in the current and nested paths
+        Searches for and runs *.depend.psd1 and requirements.psd1 files in the current and nested paths
 
         See Get-Help about_PSDepend for more information.
 
@@ -16,7 +16,7 @@ Function Invoke-PSDepend {
         Defaults to the current path
 
     .PARAMETER Recurse
-        If path is a folder, whether to recursively search for *.depend.psd1 files under that folder
+        If path is a folder, whether to recursively search for *.depend.psd1 and requirements.psd1 files under that folder
 
         Defaults to $True
 
@@ -34,17 +34,17 @@ Function Invoke-PSDepend {
     .EXAMPLE
         Invoke-PSDepend
 
-        # Search for and run *.deploy.psd1 files under the current path
+        # Search for and run *.deploy.psd1 and requirements.psd1 files under the current path
 
     .EXAMPLE
-        Invoke-PSDepend -Path C:\Path\To\requirements.psd1
+        Invoke-PSDepend -Path C:\Path\To\require.psd1
 
-        # Install dependencies from requirements.psd1
+        # Install dependencies from require.psd1
 
     .EXAMPLE
         Invoke-PSDepend -Path C:\Requirements -Recurse $False
 
-        # Find and run *.depend.psd1 files under C\Requirements (but not subfolders)
+        # Find and run *.depend.psd1 and requirements.psd1 files under C\Requirements (but not subfolders)
 
     .LINK
         about_PSDepend

@@ -57,13 +57,13 @@ function Get-Dependency {
     .PARAMETER Path
         Path to project root or dependency file.
 
-        If a folder is specified, we search for and process *.depend.psd1 files.
+        If a folder is specified, we search for and process *.depend.psd1 and requirements.psd1 files.
 
     .PARAMETER Tags
         Limit results to one or more tags defined in the Dependencies
 
     .PARAMETER Recurse
-        If specified and path is a container, search for *.depend.psd1 files recursively under $Path
+        If specified and path is a container, search for *.depend.psd1 and requirements.psd1 files recursively under $Path
 
     .LINK
         about_PSDepend

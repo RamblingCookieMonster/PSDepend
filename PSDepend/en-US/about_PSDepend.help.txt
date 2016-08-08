@@ -13,7 +13,8 @@ DETAILED DESCRIPTION
     ========================
     There are three primary concepts:
 
-        *.depend.psd1 files:    PSD1 files that tell PSDepend what you want to install
+        *.depend.psd1 files:    PSD1 files that tell PSDepend what you want to install.
+                                You can also use requirements.psd1
 
         Dependency Type:        These define how to actually install something.
                                 Each type is associated with a script.
@@ -24,7 +25,7 @@ DETAILED DESCRIPTION
                                 They tell PSDepend how to install a dependency type.
                                 All should accept a 'Dependency' parameter.
                                 For example, the PSGalleryModule script uses PowerShellGet to find
-                                and install any dependencies specified in a depend.psd1 file.
+                                and install any dependencies specified in a depend.psd1 or requirements.psd1 file.
 
 
     Example use (*.PSDepend.ps1)

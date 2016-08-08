@@ -5,7 +5,7 @@ PSDepend
 
 This is a simple PowerShell dependency handler.  You might loosely compare it to `bundle install` in the Ruby world or `pip install -r requirements.txt` in the Python world.
 
-PSDepend allows you to write simple *.depend.psd1 files that describe what dependencies you need, which you can invoke with `Invoke-PSDepend`
+PSDepend allows you to write simple *.depend.psd1 or requirements.psd1 files that describe what dependencies you need, which you can invoke with `Invoke-PSDepend`
 
 **WARNING**:
 
@@ -16,7 +16,7 @@ PSDepend allows you to write simple *.depend.psd1 files that describe what depen
 
 ## Defining Dependencies
 
-Store dependencies in a PowerShell data file, and use *.depend.psd1 to allow Invoke-PSDepend to find your files for you.
+Store dependencies in a PowerShell data file, and use *.depend.psd1 or requirements.psd1 to allow Invoke-PSDepend to find your files for you.
 
 What does a dependency file look like?
 

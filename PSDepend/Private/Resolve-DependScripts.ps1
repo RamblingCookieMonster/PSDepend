@@ -35,8 +35,8 @@ function Resolve-DependScripts
                 Resolve-Path -Path $unresolvedPath |
                     Where-Object { $_.Provider.Name -eq 'FileSystem' } |
                     Select-Object -ExpandProperty ProviderPath |
-                    Get-ChildItem -Filter *.depend.psd1 @RecurseParam |
-                    Where-Object { -not $_.PSIsContainer } |
+                    Get-ChildItem -Filter *.psd1 @RecurseParam |
+                    Where-Object { -not $_.PSIsContainer -and $_.Name -match '\.depend\.psd1$|^requirements.psd1$' } |
                     Select-Object -ExpandProperty FullName -Unique
             }
         }

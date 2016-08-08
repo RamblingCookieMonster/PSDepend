@@ -7,14 +7,14 @@ SHORT DESCRIPTION
 LONG DESCRIPTION
     PSDepend has several configuration definitions to work with:
 
-        Dependency configurations:      *.Depend.psd1 script files
+        Dependency configurations:      *.Depend.psd1 or requirements.psd1 script files
         Dependency type configurations:  Map Dependency types to scripts that run them
 
     Please see about_PSDepend or other general PSDepend help for clarification on terminology
 
 DETAILED DESCRIPTION
 
-    Dependency Configurations: *.Depend.psd1
+    Dependency Configurations: *.Depend.psd1 or requirements.psd1
     =========================================
 
         These are PowerShell data files that tell PSDepend what to install.
