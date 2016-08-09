@@ -20,6 +20,7 @@ function Get-Dependency {
             DependsOn      : Dependency that must be installed before this
             PreScripts     : One or more paths to PowerShell scripts to run before the dependency
             PostScripts    : One or more paths to PowerShell scripts to run after the dependency
+            PSDependOptions: Hash table of global PSDepend options
             Raw            : Raw output for this dependency from the PSD1. May include data outside of standard items above.
 
         These are parsed from dependency PSD1 files as follows:
@@ -115,6 +116,14 @@ function Get-Dependency {
             $File = Split-Path $DependencyFile -Leaf
             $Dependencies = Import-LocalizedData -BaseDirectory $Base -FileName $File
 
+
+            $PSDependOptions = $null
+            if($Dependencies.Containskey('PSDependOptions'))
+            {
+                $PSDependOptions = $Dependencies.PSDependOptions
+                $Dependencies.Remove('PSDependOptions')
+            }
+
             foreach($Dependency in $Dependencies.keys)
             {
                 $DependencyHash = $Dependencies.$Dependency
@@ -137,6 +146,7 @@ function Get-Dependency {
                         DependsOn = $null
                         PreScripts = $null
                         PostScripts = $null
+                        PSDependOptions = $PSDependOptions
                         Raw = $null
                     }
                 }
@@ -164,6 +174,7 @@ function Get-Dependency {
                         DependsOn = $DependencyHash.DependsOn
                         PreScripts = $DependencyHash.PreScripts
                         PostScripts = $DependencyHash.PostScripts
+                        PSDependOptions = $PSDependOptions
                         Raw = $DependencyHash
                     }
                 }

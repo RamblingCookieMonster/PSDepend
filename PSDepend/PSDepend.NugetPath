@@ -1,0 +1,6 @@
+# You can use the following:
+# Absolute paths
+# Relative paths
+# UNC paths
+# $ModuleRoot as "the path to the PSDepend module folder"
+$ModuleRoot\nuget.exe

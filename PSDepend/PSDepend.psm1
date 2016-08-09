@@ -16,4 +16,14 @@
         }
     }
 
+
+#Get nuget dependecy file
+    $NuGetPath = Get-Content $ModuleRoot\PSDepend.NugetPath | Where{$_ -notmatch "^\s*#"} | Select -First 1
+    $NugetPath = $NugetPath -replace '\$ModuleRoot', $ModuleRoot
+    $NuGetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($NuGetPath)
+    If(-not (Test-Path $NuGetPath))
+    {
+        BootStrap-Nuget -NugetPath $NuGetPath
+    }
+
 Export-ModuleMember -Function $Public.Basename
