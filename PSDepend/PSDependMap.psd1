@@ -21,8 +21,15 @@
       Description = 'Install a PowerShell module from the PowerShell Gallery.'
     }
 
+    PSGalleryNuget = @{
+      Script = 'PSGalleryNuget.ps1'
+      Description = 'Install a PowerShell module from the PowerShell Gallery without the PowerShellGet dependency'
+    }
+
     Task = @{
       Script = 'Task.ps1'
       Description = 'Support dependencies by handling simple tasks.'
     }
+
+
 }
