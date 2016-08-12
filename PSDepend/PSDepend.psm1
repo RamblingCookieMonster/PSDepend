@@ -18,9 +18,16 @@
 
 
 #Get nuget dependecy file if we don't have it
-    $NuGetPath = Get-Content $ModuleRoot\PSDepend.NugetPath | Where{$_ -notmatch "^\s*#"} | Select -First 1
-    $NugetPath = $NugetPath -replace '\$ModuleRoot', $ModuleRoot
-    $NuGetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($NuGetPath)
+    Get-Content $ModuleRoot\PSDepend.Config |
+        Where{$_ -and $_ -notmatch "^\s*#"} |
+        Foreach {
+            $Name = ( $_ -split '=')[0].trim()
+            $Value = ( $_ -split '=')[1].trim()
+            # Revisit later and only apply these for '*path', if we have other types of variables...
+            $Value = $Value -replace '\$ModuleRoot', $ModuleRoot
+            $Value = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Value)
+            Set-Variable -Name $Name -Value $Value
+        }
     BootStrap-Nuget -NugetPath $NuGetPath
 
 Export-ModuleMember -Function $Public.Basename

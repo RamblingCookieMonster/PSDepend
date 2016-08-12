@@ -1,59 +1,58 @@
 <#
     .SYNOPSIS
-        EXPERIMENTAL: Installs a module from a PowerShell repository like the PowerShell Gallery using nuget.exe
+        EXPERIMENTAL: Clone a git repository
 
     .DESCRIPTION
-        EXPERIMENTAL: Installs a module from a PowerShell repository like the PowerShell Gallery using nuget.exe
+        EXPERIMENTAL: Clone a git repository
 
-        Note: If we find an existing module that doesn't meet the specified criteria in the Target, we remove it.
+        Note: We require git.exe in your path
 
         Relevant Dependency metadata:
-            Name: The name for this module
-            Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
-            Source: Source Uri for Nuget.  Defaults to https://www.powershellgallery.com/api/v2/
-            Target: Required path to save this module.  No Default
-                Example: To install PSDeploy to C:\temp\PSDeploy, I would specify C:\temp
-            AddToPath: Add the Target to ENV:PSModulePath
+            DependencyName (Key): Git URL.
+                You can override this with the 'Name'.
+                If you specify only an Account/Repository, we assume GitHub is the source
+            Name: Optional override for the Git URL, same rules as DependencyName (key)
+            Version: Used with git checkout.  Specify a branch name, commit hash, or tags/<tag name>, for example.  Defaults to master
+            Target: Path to clone this repository.  Defaults to current path.
+            AddToPath: Add the Target to ENV:PATH and ENV:PSModulePath
 
     .PARAMETER Force
         If specified and Target is specified, create folders to Target if needed
 
-    .PARAMETER Import
-        If specified, import the module in the global scope
+    .EXAMPLE
+        @{
+            'buildhelpers' @{
+                Name = 'https://github.com/RamblingCookieMonster/BuildHelpers.git'
+                Version = 'd32a9495c39046c851ceccfb7b1a85b17d5be051'
+                Target = C:\git
+            }
+        }
+
+        # Full syntax
+          # DependencyName (key) uses (unique) name 'buildhelpers'
+          # Override DependencyName as URL the name https://github.com/RamblingCookieMonster/BuildHelpers.git
+          # Specify a commit to checkout (version)
+          # Clone in C:\git
 
     .EXAMPLE
 
         @{
-            PSDeploy = @{
-                DependencyType = 'PSGalleryNuget'
-                Target = 'C:\Temp'
-                Version = '0.1.19'
-            }
+            'ramblingcookiemonster/PSDeploy' = 'master'
+            'ramblingcookiemonster/BuildHelpers' = 'd32a9495c39046c851ceccfb7b1a85b17d5be051'
         }
 
-        # Install PSDeploy via nuget PSGallery feed, to C:\temp, at version 0.1.19
-
-    .EXAMPLE
-
-        @{
-            PSDeploy = @{
-                DependencyType = 'PSGalleryNuget'
-                Source = 'https://nuget.int.feed/'
-                Target = 'C:\Temp'
-            }
-        }
-
-        # Install the latest version of PSDeploy on an internal nuget feed, to C:\temp, 
-
+        # Simple syntax
+          # First example shows cloning PSDeploy from ramblingcookiemonster's GitHub account
+          # Second example shows clonging PSDeploy from ramblingcookiemonster's GitHub account and checking out a specific commit
+          # Both are cloned to the current path
+          # This syntax assumes GitHub as a source, the right hand side is the version (branch, commit, tags/<tag name>, etc.
 #>
 [cmdletbinding()]
 param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]$Dependency,
 
-    [switch]$Force,
-
-    [switch]$Import
+    [switch]$Force
 )
 
 # Extract data from Dependency
@@ -67,31 +66,21 @@ param(
     $Version = $Dependency.Version
     if(-not $Version)
     {
-        $Version = 'latest'
+        $Version = 'master'
     }
 
-    $Source = $Dependency.Source
-    if(-not $Dependency.Source)
-    {
-        $Source = 'https://www.powershellgallery.com/api/v2/'
-    }
-
-    # We use target as a proxy for Scope
-    if(-not $Dependency.Target)
-    {
-        Write-Error "PSGalleryNuget requires a Dependency Target. Skipping [$DependencyName]"
-        return
-    }
-
-if(-not (Get-Command Nuget.exe -ErrorAction SilentlyContinue))
+if(-not (Get-Command git.exe -ErrorAction SilentlyContinue))
 {
-    Write-Error "PSGalleryNuget requires Nuget.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's NugetPath.  Skipping [$DependencyName]"
+    Write-Error "Git dependency type requires git.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's GitPath.  Skipping [$DependencyName]"
 }
 
-Write-Verbose -Message "Getting dependency [$name] from Nuget source [$Source]"
+Write-Verbose -Message "Getting dependency [$DependencyName] from Nuget source [$Source]"
 
-# This code works for both install and save scenarios.
-$ModulePath =  Join-Path $Target $Name
+$CloneParams = @('clone', $Name)
+if($Target)
+{
+    $CloneParams += $Target
+}
 
 if(Test-Path $ModulePath)
 {
@@ -99,11 +88,11 @@ if(Test-Path $ModulePath)
     if(-not (Test-Path $Manifest))
     {
         # For now, skip if we don't find a psd1
-        Write-Error "Could not find manifest [$Manifest] for dependency [$Name]"
+        Write-Error "Could not find manifest [$Manifest] for dependency [$DependencyName]"
         return
     }
 
-    Write-Verbose "Found existing module [$Name]"
+    Write-Verbose "Found existing module [$DependencyName]"
 
     # Thanks to Brandon Padgett!
     $ManifestData = Import-LocalizedData -BaseDirectory $ModulePath -FileName "$Name.psd1"

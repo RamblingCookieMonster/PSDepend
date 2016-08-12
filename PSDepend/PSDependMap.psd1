@@ -7,29 +7,32 @@
 @{
 
     FileDownload = @{
-      Script= 'FileDownload.ps1'
-      Description = 'Download a file'
+        Script= 'FileDownload.ps1'
+        Description = 'Download a file'
+    }
+
+    Git = @{
+        Script = 'Git.ps1'
+        Description = 'Clone a git repository'
     }
 
     Noop = @{
-      Script = 'noop.ps1'
-      Description = 'Display parameters that a depends script would receive. Use for testing and validation.'
+        Script = 'noop.ps1'
+        Description = 'Display parameters that a depends script would receive. Use for testing and validation.'
     }
 
     PSGalleryModule = @{
-      Script= 'PSGalleryModule.ps1'
-      Description = 'Install a PowerShell module from the PowerShell Gallery.'
+        Script= 'PSGalleryModule.ps1'
+        Description = 'Install a PowerShell module from the PowerShell Gallery.'
     }
 
     PSGalleryNuget = @{
-      Script = 'PSGalleryNuget.ps1'
-      Description = 'Install a PowerShell module from the PowerShell Gallery without the PowerShellGet dependency'
+        Script = 'PSGalleryNuget.ps1'
+        Description = 'Install a PowerShell module from the PowerShell Gallery without the PowerShellGet dependency'
     }
 
     Task = @{
-      Script = 'Task.ps1'
-      Description = 'Support dependencies by handling simple tasks.'
+        Script = 'Task.ps1'
+        Description = 'Support dependencies by handling simple tasks.'
     }
-
-
 }

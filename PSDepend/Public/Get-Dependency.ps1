@@ -129,13 +129,34 @@ function Get-Dependency {
                 $DependencyHash = $Dependencies.$Dependency
 
                 #Parse simple key=name, value=version format
-                if($DependencyHash -is [string])
+                if($DependencyHash -is [string] -and $Dependency -notmatch '/')
                 {
                     [pscustomobject]@{
                         PSTypeName = 'PSDepend.Dependency'
                         DependencyFile = $DependencyFile
                         DependencyName = $Dependency
                         DependencyType = 'PSGalleryModule'
+                        Name = $Dependency
+                        Version = $DependencyHash
+                        Parameters = $null
+                        Source = $null
+                        Target = $null
+                        AddToPath = $null
+                        Tags = $null
+                        DependsOn = $null
+                        PreScripts = $null
+                        PostScripts = $null
+                        PSDependOptions = $PSDependOptions
+                        Raw = $null
+                    }
+                }
+                elseif($DependencyHash -is [string] -and $Dependency -match '/')
+                {
+                    [pscustomobject]@{
+                        PSTypeName = 'PSDepend.Dependency'
+                        DependencyFile = $DependencyFile
+                        DependencyName = $Dependency
+                        DependencyType = 'Git'
                         Name = $Dependency
                         Version = $DependencyHash
                         Parameters = $null
