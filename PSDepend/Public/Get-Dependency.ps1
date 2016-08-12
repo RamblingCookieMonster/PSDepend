@@ -129,7 +129,8 @@ function Get-Dependency {
                 $DependencyHash = $Dependencies.$Dependency
 
                 #Parse simple key=name, value=version format
-                if($DependencyHash -is [string] -and $Dependency -notmatch '/')
+                # It doesn't look like a git repo, and simple syntax: PSGalleryModule
+                if( $DependencyHash -is [string] -and $Dependency -notmatch '/')
                 {
                     [pscustomobject]@{
                         PSTypeName = 'PSDepend.Dependency'
@@ -150,6 +151,7 @@ function Get-Dependency {
                         Raw = $null
                     }
                 }
+                # It looks like a git repo, and simple syntax: Git
                 elseif($DependencyHash -is [string] -and $Dependency -match '/')
                 {
                     [pscustomobject]@{
@@ -171,13 +173,35 @@ function Get-Dependency {
                         Raw = $null
                     }
                 }
+                # It looks like a git repo, flexible syntax: Git
+                elseif(
+                    $DependencyHash -is [hashtable] -and
+                    (
+                        ($Dependency -match '/' -and -not $Dependency.Name) -or
+                        $Dependency.Name -match '/'
+                    )
+                )
+                {
+
+                }
                 else
                 {
                     # Parse dependency hash format
-                    # Default type is module
+                    # Default type is module, unless it's in a git-style format
                     if(-not $DependencyHash.ContainsKey('DependencyType'))
                     {
-                        $DependencyHash.add('DependencyType', 'PSGalleryModule')
+                        # Look for git format:
+                        if(
+                            ($Dependency -match '/' -and -not $Dependency.Name) -or
+                            $Dependency.Name -match '/'
+                        )
+                        {
+                            $DependencyHash.add('DependencyType', 'Git')
+                        }
+                        else
+                        {
+                            $DependencyHash.add('DependencyType', 'PSGalleryModule')
+                        }
                     }
 
                     [pscustomobject]@{

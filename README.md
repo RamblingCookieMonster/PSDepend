@@ -30,21 +30,24 @@ Here's the simplest syntax.  If this meets your needs, you can stop here:
     Pester       = 'latest'
     BuildHelpers = '0.0.20'  # I don't trust this Warren guy...
     PSDeploy     = '0.1.21'  # Maybe pin the version in case he breaks this...
+    
+    RamblingCookieMonster/PowerShell = 'master'
 }
 ```
 
 And what PSDepend sees:
 
 ```
-DependencyName DependencyType  Version Tags
--------------- --------------  ------- ----
-psake          PSGalleryModule latest
-BuildHelpers   PSGalleryModule 0.0.20
-Pester         PSGalleryModule
-PSDeploy       PSGalleryModule 0.1.21
+DependencyName                   DependencyType  Version Tags
+--------------                   --------------  ------- ----
+psake                            PSGalleryModule latest      
+BuildHelpers                     PSGalleryModule 0.0.20      
+Pester                           PSGalleryModule latest      
+RamblingCookieMonster/PowerShell Git             master      
+PSDeploy                         PSGalleryModule 0.1.21   
 ```
 
-There's a bit more behind the scenes - we assume you want PSGalleryModule's unless you specify otherwise, and we hide a few dependency properties.
+There's a bit more behind the scenes - we assume you want PSGalleryModules or GitHub repos unless you specify otherwise, and we hide a few dependency properties.
 
 ### Flexible syntax
 
@@ -76,7 +79,7 @@ What else can we put in a dependency?  Here's an example using a more flexible s
         DependencyType = 'FileDownload'
         Source = 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
         Target = 'C:\nuget.exe'
-    }
+    }  
 }
 ```
 
@@ -160,4 +163,4 @@ Get-Help Get-Dependency -Full
 
 ## Notes
 
-Major props to Michael Willis, who is writing [PSRequire](https://github.com/Xainey/PSRequire), a similar but more feature-full solution.
+Major props to Michael Willis for the idea - check out his [PSRequire](https://github.com/Xainey/PSRequire), a similar but more feature-full solution.

@@ -7,7 +7,8 @@ SHORT DESCRIPTION
 LONG DESCRIPTION
     PSDepend has several configuration definitions to work with:
 
-        Dependency configurations:      *.Depend.psd1 or requirements.psd1 script files
+        Dependency configurations:       *.Depend.psd1 or requirements.psd1 script files
+        PSDepend configuration:          PSDepend.Config file with a few configurations for PSDepend
         Dependency type configurations:  Map Dependency types to scripts that run them
 
     Please see about_PSDepend or other general PSDepend help for clarification on terminology
@@ -87,8 +88,16 @@ DETAILED DESCRIPTION
                 }
             }
 
+    PSDepend configuration: PSDepend.Config
+    =======================================
+
+    This file includes a few configurations for PSDepend:
+        
+        NugetPath: Path to a nuget.exe, if it's not in your path.  If it's not found in either spot, we download to this
+        GitPath: Path to a git.exe, if it's not in your path.  We do not resolve this dependency for you (yet).
+
     Dependency type map: PSDependMap.psd1
-    ================================
+    =====================================
 
     This is a file that tells PSDepend what script to use for each DependencyType. By default, it sits in your PSDepend module folder.
 
