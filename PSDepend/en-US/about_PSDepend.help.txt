@@ -27,7 +27,7 @@ DETAILED DESCRIPTION
                                 For example, the PSGalleryModule script uses PowerShellGet to find
                                 and install any dependencies specified in a depend.psd1 or requirements.psd1 file.
 
-    Dependencies
+    Prerequisites
     ============
     
     Each dependency type may have certain prerequisites:
@@ -36,9 +36,10 @@ DETAILED DESCRIPTION
       * PSGalleryNuget:  This requires nuget.exe in your path*.  We handle this for you:
                          When you import PSDepend, we... 
                             Look for nuget.exe in your path. 
-                            If we don't find it... Look in the path specified in PSDepend\PSDepend.NugetPath. Default is PSDepend\nuget.exe
+                            If we don't find it... Look in the path specified in PSDepend\PSDepend.Config's NugetPath. Default is PSDepend\nuget.exe
                                 If we don't find it there, we download to that path
-                                If we do find it there, we add the parent container to $ENV:Path 
+                                If we do find it there, we add the parent container to $ENV:Path
+      * Git: Requires git.exe in your path, or in the file path specified in PSDepend\PSDepend.Config's GitPath
                             
     Example use (*.PSDepend.ps1)
     ============================

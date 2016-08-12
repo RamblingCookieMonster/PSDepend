@@ -7,7 +7,8 @@ SHORT DESCRIPTION
 LONG DESCRIPTION
     PSDepend has several configuration definitions to work with:
 
-        Dependency configurations:      *.Depend.psd1 or requirements.psd1 script files
+        Dependency configurations:       *.Depend.psd1 or requirements.psd1 script files
+        PSDepend configuration:          PSDepend.Config file with a few configurations for PSDepend
         Dependency type configurations:  Map Dependency types to scripts that run them
 
     Please see about_PSDepend or other general PSDepend help for clarification on terminology
@@ -24,7 +25,7 @@ DETAILED DESCRIPTION
             DependencyFile: File that we read a dependency from
             DependencyName: Unique name within a dependency file - this is the key, the rest of the data is stored in this key's value.
             DependencyType: The dependency type.  Defaults to PSGalleryModule
-            Name:           Name of the thing to deploy.  Optional, use this if DependencyName has a collision
+            Name:           Name of the thing to install.  Optional, use this if DependencyName has a collision
             Version:        Version to install and check for.  The dependency script author is responsible for testing whether this version already exists and installing it if not.
             Parameters:     Optional parameters if the dependency type's script takes parameters.  For example, the PSGalleryModule has an optional 'Repository' parameter.
             Source:         Optional source.  For example, a FileDownload source is a URL
@@ -87,28 +88,36 @@ DETAILED DESCRIPTION
                 }
             }
 
-    Dependency type map: PSDeployMap.psd1
-    ================================
+    PSDepend configuration: PSDepend.Config
+    =======================================
 
-    This is a file that tells PSDeploy what script to use for each DeploymentType. By default, it sits in your PSDeploy module folder.
+    This file includes a few configurations for PSDepend:
+        
+        NugetPath: Path to a nuget.exe, if it's not in your path.  If it's not found in either spot, we download to this
+        GitPath: Path to a git.exe, if it's not in your path.  We do not resolve this dependency for you (yet).
+
+    Dependency type map: PSDependMap.psd1
+    =====================================
+
+    This is a file that tells PSDepend what script to use for each DependencyType. By default, it sits in your PSDepend module folder.
 
     There are two scenarios you would generally work with this:
 
-      - You want to extend PSDeploy to add more DeploymentTypes
-      - You want to move the PSDeploy.yml to a central location that multiple systems could point to
+      - You want to extend PSDepend to add more DependencyTypes
+      - You want to move the PSDependMap.psd1 to a central location that multiple systems could point to
 
-    There are three attributes to each DeploymentType in this file:
+    There are three attributes to each DependencyType in this file:
 
-        DeploymentType Name:  The name of this DeploymentType
-        Script:               The name of the script to process these DeploymentTypes
-                              This looks in the PSDeploy module path, under PSDeployScripts
+        DependencyType Name:  The name of this DependencyType
+        Script:               The name of the script to process these DependencyTypes
+                              This looks in the PSDepend module path, under PSDependScripts
                               You can theoretically specify an absolute path
-        Description:          Description for this DeploymentType. Provided to a user when they run Get-PSDeploymentType.
+        Description:          Description for this DependencyType. Provided to a user when they run Get-PSDependType.
 
-    The PSDeploy.yml file will have one or more DeploymentType blocks like this:
+    The PSDependMap.psd1 file will have one or more DependencyType blocks like this:
 
-        Filesystem:
-          Script: Filesystem.ps1
-          Description: Uses the current session and Robocopy or Copy-Item for folder and file deployments, respectively.
+        PSGalleryModule:
+          Script: PSGalleryModule.ps1
+          Description: Install a PowerShell module from the PowerShell Gallery.
 
-    See about_PSDeploy for more information
+    See about_PSDepend for more information

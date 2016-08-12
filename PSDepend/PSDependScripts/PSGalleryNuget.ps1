@@ -85,7 +85,7 @@ param(
 
 if(-not (Get-Command Nuget.exe -ErrorAction SilentlyContinue))
 {
-    Write-Error "PSGalleryNuget requires Nuget.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.NugetPath.  Skipping [$DependencyName]"
+    Write-Error "PSGalleryNuget requires Nuget.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's NugetPath.  Skipping [$DependencyName]"
 }
 
 Write-Verbose -Message "Getting dependency [$name] from Nuget source [$Source]"
