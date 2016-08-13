@@ -10,6 +10,7 @@
             Name: Optional file name for the downloaded file.  Defaults to parsing filename from the URL
             Target: The folder to download this file to.  If a full path to a new file is used, this overrides any other file name.
             Source: Optional override for URL
+            AddToPath: If specified, prepend the target's parent container to PATH
 
     .EXAMPLE
         sqllite_dll = @{
@@ -52,12 +53,13 @@ param(
     }
     Write-Verbose "Using URL: $URL"
 
+# Act on target path....
     $TargetParent = Split-Path $Target -Parent
     if( (Test-Path $TargetParent) -and -not (Test-Path $Target))
     {
         # They gave us a full path, don't parse the file name, use this!
         $Path = $Target
-        Write-Verbose "Using [$Path] from `$Target"
+        Write-Verbose "Using [$Path] as `$Target"
     }
     elseif(Test-Path $Target -PathType Leaf)
     {
@@ -68,7 +70,7 @@ param(
     }
     elseif(-not (Test-Path $Target))
     {
-       # They gave us something that doesn't look like a new container for a new or exisrting file. Wat?
+       # They gave us something that doesn't look like a new container for a new or existing file. Wat?
        Write-Error "Could not find target path [$Target]"
        return
     }
@@ -103,3 +105,9 @@ $webclient = New-Object System.Net.WebClient
     # We should consider credentials at some point, but PSD1 does not lend itself to securely storing passwords
 
 $webclient.DownloadFile($URL, $Path)
+
+if($Dependency.AddToPath)
+{   
+    Write-Verbose "Setting PATH to`n$($TargetParent, $env:PATH -join ';' | Out-String)"
+    $env:PATH = $TargetParent, $env:PATH -join ';'
+}

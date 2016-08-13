@@ -9,7 +9,7 @@
             Name: The name for this module
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
             Target: Used as 'Scope' for Install-Module.  If this is a path, we use Save-Module with this path.  Defaults to 'AllUsers'
-            AddToPath: If target is used as a path, add that path to ENV:PSModulePath
+            AddToPath: If target is used as a path, prepend that path to ENV:PSModulePath
 
         If you don't have the Nuget package provider, we install it for you
 
@@ -150,8 +150,8 @@ elseif((Test-Path $Scope -PathType Container) -or $Force)
 
     if($Dependency.AddToPath)
     {
-        Write-Verbose "Setting PSModulePath to`n$($env:PSModulePath, $Scope -join ';' | Out-String)"
-        $env:PSModulePath = $env:PSModulePath, $Scope -join ';'
+        Write-Verbose "Setting PSModulePath to`n$($Scope, $env:PSModulePath -join ';' | Out-String)"
+        $env:PSModulePath = $Scope, $env:PSModulePath -join ';'
     }
 }
 

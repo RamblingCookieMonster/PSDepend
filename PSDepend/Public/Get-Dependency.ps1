@@ -173,17 +173,6 @@ function Get-Dependency {
                         Raw = $null
                     }
                 }
-                # It looks like a git repo, flexible syntax: Git
-                elseif(
-                    $DependencyHash -is [hashtable] -and
-                    (
-                        ($Dependency -match '/' -and -not $Dependency.Name) -or
-                        $Dependency.Name -match '/'
-                    )
-                )
-                {
-
-                }
                 else
                 {
                     # Parse dependency hash format

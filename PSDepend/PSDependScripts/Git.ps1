@@ -14,7 +14,7 @@
             Name: Optional override for the Git URL, same rules as DependencyName (key)
             Version: Used with git checkout.  Specify a branch name, commit hash, or tags/<tag name>, for example.  Defaults to master
             Target: Path to clone this repository.  Defaults to nothing (current path/repo name)
-            AddToPath: Add the Target to ENV:PATH and ENV:PSModulePath
+            AddToPath: Prepend the Target to ENV:PATH and ENV:PSModulePath
 
     .PARAMETER Force
         If specified and target does not exist, create directory tree up to the target folder
@@ -116,9 +116,9 @@ Pop-Location
 
 if($Dependency.AddToPath)
 {
-    Write-Verbose "Setting PSModulePath to`n$($env:PSModulePath, $RepoPath -join ';' | Out-String)"
-    $env:PSModulePath = $env:PSModulePath, $RepoPath -join ';'
+    Write-Verbose "Setting PSModulePath to`n$($RepoPath, $env:PSModulePath -join ';' | Out-String)"
+    $env:PSModulePath = $RepoPath, $env:PSModulePath -join ';'
     
-    Write-Verbose "Setting PATH to`n$($env:PATH, $RepoPath -join ';' | Out-String)"
-    $env:PATH = $env:PATH, $RepoPath -join ';'
+    Write-Verbose "Setting PATH to`n$($RepoPath, $env:PATH -join ';' | Out-String)"
+    $env:PATH = $RepoPath, $env:PATH -join ';'
 }

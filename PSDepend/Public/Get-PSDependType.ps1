@@ -62,9 +62,9 @@ Function Get-PSDependType {
     #>
     [cmdletbinding()]
     param(
+        [string]$DependencyType = '*',
         [validatescript({Test-Path $_ -PathType Leaf -ErrorAction Stop})]
         [string]$Path = $(Join-Path $ModuleRoot PSDependMap.psd1),
-        [string]$DependencyType = '*',
         [switch]$ShowHelp
     )
 

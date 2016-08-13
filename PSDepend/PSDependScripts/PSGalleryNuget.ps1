@@ -13,7 +13,7 @@
             Source: Source Uri for Nuget.  Defaults to https://www.powershellgallery.com/api/v2/
             Target: Required path to save this module.  No Default
                 Example: To install PSDeploy to C:\temp\PSDeploy, I would specify C:\temp
-            AddToPath: Add the Target to ENV:PSModulePath
+            AddToPath: Prepend the Target to ENV:PSModulePath
 
     .PARAMETER Force
         If specified and Target is specified, create folders to Target if needed
@@ -148,8 +148,8 @@ if(($TargetExists = Test-Path $Target -PathType Container) -or $Force)
 
     if($Dependency.AddToPath)
     {
-        Write-Verbose "Setting PSModulePath to`n$($env:PSModulePath, $Scope -join ';' | Out-String)"
-        $env:PSModulePath = $env:PSModulePath, $Target -join ';'
+        Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
+        $env:PSModulePath = $Target, $env:PSModulePath -join ';'
     }
 }
 else
