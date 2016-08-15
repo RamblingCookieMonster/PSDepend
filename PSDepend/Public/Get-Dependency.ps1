@@ -32,7 +32,7 @@ function Get-Dependency {
 
             With the simple syntax:
                * The DependencyName (key) is used as the Name
-               * PSGalleryModule is used as the DependencyType
+               * We default to Git as the DependencyType if we see a '/', otherwise we default to PSGalleryModule
                * The Version (value) is a string, and is used as the Version
                * Other properties are set to $null
 

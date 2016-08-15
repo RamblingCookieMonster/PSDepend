@@ -77,6 +77,7 @@ param(
     }
 
     # We use target as a proxy for Scope
+    $Target = $Dependency.Target
     if(-not $Dependency.Target)
     {
         Write-Error "PSGalleryNuget requires a Dependency Target. Skipping [$DependencyName]"
