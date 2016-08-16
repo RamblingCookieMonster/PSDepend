@@ -5,15 +5,17 @@ if(-not $ENV:BHProjectPath)
 Remove-Module $ENV:BHProjectName -ErrorAction SilentlyContinue
 Import-Module (Join-Path $ENV:BHProjectPath $ENV:BHProjectName) -Force
 
-$null = mkdir C:\test -force
+$null = mkdir 'C:\PSDependPesterTest' -force
 
 InModuleScope 'PSDepend' {
 
     $TestDepends = Join-Path $ENV:BHProjectPath Tests\DependFiles
     $PSVersion = $PSVersionTable.PSVersion.Major
     $ProjectRoot = $ENV:BHProjectPath
-    $SavePath = 'C:\test'
-    
+    $SavePath = 'C:\PSDependPesterTest'
+    $ExistingPSModulePath = $env:PSModulePath.PSObject.Copy()
+    $ExistingPath = $env:Path.PSObject.Copy()
+
     $Verbose = @{}
     if($ENV:BHBranchName -notlike "master" -or $env:BHCommitMessage -match "!verbose")
     {
@@ -61,5 +63,39 @@ InModuleScope 'PSDepend' {
                 $Results | Should Throw
             }
         }
+
+        Context 'Same module version exists' {
+            Mock Install-Module {}
+            Mock Get-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5'
+                }
+            }
+            Mock Find-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5'
+                }
+            }
+
+            It 'Runs Get-Module and Find-Module, skips Install-Module' {
+                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-Module -Times 1 -Exactly
+                Assert-MockCalled Find-Module -Times 1 -Exactly
+                Assert-MockCalled Install-Module -Times 0 -Exactly
+            }
+        }
+
+        Context 'Misc' {
+            It 'Adds folder to path when specified' {
+                Mock Get-PSRepository { Return $true }
+                Mock Save-Module {$True}
+                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.addtopath.depend.psd1" -Force -ErrorAction Stop
+                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
+                $ENV:PSModulePath = $ExistingPSModulePath
+            }
+        }
     }
 }
+
+Remove-Item C:\PSDependPesterTest -Force -Recurse
