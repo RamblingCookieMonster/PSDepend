@@ -1,5 +1,5 @@
 ﻿@{
     'jenkins' = @{
-        target = 'C:\test'
+        target = 'C:\PSDependPesterTest'
     }
 }

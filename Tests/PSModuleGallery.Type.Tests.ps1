@@ -45,7 +45,7 @@ InModuleScope 'PSDepend' {
             
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\savemodule.depend.psd1" -Force
 
-            It 'Should execute Install-Module' {
+            It 'Should execute Save-Module' {
                 Assert-MockCalled Save-Module -Times 1 -Exactly
             }
 
