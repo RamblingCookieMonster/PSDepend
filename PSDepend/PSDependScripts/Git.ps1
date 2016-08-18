@@ -19,6 +19,12 @@
     .PARAMETER Force
         If specified and target does not exist, create directory tree up to the target folder
 
+    .PARAMETER PSDependAction
+        Test, Install, or Import the module.  Defaults to Install
+
+        Test: Return true or false on whether the dependency is in place (Note: Currently only checks if path exists)
+        Install: Install the dependency
+
     .EXAMPLE
         @{
             'buildhelpers' @{
@@ -52,44 +58,72 @@ param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]$Dependency,
 
-    [switch]$Force
+    [switch]$Force,
+
+    [ValidateSet('Test', 'Install')]
+    [string[]]$PSDependAction = @('Install')
 )
 
 # Extract data from Dependency
-    $DependencyName = $Dependency.DependencyName
-    $Name = $Dependency.Name
-    if(-not $Name)
-    {
-        $Name = $DependencyName
-    }
+$DependencyName = $Dependency.DependencyName
+$Name = $Dependency.Name
+if(-not $Name)
+{
+    $Name = $DependencyName
+}
 
-    #Name is in account/repo format, default to GitHub as source
-    #This likely needs work, and will need to change if GitHub changes valid characters for usernames
-    if($Name -match "[a-zA-Z0-9]+/[a-zA-Z0-9_-]+")
-    {
-        $Name = "https://github.com/$Name.git"
-    }
-    $GitName = $Name.split('/')[-1] -replace "\.git[/]?$", ''
+#Name is in account/repo format, default to GitHub as source
+#This likely needs work, and will need to change if GitHub changes valid characters for usernames
+if($Name -match "[a-zA-Z0-9]+/[a-zA-Z0-9_-]+")
+{
+    $Name = "https://github.com/$Name.git"
+}
+$GitName = $Name.split('/')[-1] -replace "\.git[/]?$", ''
 
-    $Target = $Dependency.Target
-    if($Target)
+#TODO: PSDependAction Test should test that it exists, is a git repo, and if specified, the version...
+$Target = $Dependency.Target
+if($Target)
+{
+    $RepoPath = $Target
+    if(-not (Test-Path $Target))
     {
-        $RepoPath = $Target
-        if(-not (Test-Path $Target))
+        # Nothing found, return test output
+        if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+        {
+            return $False
+        }
+        if( $PSDependAction -contains 'Install')
         {
             mkdir $Target -Force
         }
     }
-    else
+}
+else
+{
+    $RepoPath = Join-Path $PWD.Path $GitName
+    if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
     {
-        $RepoPath = Join-Path $PWD.Path $GitName
+        if(Test-Path $RepoPath)
+        {
+            return $true
+        }
+        else
+        {
+            return $false
+        }
     }
+}
 
-    $Version = $Dependency.Version
-    if(-not $Version)
-    {
-        $Version = 'master'
-    }
+if($PSDependAction -notcontains 'Install')
+{
+    return
+}
+
+$Version = $Dependency.Version
+if(-not $Version)
+{
+    $Version = 'master'
+}
 
 if(-not (Get-Command git.exe -ErrorAction SilentlyContinue))
 {

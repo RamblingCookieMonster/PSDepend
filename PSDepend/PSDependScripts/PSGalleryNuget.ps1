@@ -21,6 +21,13 @@
     .PARAMETER Import
         If specified, import the module in the global scope
 
+    .PARAMETER PSDependAction
+        Test, Install, or Import the module.  Defaults to Install
+
+        Test: Return true or false on whether the dependency is in place
+        Install: Install the dependency
+        Import: Import the dependency
+
     .EXAMPLE
 
         @{
@@ -53,7 +60,10 @@ param(
 
     [switch]$Force,
 
-    [switch]$Import
+    [switch]$Import,
+
+    [ValidateSet('Test', 'Install', 'Import')]
+    [string[]]$PSDependAction = @('Install')
 )
 
 # Extract data from Dependency
@@ -115,6 +125,10 @@ if(Test-Path $ModulePath)
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
         Write-Verbose "You have the requested version [$Version] of [$Name]"
+        if($PSDependAction -contains 'Test')
+        {
+            return $True
+        }
         return $null
     }
     
@@ -125,6 +139,10 @@ if(Test-Path $ModulePath)
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
+        if($PSDependAction -contains 'Test')
+        {
+            return $True
+        }
         return $null
     }
 
@@ -132,33 +150,42 @@ if(Test-Path $ModulePath)
     Remove-Item $ModulePath -Force -Recurse 
 }
 
-if(($TargetExists = Test-Path $Target -PathType Container) -or $Force)
+#No dependency found, return false if we're testing alone...
+if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
 {
-    Write-Verbose "Saving [$Name] with path [$Target]"
-    $NugetParams = '-Source', $Source, '-ExcludeVersion', '-NonInteractive', '-OutputDirectory', $Target
-    if($Force)
-    {
-        Write-Verbose "Force creating directory path to [$Target]"
-        $Null = New-Item -ItemType Directory -Path $Target -Force -ErrorAction SilentlyContinue
-    }
-    if($Version -and $Version -notlike 'latest')
-    {
-        $NugetParams += '-version', $Version
-    }
-    nuget.exe install $Name @NugetParams
-
-    if($Dependency.AddToPath)
-    {
-        Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
-        $env:PSModulePath = $Target, $env:PSModulePath -join ';'
-    }
-}
-else
-{
-    Write-Error "Target [$Target] exists must be true, and is [$TargetExists]. Alternatively, specify -Force to create the Target"
+    return $False
 }
 
-if($Import)
+if($PSDependAction -contains 'Install')
+{
+    if(($TargetExists = Test-Path $Target -PathType Container) -or $Force)
+    {
+        Write-Verbose "Saving [$Name] with path [$Target]"
+        $NugetParams = '-Source', $Source, '-ExcludeVersion', '-NonInteractive', '-OutputDirectory', $Target
+        if($Force)
+        {
+            Write-Verbose "Force creating directory path to [$Target]"
+            $Null = New-Item -ItemType Directory -Path $Target -Force -ErrorAction SilentlyContinue
+        }
+        if($Version -and $Version -notlike 'latest')
+        {
+            $NugetParams += '-version', $Version
+        }
+        nuget.exe install $Name @NugetParams
+
+        if($Dependency.AddToPath)
+        {
+            Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
+            $env:PSModulePath = $Target, $env:PSModulePath -join ';'
+        }
+    }
+    else
+    {
+        Write-Error "Target [$Target] exists must be true, and is [$TargetExists]. Alternatively, specify -Force to create the Target"
+    }
+}
+
+if($Import -or $PSDependAction -contains 'Import')
 {
     Write-Verbose "Importing [$ModulePath]"
     Import-Module $ModulePath -Scope Global -Force 
