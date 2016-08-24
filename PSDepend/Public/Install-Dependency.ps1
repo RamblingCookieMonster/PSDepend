@@ -97,41 +97,40 @@ Function Install-Dependency {
                 }
                 $TheseDependencies = @( $Dependency | Where-Object {$_.DependencyType -eq $DependencyType})
 
-                #Parameters for dependency types.  Only accept valid params...
-                if($Dependency.Parameters.keys.count -gt 0)
+                foreach($ThisDependency in $TheseDependencies)
                 {
-                    #Define params for the script
-                    #Each dependency type can have a hashtable to splat.
-                    $ValidParameters = Get-ParameterName -Command $DependencyScript
-
-                    $FilteredOptions = @{}
-                    foreach($key in $Dependency.Parameters.keys)
+                    #Parameters for dependency types.  Only accept valid params...
+                    if($ThisDependency.Parameters.keys.count -gt 0)
                     {
-                        if($ValidParameters -contains $key)
+                        #Define params for the script
+                        #Each dependency type can have a hashtable to splat.
+                        $ValidParameters = ( Get-Parameter -Command $DependencyScript ).Name
+
+                        $FilteredOptions = @{}
+                        foreach($key in $ThisDependency.Parameters.keys)
                         {
-                            $FilteredOptions.Add($key, $Dependency.Parameters.$key)
+                            if($ValidParameters -contains $key)
+                            {
+                                $FilteredOptions.Add($key, $ThisDependency.Parameters.$key)
+                            }
+                            else
+                            {
+                                Write-Warning "Parameter [$Key] with value [$($ThisDependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring"
+                            }
                         }
-                        else
-                        {
-                            Write-Warning "Parameter [$Key] with value [$($Dependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring"
-                        }
+                        $splat = $FilteredOptions
                     }
-                    $splat = $FilteredOptions
-                }
-                else
-                {
-                    $splat = @{}
-                }
-                #Define params for the script
-                $splat.add('Dependency', $TheseDependencies)
-
-
-                # PITA, but tasks can run two ways, each different than typical dependency scripts
-                if($DependencyType -eq 'Task')
-                {
-                    foreach($Dependency in $TheseDependencies)
+                    else
                     {
-                        foreach($TaskScript in $Dependency.Target)
+                        $splat = @{}
+                    }
+                    #Define params for the script
+                    $splat.add('Dependency', $ThisDependency)
+
+                    # PITA, but tasks can run two ways, each different than typical dependency scripts
+                    if($DependencyType -eq 'Task')
+                    {
+                        foreach($TaskScript in $ThisDependency.Target)
                         {
                             if( Test-Path $TaskScript -PathType Leaf)
                             {
@@ -143,10 +142,10 @@ Function Install-Dependency {
                             }
                         }
                     }
-                }
-                else
-                {
-                    . $DependencyScript @splat
+                    else
+                    {
+                        . $DependencyScript @splat
+                    }
                 }
             }
         }
