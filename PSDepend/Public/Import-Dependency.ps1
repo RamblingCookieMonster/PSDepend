@@ -1,16 +1,15 @@
-Function Test-Dependency {
+Function Import-Dependency {
     <#
     .SYNOPSIS
-        Test a specific dependency
+        Import a specific dependency
 
     .DESCRIPTION
-        Test a specific dependency.  Validates whether a dependency exists
+        Import a specific dependency, if that dependency supports it.
 
         Takes output from Get-Dependency
 
           * Runs dependency scripts depending on each dependencies type.
-          * Appends a 'DependencyExists' property indicating whether the dependency exists; alternatively
-          * Returns $True or $False if the -Quiet switch is used
+          * Imports items if supported
 
         See Get-Help about_PSDepend for more information.
 
@@ -26,9 +25,9 @@ Function Test-Dependency {
         Only test dependencies that are tagged with all of the specified Tags (-and, not -or)
 
     .EXAMPLE
-        Get-Dependency -Path C:\requirements.psd1 | Test-Dependency
+        Get-Dependency -Path C:\requirements.psd1 | Import-Dependency
 
-        Get dependencies from C:\requirements.psd1 and test whether they exist
+        Get dependencies from C:\requirements.psd1 and import them
 
     .LINK
         about_PSDepend
@@ -61,14 +60,12 @@ Function Test-Dependency {
         [validatescript({Test-Path -Path $_ -PathType Leaf -ErrorAction Stop})]
         [string]$PSDependTypePath = $(Join-Path $ModuleRoot PSDependMap.psd1),
 
-        [string[]]$Tags,
-
-        [switch]$Quiet
+        [string[]]$Tags
     )
     Begin
     {
         # This script reads a depend.psd1, installs dependencies as defined
-        Write-Verbose "Running Test-Dependency with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
+        Write-Verbose "Running Import-Dependency with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
     }
     Process
     {
@@ -120,30 +117,22 @@ Function Test-Dependency {
                     }
                     if($splat.ContainsKey('PSDependAction'))
                     {
-                        $Splat['PSDependAction'] = 'Test'
+                        $Splat['PSDependAction'] = 'Import'
                     }
                     else
                     {
-                        $Splat.add('PSDependAction','Test')
+                        $Splat.add('PSDependAction','Import')
                     }
                 }
                 else
                 {
-                    $splat = @{PSDependAction = 'Test'}
+                    $splat = @{PSDependAction = 'Import'}
                 }
 
                 #Define params for the script
                 $splat.add('Dependency', $ThisDependency)
 
-                $TestResult = . $DependencyScript @splat
-                if($Quiet)
-                {
-                    $TestResult
-                }
-                else
-                {
-                    $ThisDependency | Select -Property *, @{n='DependencyExists'; e={$TestResult}}
-                }
+                . $DependencyScript @splat
             }
         }
     }

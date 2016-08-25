@@ -125,6 +125,8 @@ if(Test-Path $ModulePath)
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
         Write-Verbose "You have the requested version [$Version] of [$Name]"
+        # Conditional import
+        Import-PSDependModule -Name $ModulePath -Action $PSDependAction
         if($PSDependAction -contains 'Test')
         {
             return $True
@@ -139,6 +141,8 @@ if(Test-Path $ModulePath)
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
+        # Conditional import
+        Import-PSDependModule -Name $ModulePath -Action $PSDependAction
         if($PSDependAction -contains 'Test')
         {
             return $True
@@ -185,8 +189,5 @@ if($PSDependAction -contains 'Install')
     }
 }
 
-if($Import -or $PSDependAction -contains 'Import')
-{
-    Write-Verbose "Importing [$ModulePath]"
-    Import-Module $ModulePath -Scope Global -Force 
-}
+# Conditional import
+Import-PSDependModule -Name $ModulePath -Action $PSDependAction

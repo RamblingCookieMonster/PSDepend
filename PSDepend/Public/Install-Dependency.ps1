@@ -97,28 +97,43 @@ Function Install-Dependency {
                 }
                 $TheseDependencies = @( $Dependency | Where-Object {$_.DependencyType -eq $DependencyType})
 
+                #Define params for the script
+                #Each dependency type can have a hashtable to splat.
+                $RawParameters = Get-Parameter -Command $DependencyScript
+                $ValidParamNames = $RawParameters.Name
+
+                if($ValidParamNames -notcontains 'PSDependAction')
+                {
+                    Write-Error "No PSDependAction found on PSDependScript [$DependencyScript]. Skipping [$($Dependency.DependencyName)]"
+                    continue
+                }
+
                 foreach($ThisDependency in $TheseDependencies)
                 {
                     #Parameters for dependency types.  Only accept valid params...
                     if($ThisDependency.Parameters.keys.count -gt 0)
                     {
-                        #Define params for the script
-                        #Each dependency type can have a hashtable to splat.
-                        $ValidParameters = ( Get-Parameter -Command $DependencyScript ).Name
-
-                        $FilteredOptions = @{}
+                        $splat = @{}
                         foreach($key in $ThisDependency.Parameters.keys)
                         {
-                            if($ValidParameters -contains $key)
+                            if($ValidParamNames -contains $key)
                             {
-                                $FilteredOptions.Add($key, $ThisDependency.Parameters.$key)
+                                $splat.Add($key, $ThisDependency.Parameters.$key)
                             }
                             else
                             {
                                 Write-Warning "Parameter [$Key] with value [$($ThisDependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring"
                             }
                         }
-                        $splat = $FilteredOptions
+
+                        if($splat.ContainsKey('PSDependAction'))
+                        {
+                            $Splat['PSDependAction'] = 'Import'
+                        }
+                        else
+                        {
+                            $Splat.add('PSDependAction','Import')
+                        }
                     }
                     else
                     {
@@ -151,6 +166,3 @@ Function Install-Dependency {
         }
     }
 }
-
-
-
