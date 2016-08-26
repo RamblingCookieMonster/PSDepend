@@ -50,12 +50,10 @@ Function Install-Dependency {
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend
     #>
-    [cmdletbinding( DefaultParameterSetName = 'Map',
-                    SupportsShouldProcess = $True,
+    [cmdletbinding( SupportsShouldProcess = $True,
                     ConfirmImpact='High' )]
     Param(
         [parameter( ValueFromPipeline = $True,
-                    ParameterSetName='Map',
                     Mandatory = $True)]
         [PSTypeName('PSDepend.Dependency')]
         [psobject[]]$Dependency,
@@ -83,10 +81,9 @@ Function Install-Dependency {
         {
             #Get definitions, and dependencies in this particular psd1
             $DependencyDefs = Get-PSDependScript
-            $TheseDependencyTypes = @( $Dependency.DependencyType | Sort -Unique )
+            $TheseDependencyTypes = @( $Dependency.DependencyType | Sort-Object -Unique )
 
             #Build up hash, we call each dependencytype script for applicable dependencies
-            $ToInstall = @{}
             foreach($DependencyType in $TheseDependencyTypes)
             {
                 $DependencyScript = $DependencyDefs.$DependencyType

@@ -47,9 +47,7 @@ Function Import-Dependency {
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend
     #>
-    [cmdletbinding( DefaultParameterSetName = 'Map',
-                    SupportsShouldProcess = $True,
-                    ConfirmImpact='High' )]
+    [cmdletbinding()]
     Param(
         [parameter( ValueFromPipeline = $True,
                     ParameterSetName='Map',
@@ -73,10 +71,9 @@ Function Import-Dependency {
 
         #Get definitions, and dependencies in this particular psd1
         $DependencyDefs = Get-PSDependScript
-        $TheseDependencyTypes = @( $Dependency.DependencyType | Sort -Unique )
+        $TheseDependencyTypes = @( $Dependency.DependencyType | Sort-Object -Unique )
 
         #Build up hash, we call each dependencytype script for applicable dependencies
-        $ToTest = @{}
         foreach($DependencyType in $TheseDependencyTypes)
         {
             $DependencyScript = $DependencyDefs.$DependencyType
