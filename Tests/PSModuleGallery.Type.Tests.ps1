@@ -130,7 +130,7 @@ InModuleScope 'PSDepend' {
 
     Describe "FileDownload Type PS$PSVersion" {
 
-        Context 'Installs Module' {
+        Context 'Installs dependency' {
             Mock Get-WebFile {
                 [pscustomobject]@{
                     PSB = $PSBoundParameters
@@ -149,6 +149,35 @@ InModuleScope 'PSDepend' {
             
             It 'Invokes the FileDownload dependency type' {
                 Assert-MockCalled Get-WebFile -Times 1 -Exactly
+            }
+
+            New-Item -ItemType File -Path (Join-Path $SavePath 'System.Data.SQLite.dll')
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\filedownload.depend.psd1" -Force
+
+            It 'Parses URL file name and skips on existing' {
+                Assert-MockCalled Get-WebFile -Times 1 -Exactly # already called, so still 1, not 2...
+            }
+        }
+
+        Remove-Item $SavePath -Force -Recurse
+        mkdir $SavePath -Force
+
+        Context 'Tests dependency' {
+            It 'Returns $false if file does not exist' {
+                Mock Get-WebFile {}
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\filedownload.depend.psd1" | Test-Dependency @Verbose -Quiet)
+                $Results.count | Should be 1
+                $Results[0] | Should be $False
+                Assert-MockCalled -CommandName Get-WebFile -Times 0 -Exactly
+            }
+
+            New-Item -ItemType File -Path (Join-Path $SavePath 'System.Data.SQLite.dll')
+            It 'Returns $true if file does exist' {
+                Mock Get-WebFile {}
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\filedownload.depend.psd1" | Test-Dependency @Verbose -Quiet)
+                $Results.count | Should be 1
+                $Results[0] | Should be $true
+                Assert-MockCalled -CommandName Get-WebFile -Times 0 -Exactly
             }
         }
     }
