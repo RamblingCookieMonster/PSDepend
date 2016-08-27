@@ -122,14 +122,10 @@ param(
 
 if($PSDependAction -contains 'Install')
 {
-    # We have the info, check for file, download it!
-    $webclient = New-Object System.Net.WebClient
-
     # Future considerations:
         # Should we check for existing? And if we find it, still download file, and compare sha256 hash, replace if it does not match?
         # We should consider credentials at some point, but PSD1 does not lend itself to securely storing passwords
-
-    $webclient.DownloadFile($URL, $Path)
+    Get-WebFile -URL $URL -Path $Path
 }
 
 if($Dependency.AddToPath)

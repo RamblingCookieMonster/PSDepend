@@ -110,8 +110,6 @@ InModuleScope 'PSDepend' {
             Mock Push-Location {}
             Mock Pop-Location {}
             Mock Set-Location {}
-            Set-Location $SavePath
-
 
             $Dependencies = Get-Dependency @Verbose -Path "$TestDepends\git.depend.psd1"
 
@@ -127,7 +125,31 @@ InModuleScope 'PSDepend' {
             It 'Invokes the Git dependency type' {
                 Assert-MockCalled -CommandName Invoke-ExternalCommand -Times 6 -Exactly
             }
+        }
+    }
 
+    Describe "FileDownload Type PS$PSVersion" {
+
+        Context 'Installs Module' {
+            Mock Get-WebFile {
+                [pscustomobject]@{
+                    PSB = $PSBoundParameters
+                    Arg = $Args
+                }
+            }
+
+            $Dependencies = @(Get-Dependency @Verbose -Path "$TestDepends\filedownload.depend.psd1")
+
+            It 'Parses the FileDownload dependency type' {
+                $Dependencies.count | Should be 1
+                $Dependencies[0].DependencyType | Should be 'FileDownload'
+            }
+
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\filedownload.depend.psd1" -Force
+            
+            It 'Invokes the FileDownload dependency type' {
+                Assert-MockCalled Get-WebFile -Times 1 -Exactly
+            }
         }
     }
 }

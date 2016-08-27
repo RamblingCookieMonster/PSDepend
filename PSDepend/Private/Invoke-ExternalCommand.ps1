@@ -4,6 +4,7 @@ function Invoke-ExternalCommand {
     [cmdletbinding()]
     param($Command, [string[]]$Arguments)
 
+    Write-Verbose "Running $Command with arguments $($Arguments -join "; ")"
     $result = $null
     $result = & $command @arguments  
     Write-Verbose "$($result | Out-String)"

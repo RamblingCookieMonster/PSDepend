@@ -74,7 +74,7 @@ if(-not $Name)
 
 #Name is in account/repo format, default to GitHub as source
 #This likely needs work, and will need to change if GitHub changes valid characters for usernames
-if($Name -match "[a-zA-Z0-9]+/[a-zA-Z0-9_-]+")
+if($Name -match "^[a-zA-Z0-9]+/[a-zA-Z0-9_-]+$")
 {
     $Name = "https://github.com/$Name.git"
 }
@@ -94,7 +94,8 @@ if($Target)
         }
         if( $PSDependAction -contains 'Install')
         {
-            mkdir $Target -Force
+            Write-Verbose "Creating folder [$Target] for git dependency [$Name]"
+            $null = mkdir $Target -Force
         }
     }
 }
