@@ -182,7 +182,7 @@ function Get-Dependency {
                         # Look for git format:
                         if(
                             ($Dependency -match '/' -and -not $Dependency.Name) -or
-                            $Dependency.Name -match '/'
+                            $DependencyHash.Name -match '/'
                         )
                         {
                             $DependencyHash.add('DependencyType', 'Git')

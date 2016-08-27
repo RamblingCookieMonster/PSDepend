@@ -27,10 +27,10 @@
 
     .EXAMPLE
         @{
-            'buildhelpers' @{
+            'buildhelpers' = @{
                 Name = 'https://github.com/RamblingCookieMonster/BuildHelpers.git'
                 Version = 'd32a9495c39046c851ceccfb7b1a85b17d5be051'
-                Target = C:\git
+                Target = 'C:\git'
             }
         }
 
@@ -138,14 +138,14 @@ if($Target)
 }
 
 #TODO: Add logic to test for existing repo
-git @CloneParams
+Invoke-ExternalCommand git $CloneParams
 Push-Location
 Set-Location $RepoPath
 
 #TODO: Should we do a fetch, once existing repo is found?
 Write-Verbose -Message "Checking out [$Version] of [$Name]"
 $CheckoutParams = @('checkout', $Version)
-git @CheckoutParams
+Invoke-ExternalCommand git $CheckoutParams
 Pop-Location
 
 if($Dependency.AddToPath)
