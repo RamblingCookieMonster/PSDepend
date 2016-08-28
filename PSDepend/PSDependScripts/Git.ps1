@@ -81,6 +81,7 @@ if($Name -match "^[a-zA-Z0-9]+/[a-zA-Z0-9_-]+$")
 $GitName = $Name.split('/')[-1] -replace "\.git[/]?$", ''
 
 #TODO: PSDependAction Test should test that it exists, is a git repo, and if specified, the version...
+$GottaTest = $False
 $Target = $Dependency.Target
 if($Target)
 {
@@ -98,26 +99,30 @@ if($Target)
             $null = mkdir $Target -Force
         }
     }
+    else # Target exists
+    {
+        $GottaTest = $True
+    }
 }
-else
+else # Target not specified, use current path
 {
     $RepoPath = Join-Path $PWD.Path $GitName
-    if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+    if(-not (Test-Path $RepoPath))
     {
-        if(Test-Path $RepoPath)
+        if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
         {
-            return $true
+            return $False
         }
-        else
-        {
-            return $false
-        }
+    }
+    else
+    {
+        $GottaTest = $True
     }
 }
 
-if($PSDependAction -notcontains 'Install')
+if(-not (Get-Command git.exe -ErrorAction SilentlyContinue))
 {
-    return
+    Write-Error "Git dependency type requires git.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's GitPath.  Skipping [$DependencyName]"
 }
 
 $Version = $Dependency.Version
@@ -126,9 +131,37 @@ if(-not $Version)
     $Version = 'master'
 }
 
-if(-not (Get-Command git.exe -ErrorAction SilentlyContinue))
+Push-Location
+Set-Location $RepoPath
+
+if($GottaTest)
 {
-    Write-Error "Git dependency type requires git.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's GitPath.  Skipping [$DependencyName]"
+    $Branch = git rev-parse --abbrev-ref HEAD
+    $Commit = git rev-parse HEAD
+    if($Version -eq $Branch -or $Version -eq $Commit)
+    {
+        Write-Verbose "[$RepoPath] exists and is already at version [$Version]"
+        if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+        {
+            return $true
+        }
+        return
+    }
+    elseif($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+    {
+        Write-Verbose "[$RepoPath] exists and is at branch [$Branch], commit [$Commit].`nWe don't currently support moving to the requested version [$Version]"
+        return $false
+    }
+    else
+    {
+        Write-Verbose "[$RepoPath] exists and is at branch [$Branch], commit [$Commit].`nWe don't currently support moving to the requested version [$Version]"
+        return
+    }
+}
+
+if($PSDependAction -notcontains 'Install')
+{
+    return
 }
 
 Write-Verbose -Message "Cloning dependency [$Name] with git"
@@ -138,10 +171,7 @@ if($Target)
     $CloneParams += $Target
 }
 
-#TODO: Add logic to test for existing repo
 Invoke-ExternalCommand git $CloneParams
-Push-Location
-Set-Location $RepoPath
 
 #TODO: Should we do a fetch, once existing repo is found?
 Write-Verbose -Message "Checking out [$Version] of [$Name]"

@@ -24,7 +24,7 @@ InModuleScope 'PSDepend' {
 
     Describe "PSGalleryModule Type PS$PSVersion" {
 
-        Context 'Installs Module' {
+        Context 'Installs Modules' {
             Mock Install-Module { Return $true }
             Mock Get-PSRepository { Return $true }
             
@@ -39,7 +39,7 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Context 'Saves Module' {
+        Context 'Saves Modules' {
             Mock Save-Module { Return $true }
             Mock Get-PSRepository { Return $true }
             
@@ -86,6 +86,57 @@ InModuleScope 'PSDepend' {
             }
         }
 
+        Context 'Test-Dependency' {
+            It 'Returns $true when it finds an existing module' {
+                Mock Install-Module {}
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                Mock Find-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+
+            It "Returns `$false when it doesn't find an existing module" {
+                Mock Install-Module {}
+                Mock Get-Module { $null }
+                Mock Find-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+            It "Returns `$false when it finds an existing module with a lower version" {
+                Mock Install-Module {}
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.4'
+                    }
+                }
+                Mock Find-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+        }
+
         Context 'Misc' {
             It 'Adds folder to path when specified' {
                 Mock Get-PSRepository { Return $true }
@@ -98,18 +149,18 @@ InModuleScope 'PSDepend' {
     }
 
     Describe "Git Type PS$PSVersion" {
-
         Context 'Installs Module' {
             Mock Invoke-ExternalCommand {
                 [pscustomobject]@{
                     PSB = $PSBoundParameters
                     Arg = $Args
                 }
-            }
+            } -ParameterFilter {$Arguments -contains 'checkout' -or $Arguments -contains 'clone'}
             Mock mkdir { return $true }
-            Mock Push-Location {}
-            Mock Pop-Location {}
-            Mock Set-Location {}
+            Mock Push-Location
+            Mock Pop-Location
+            Mock Set-Location
+            Mock Test-Path { return $False } -ParameterFilter {$Path -match "Invoke-Build$|PSDeploy$"}
 
             $Dependencies = Get-Dependency @Verbose -Path "$TestDepends\git.depend.psd1"
 
