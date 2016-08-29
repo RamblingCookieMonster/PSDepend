@@ -8,7 +8,7 @@ function Get-Dependency {
 
         The resulting object contains these properties
             DependencyFile : Path to psd1 file this dependency is defined in
-            DependencyName : Unique dependency name (the key in the psd1 file)
+            DependencyName : Unique dependency name (the key in the psd1 file).  We reserve PSDependOptions for global options.
             DependencyType : Type of dependency.  See Get-PSDependType
             Name           : Name for the dependency
             Version        : Version for the dependency
@@ -53,6 +53,24 @@ function Get-Dependency {
                 }
             }
 
+        Global options:
+           @{
+               PSDependOptions = @{
+                   Target = 'C:\temp'
+               }
+               # Supported for:
+               #    Parameters
+               #    Source
+               #    Target
+               #    AddToPath
+               #    Tags
+               #    DependsOn
+               #    PreScripts
+               #    PostScripts
+
+               # Dependencies use these values as a default, unless you specify them explicitly for a dependency
+           }
+
         Note that you can mix these syntax together in the same psd1.
 
     .PARAMETER Path
@@ -94,6 +112,21 @@ function Get-Dependency {
         [switch]$Recurse
     )
 
+    # Helper to pick from global psdependoptions, or return a default
+    function Get-GlobalOption {
+        param(
+            $Options = $PSDependOptions,
+            $Name,
+            $Prefer,
+            $Default = $Null
+        )
+
+        # Check for preferred value, otherwise try to get value from key, otherwise use default....
+        if($Prefer){ return $Prefer}
+        try { return $Options[$Name] } catch { }
+        return $Default
+    }
+
     foreach($DependencyPath in $Path)
     {
         #Resolve relative paths... Thanks Oisin! http://stackoverflow.com/a/3040982/3067642
@@ -116,7 +149,7 @@ function Get-Dependency {
             $File = Split-Path $DependencyFile -Leaf
             $Dependencies = Import-LocalizedData -BaseDirectory $Base -FileName $File
 
-
+            # Global settings....
             $PSDependOptions = $null
             if($Dependencies.Containskey('PSDependOptions'))
             {
@@ -139,14 +172,14 @@ function Get-Dependency {
                         DependencyType = 'PSGalleryModule'
                         Name = $Dependency
                         Version = $DependencyHash
-                        Parameters = $null
-                        Source = $null
-                        Target = $null
-                        AddToPath = $null
-                        Tags = $null
-                        DependsOn = $null
-                        PreScripts = $null
-                        PostScripts = $null
+                        Parameters = Get-GlobalOption -Name Parameters
+                        Source = Get-GlobalOption -Name Source
+                        Target = Get-GlobalOption -Name Target
+                        AddToPath = Get-GlobalOption -Name AddToPath
+                        Tags = Get-GlobalOption -Name Tags
+                        DependsOn = Get-GlobalOption -Name DependsOn
+                        PreScripts =  Get-GlobalOption -Name PreScripts
+                        PostScripts =  Get-GlobalOption -Name PostScripts
                         PSDependOptions = $PSDependOptions
                         Raw = $null
                     }
@@ -161,14 +194,14 @@ function Get-Dependency {
                         DependencyType = 'Git'
                         Name = $Dependency
                         Version = $DependencyHash
-                        Parameters = $null
-                        Source = $null
-                        Target = $null
-                        AddToPath = $null
-                        Tags = $null
-                        DependsOn = $null
-                        PreScripts = $null
-                        PostScripts = $null
+                        Parameters = Get-GlobalOption -Name Parameters
+                        Source = Get-GlobalOption -Name Source
+                        Target = Get-GlobalOption -Name Target
+                        AddToPath = Get-GlobalOption -Name AddToPath
+                        Tags = Get-GlobalOption -Name Tags
+                        DependsOn = Get-GlobalOption -Name DependsOn
+                        PreScripts = Get-GlobalOption -Name PreScripts
+                        PostScripts = Get-GlobalOption -Name PostScripts
                         PSDependOptions = $PSDependOptions
                         Raw = $null
                     }
@@ -200,14 +233,14 @@ function Get-Dependency {
                         DependencyType = $DependencyHash.DependencyType
                         Name = $DependencyHash.Name
                         Version = $DependencyHash.Version
-                        Parameters = $DependencyHash.Parameters
-                        Source = $DependencyHash.Source
-                        Target = $DependencyHash.Target
-                        AddToPath = $DependencyHash.AddToPath
-                        Tags = $DependencyHash.Tags
-                        DependsOn = $DependencyHash.DependsOn
-                        PreScripts = $DependencyHash.PreScripts
-                        PostScripts = $DependencyHash.PostScripts
+                        Parameters = Get-GlobalOption -Name Parameters -Prefer $DependencyHash.Parameters
+                        Source = Get-GlobalOption -Name Source -Prefer $DependencyHash.Source
+                        Target = Get-GlobalOption -Name Target -Prefer $DependencyHash.Target
+                        AddToPath = Get-GlobalOption -Name AddToPath -Prefer $DependencyHash.AddToPath
+                        Tags = Get-GlobalOption -Name Tags -Prefer $DependencyHash.Tags
+                        DependsOn = Get-GlobalOption -Name DependsOn -Prefer $DependencyHash.DependsOn
+                        PreScripts = Get-GlobalOption -Name PreScripts -Prefer $DependencyHash.PreScripts
+                        PostScripts = Get-GlobalOption -Name PostScripts -Prefer $DependencyHash.PostScripts
                         PSDependOptions = $PSDependOptions
                         Raw = $DependencyHash
                     }
