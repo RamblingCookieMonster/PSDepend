@@ -7,6 +7,9 @@ Import-Module (Join-Path $ENV:BHProjectPath $ENV:BHProjectName) -Force
 
 $null = mkdir 'C:\PSDependPesterTest' -force
 
+# Maybe use a convention for describe/context/it... these are all over the place...
+# Pull requests welcome!
+
 InModuleScope 'PSDepend' {
 
     $TestDepends = Join-Path $ENV:BHProjectPath Tests\DependFiles
@@ -176,6 +179,30 @@ InModuleScope 'PSDepend' {
             It 'Invokes the Git dependency type' {
                 Assert-MockCalled -CommandName Invoke-ExternalCommand -Times 6 -Exactly
             }
+
+        }
+        Context 'Tests dependency' {
+            Mock mkdir { return $true }
+            Mock Push-Location
+            Mock Pop-Location
+            Mock Set-Location
+            Mock Invoke-ExternalCommand -ParameterFilter {$Arguments -contains 'checkout' -or $Arguments -contains 'clone'}
+            
+
+            It 'Returns $false if git repo does not exist' {
+                Mock Test-Path { return $False } -ParameterFilter {$Path -match "PSDeploy$"}
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\git.test.depend.psd1" | Test-Dependency @Verbose -Quiet )
+                $Results.count | Should be 1
+                $Results[0] | Should be $False
+            }
+
+            It 'Returns $true if git repo does exist' {
+                Mock Test-Path { return $true } -ParameterFilter {$Path -match "PSDeploy$"}
+                Mock Invoke-ExternalCommand { return 'imaginary_branch' } -ParameterFilter {$Arguments -contains 'rev-parse'}
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\git.test.depend.psd1" | Test-Dependency @Verbose -Quiet )
+                $Results.count | Should be 1
+                $Results[0] | Should be $true
+            }
         }
     }
 
@@ -229,6 +256,108 @@ InModuleScope 'PSDepend' {
                 $Results.count | Should be 1
                 $Results[0] | Should be $true
                 Assert-MockCalled -CommandName Get-WebFile -Times 0 -Exactly
+            }
+        }
+    }
+    Describe "PSGalleryNuget Type PS$PSVersion" {
+
+        Context 'Installs Modules' {
+            Mock Test-Path { Return $true } -ParameterFilter { $PathType -eq 'Container' }
+            Mock Invoke-ExternalCommand { Return $true }
+            Mock Find-NugetPackage { Return $true }
+            
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.depend.psd1" -Force
+
+            It 'Should execute Invoke-ExternalCommand' {
+                Assert-MockCalled Invoke-ExternalCommand -Times 1 -Exactly
+            }
+
+            It 'Should Return Mocked output' {
+                $Results | Should be $True
+            }
+        }
+
+        Context 'Same module version exists' {
+            Mock Test-Path {return $True} -ParameterFilter {$Path -match 'jenkins'}
+            Mock Invoke-ExternalCommand {}
+            Mock Import-LocalizedData {
+                [pscustomobject]@{
+                    ModuleVersion = '1.2.5'
+                }
+            } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
+            Mock Find-NugetPackage {
+                [pscustomobject]@{
+                    Version = '1.2.5'
+                }
+            }
+
+            It 'Runs Import-LocalizedData and Find-NugetPackage, skips Invoke-ExternalCommand' {
+                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Import-LocalizedData -Times 1 -Exactly
+                Assert-MockCalled Find-NugetPackage -Times 1 -Exactly
+                Assert-MockCalled Invoke-ExternalCommand -Times 0 -Exactly
+            }
+        }
+
+        Context 'Test-Dependency' {
+            It 'Returns $true when it finds an existing module' {
+                Mock Test-Path {return $True} -ParameterFilter {$Path -match 'jenkins'}
+                Mock Invoke-ExternalCommand {}
+                Mock Import-LocalizedData {
+                    [pscustomobject]@{
+                        ModuleVersion = '1.2.5'
+                    }
+                } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
+                Mock Find-NugetPackage {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+
+            It "Returns `$false when it doesn't find an existing module" {
+                Mock Import-LocalizedData -ParameterFilter {$FileName -eq 'jenkins.psd1'}
+                Mock Find-NugetPackage {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+
+            It "Returns `$false when it finds an existing module with a lower version" {
+                Mock Find-NugetPackage {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                Mock Import-LocalizedData {
+                    [pscustomobject]@{
+                        ModuleVersion = '1.2.4'
+                    }
+                } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
+
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+        }
+
+        Context 'Misc' {
+            It 'Adds folder to path when specified' {
+                Mock Invoke-ExternalCommand {} {$True}
+                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.addtopath.depend.psd1" -Force -ErrorAction Stop
+                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
+                $ENV:PSModulePath = $ExistingPSModulePath
             }
         }
     }

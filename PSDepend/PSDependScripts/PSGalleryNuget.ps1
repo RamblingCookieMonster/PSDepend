@@ -65,7 +65,6 @@ param(
     [ValidateSet('Test', 'Install', 'Import')]
     [string[]]$PSDependAction = @('Install')
 )
-
 # Extract data from Dependency
     $DependencyName = $Dependency.DependencyName
     $Name = $Dependency.Name
@@ -151,7 +150,23 @@ if(Test-Path $ModulePath)
     }
 
     Write-Verbose "Removing existing [$ModulePath]`nContinuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
-    Remove-Item $ModulePath -Force -Recurse 
+    if($PSDependAction -contains 'Install')
+    {
+        if($Force)
+        {
+            Write-Verbose "Removing existing [$ModulePath]`nContinuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
+            Remove-Item $ModulePath -Force -Recurse
+        }
+        else
+        {
+            Write-Verbose "Use -Force to remove existing [$ModulePath]`nSkipping install of [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
+            if( $PSDependAction -contains 'Test')
+            {
+                return $false
+            }
+            return $null
+        }
+    }
 }
 
 #No dependency found, return false if we're testing alone...
@@ -166,7 +181,7 @@ if($PSDependAction -contains 'Install')
     {
         Write-Verbose "Saving [$Name] with path [$Target]"
         $NugetParams = '-Source', $Source, '-ExcludeVersion', '-NonInteractive', '-OutputDirectory', $Target
-        if($Force)
+        if($Force -and -not $TargetExists)
         {
             Write-Verbose "Force creating directory path to [$Target]"
             $Null = New-Item -ItemType Directory -Path $Target -Force -ErrorAction SilentlyContinue
@@ -175,7 +190,8 @@ if($PSDependAction -contains 'Install')
         {
             $NugetParams += '-version', $Version
         }
-        nuget.exe install $Name @NugetParams
+        $NugetParams = 'install', $Name + $NugetParams
+        Invoke-ExternalCommand nuget.exe -Arguments $NugetParams
 
         if($Dependency.AddToPath)
         {

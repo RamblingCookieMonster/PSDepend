@@ -136,8 +136,8 @@ Set-Location $RepoPath
 
 if($GottaTest)
 {
-    $Branch = git rev-parse --abbrev-ref HEAD
-    $Commit = git rev-parse HEAD
+    $Branch = Invoke-ExternalCommand git (echo rev-parse --abbrev-ref HEAD)
+    $Commit = Invoke-ExternalCommand git (echo rev-parse HEAD)
     if($Version -eq $Branch -or $Version -eq $Commit)
     {
         Write-Verbose "[$RepoPath] exists and is already at version [$Version]"

@@ -125,11 +125,11 @@ Function Install-Dependency {
 
                         if($splat.ContainsKey('PSDependAction'))
                         {
-                            $Splat['PSDependAction'] = 'Import'
+                            $Splat['PSDependAction'] = 'Install'
                         }
                         else
                         {
-                            $Splat.add('PSDependAction','Import')
+                            $Splat.add('PSDependAction','Install')
                         }
                     }
                     else
