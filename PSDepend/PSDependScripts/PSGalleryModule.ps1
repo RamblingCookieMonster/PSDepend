@@ -21,6 +21,15 @@
 
     .PARAMETER Import
         If specified, import the module in the global scope
+
+        Deprecated.  Moving to PSDependAction
+
+    .PARAMETER PSDependAction
+        Test, Install, or Import the module.  Defaults to Install
+
+        Test: Return true or false on whether the dependency is in place
+        Install: Install the dependency
+        Import: Import the dependency
 #>
 [cmdletbinding()]
 param(
@@ -31,7 +40,10 @@ param(
 
     [switch]$Force,
 
-    [switch]$Import
+    [switch]$Import,
+
+    [ValidateSet('Test', 'Install', 'Import')]
+    [string[]]$PSDependAction = @('Install')
 )
 
 # Extract data from Dependency
@@ -116,6 +128,13 @@ if($Existing)
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
         Write-Verbose "You have the requested version [$Version] of [$Name]"
+        # Conditional import
+        Import-PSDependModule -Name $ModuleName -Action $PSDependAction
+
+        if($PSDependAction -contains 'Test')
+        {
+            return $True
+        }
         return $null
     }
     
@@ -126,37 +145,50 @@ if($Existing)
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
+        
+        # Conditional import
+        Import-PSDependModule -Name $ModuleName -Action $PSDependAction
+
+        if($PSDependAction -contains 'Test')
+        {
+            return $True
+        }
         return $null
     }
 
     Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
 }
 
-$ImportParam = @{}
-if('AllUsers', 'CurrentUser' -contains $Scope)
-{   
-    Write-Verbose "Installing [$Name] with scope [$Scope]"
-    Install-Module @params -Scope $Scope
-}
-elseif((Test-Path $Scope -PathType Container) -or $Force)
+#No dependency found, return false if we're testing alone...
+if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
 {
-    Write-Verbose "Saving [$Name] with path [$Scope]"
-    if($Force)
-    {
-        Write-Verbose "Force creating directory path to [$Scope]"
-        $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
-    }
-    Save-Module @params -Path $Scope
-
-    if($Dependency.AddToPath)
-    {
-        Write-Verbose "Setting PSModulePath to`n$($Scope, $env:PSModulePath -join ';' | Out-String)"
-        $env:PSModulePath = $Scope, $env:PSModulePath -join ';'
-    }
+    return $False
 }
 
-if($Import)
+if($PSDependAction -contains 'Install')
 {
-    Write-Verbose "Importing [$ModuleName]"
-    Import-Module $ModuleName -Scope Global -Force 
+    if('AllUsers', 'CurrentUser' -contains $Scope)
+    {   
+        Write-Verbose "Installing [$Name] with scope [$Scope]"
+        Install-Module @params -Scope $Scope
+    }
+    elseif((Test-Path $Scope -PathType Container) -or $Force)
+    {
+        Write-Verbose "Saving [$Name] with path [$Scope]"
+        if($Force)
+        {
+            Write-Verbose "Force creating directory path to [$Scope]"
+            $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
+        }
+        Save-Module @params -Path $Scope
+
+        if($Dependency.AddToPath)
+        {
+            Write-Verbose "Setting PSModulePath to`n$($Scope, $env:PSModulePath -join ';' | Out-String)"
+            $env:PSModulePath = $Scope, $env:PSModulePath -join ';'
+        }
+    }
 }
+
+# Conditional import
+Import-PSDependModule -Name $ModuleName -Action $PSDependAction

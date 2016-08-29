@@ -50,12 +50,10 @@ Function Install-Dependency {
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend
     #>
-    [cmdletbinding( DefaultParameterSetName = 'Map',
-                    SupportsShouldProcess = $True,
+    [cmdletbinding( SupportsShouldProcess = $True,
                     ConfirmImpact='High' )]
     Param(
         [parameter( ValueFromPipeline = $True,
-                    ParameterSetName='Map',
                     Mandatory = $True)]
         [PSTypeName('PSDepend.Dependency')]
         [psobject[]]$Dependency,
@@ -83,10 +81,9 @@ Function Install-Dependency {
         {
             #Get definitions, and dependencies in this particular psd1
             $DependencyDefs = Get-PSDependScript
-            $TheseDependencyTypes = @( $Dependency.DependencyType | Sort -Unique )
+            $TheseDependencyTypes = @( $Dependency.DependencyType | Sort-Object -Unique )
 
             #Build up hash, we call each dependencytype script for applicable dependencies
-            $ToInstall = @{}
             foreach($DependencyType in $TheseDependencyTypes)
             {
                 $DependencyScript = $DependencyDefs.$DependencyType
@@ -97,41 +94,55 @@ Function Install-Dependency {
                 }
                 $TheseDependencies = @( $Dependency | Where-Object {$_.DependencyType -eq $DependencyType})
 
-                #Parameters for dependency types.  Only accept valid params...
-                if($Dependency.Parameters.keys.count -gt 0)
-                {
-                    #Define params for the script
-                    #Each dependency type can have a hashtable to splat.
-                    $ValidParameters = Get-ParameterName -Command $DependencyScript
+                #Define params for the script
+                #Each dependency type can have a hashtable to splat.
+                $RawParameters = Get-Parameter -Command $DependencyScript
+                $ValidParamNames = $RawParameters.Name
 
-                    $FilteredOptions = @{}
-                    foreach($key in $Dependency.Parameters.keys)
+                if($ValidParamNames -notcontains 'PSDependAction')
+                {
+                    Write-Error "No PSDependAction found on PSDependScript [$DependencyScript]. Skipping [$($Dependency.DependencyName)]"
+                    continue
+                }
+
+                foreach($ThisDependency in $TheseDependencies)
+                {
+                    #Parameters for dependency types.  Only accept valid params...
+                    if($ThisDependency.Parameters.keys.count -gt 0)
                     {
-                        if($ValidParameters -contains $key)
+                        $splat = @{}
+                        foreach($key in $ThisDependency.Parameters.keys)
                         {
-                            $FilteredOptions.Add($key, $Dependency.Parameters.$key)
+                            if($ValidParamNames -contains $key)
+                            {
+                                $splat.Add($key, $ThisDependency.Parameters.$key)
+                            }
+                            else
+                            {
+                                Write-Warning "Parameter [$Key] with value [$($ThisDependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring"
+                            }
+                        }
+
+                        if($splat.ContainsKey('PSDependAction'))
+                        {
+                            $Splat['PSDependAction'] = 'Install'
                         }
                         else
                         {
-                            Write-Warning "Parameter [$Key] with value [$($Dependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring"
+                            $Splat.add('PSDependAction','Install')
                         }
                     }
-                    $splat = $FilteredOptions
-                }
-                else
-                {
-                    $splat = @{}
-                }
-                #Define params for the script
-                $splat.add('Dependency', $TheseDependencies)
-
-
-                # PITA, but tasks can run two ways, each different than typical dependency scripts
-                if($DependencyType -eq 'Task')
-                {
-                    foreach($Dependency in $TheseDependencies)
+                    else
                     {
-                        foreach($TaskScript in $Dependency.Target)
+                        $splat = @{}
+                    }
+                    #Define params for the script
+                    $splat.add('Dependency', $ThisDependency)
+
+                    # PITA, but tasks can run two ways, each different than typical dependency scripts
+                    if($DependencyType -eq 'Task')
+                    {
+                        foreach($TaskScript in $ThisDependency.Target)
                         {
                             if( Test-Path $TaskScript -PathType Leaf)
                             {
@@ -143,15 +154,12 @@ Function Install-Dependency {
                             }
                         }
                     }
-                }
-                else
-                {
-                    . $DependencyScript @splat
+                    else
+                    {
+                        . $DependencyScript @splat
+                    }
                 }
             }
         }
     }
 }
-
-
-

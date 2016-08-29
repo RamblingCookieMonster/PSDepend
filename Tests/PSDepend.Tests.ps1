@@ -59,8 +59,16 @@ Describe "Get-Dependency PS$PSVersion" {
             $Dependencies.DependsOn | Should be 'DependsOn'
             $Dependencies.PreScripts | Should be 'C:\PreScripts.ps1'
             $Dependencies.PostScripts | Should be 'C:\PostScripts.ps1'
-            $Dependencies.Raw.ContainsKey('ExtendedSchema') | SHould be $True
+            $Dependencies.Raw.ContainsKey('ExtendedSchema') | Should be $True
             $Dependencies.Raw.ExtendedSchema['IsTotally'] | Should Be 'Captured'
+        }
+
+        It 'Should handle DependsOn' {
+            $Dependencies = Get-Dependency -Path $TestDepends\dependson.depend.psd1
+            @( $Dependencies ).count | Should Be 3
+            $Dependencies[0].DependencyName | Should be 'One'
+            $Dependencies[1].DependencyName | Should be 'Two'
+            $Dependencies[2].DependencyName | Should be 'THree'
         }
     }
 }

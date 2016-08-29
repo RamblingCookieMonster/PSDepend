@@ -107,7 +107,7 @@ function Get-Dependency {
         {
             $DependencyFiles = @( $DependencyPath )
         }
-        $DependencyFiles = $DependencyFiles | Select -Unique
+        $DependencyFiles = $DependencyFiles | Select-Object -Unique
 
         $DependencyMap = foreach($DependencyFile in $DependencyFiles)
         {

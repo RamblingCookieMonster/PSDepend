@@ -19,12 +19,18 @@
     .PARAMETER Force
         If specified and target does not exist, create directory tree up to the target folder
 
+    .PARAMETER PSDependAction
+        Test, Install, or Import the module.  Defaults to Install
+
+        Test: Return true or false on whether the dependency is in place (Note: Currently only checks if path exists)
+        Install: Install the dependency
+
     .EXAMPLE
         @{
-            'buildhelpers' @{
+            'buildhelpers' = @{
                 Name = 'https://github.com/RamblingCookieMonster/BuildHelpers.git'
                 Version = 'd32a9495c39046c851ceccfb7b1a85b17d5be051'
-                Target = C:\git
+                Target = 'C:\git'
             }
         }
 
@@ -52,48 +58,110 @@ param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]$Dependency,
 
-    [switch]$Force
+    [switch]$Force,
+
+    [ValidateSet('Test', 'Install')]
+    [string[]]$PSDependAction = @('Install')
 )
 
 # Extract data from Dependency
-    $DependencyName = $Dependency.DependencyName
-    $Name = $Dependency.Name
-    if(-not $Name)
-    {
-        $Name = $DependencyName
-    }
+$DependencyName = $Dependency.DependencyName
+$Name = $Dependency.Name
+if(-not $Name)
+{
+    $Name = $DependencyName
+}
 
-    #Name is in account/repo format, default to GitHub as source
-    #This likely needs work, and will need to change if GitHub changes valid characters for usernames
-    if($Name -match "^[a-zA-Z0-9]+/[a-zA-Z0-9_-]+$")
-    {
-        $Name = "https://github.com/$Name.git"
-    }
-    $GitName = $Name.split('/')[-1] -replace "\.git[/]?$", ''
+#Name is in account/repo format, default to GitHub as source
+#This likely needs work, and will need to change if GitHub changes valid characters for usernames
+if($Name -match "^[a-zA-Z0-9]+/[a-zA-Z0-9_-]+$")
+{
+    $Name = "https://github.com/$Name.git"
+}
+$GitName = $Name.split('/')[-1] -replace "\.git[/]?$", ''
 
-    $Target = $Dependency.Target
-    if($Target)
+#TODO: PSDependAction Test should test that it exists, is a git repo, and if specified, the version...
+$GottaTest = $False
+$Target = $Dependency.Target
+if($Target)
+{
+    $RepoPath = $Target
+    if(-not (Test-Path $Target))
     {
-        $RepoPath = $Target
-        if(-not (Test-Path $Target))
+        # Nothing found, return test output
+        if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
         {
-            mkdir $Target -Force
+            return $False
+        }
+        if( $PSDependAction -contains 'Install')
+        {
+            Write-Verbose "Creating folder [$Target] for git dependency [$Name]"
+            $null = mkdir $Target -Force
+        }
+    }
+    else # Target exists
+    {
+        $GottaTest = $True
+    }
+}
+else # Target not specified, use current path
+{
+    $RepoPath = Join-Path $PWD.Path $GitName
+    if(-not (Test-Path $RepoPath))
+    {
+        if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+        {
+            return $False
         }
     }
     else
     {
-        $RepoPath = Join-Path $PWD.Path $GitName
+        $GottaTest = $True
     }
-
-    $Version = $Dependency.Version
-    if(-not $Version)
-    {
-        $Version = 'master'
-    }
+}
 
 if(-not (Get-Command git.exe -ErrorAction SilentlyContinue))
 {
     Write-Error "Git dependency type requires git.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's GitPath.  Skipping [$DependencyName]"
+}
+
+$Version = $Dependency.Version
+if(-not $Version)
+{
+    $Version = 'master'
+}
+
+Push-Location
+Set-Location $RepoPath
+
+if($GottaTest)
+{
+    $Branch = Invoke-ExternalCommand git (echo rev-parse --abbrev-ref HEAD)
+    $Commit = Invoke-ExternalCommand git (echo rev-parse HEAD)
+    if($Version -eq $Branch -or $Version -eq $Commit)
+    {
+        Write-Verbose "[$RepoPath] exists and is already at version [$Version]"
+        if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+        {
+            return $true
+        }
+        return
+    }
+    elseif($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+    {
+        Write-Verbose "[$RepoPath] exists and is at branch [$Branch], commit [$Commit].`nWe don't currently support moving to the requested version [$Version]"
+        return $false
+    }
+    else
+    {
+        Write-Verbose "[$RepoPath] exists and is at branch [$Branch], commit [$Commit].`nWe don't currently support moving to the requested version [$Version]"
+        return
+    }
+}
+
+if($PSDependAction -notcontains 'Install')
+{
+    return
 }
 
 Write-Verbose -Message "Cloning dependency [$Name] with git"
@@ -103,15 +171,12 @@ if($Target)
     $CloneParams += $Target
 }
 
-#TODO: Add logic to test for existing repo
-git @CloneParams
-Push-Location
-Set-Location $RepoPath
+Invoke-ExternalCommand git $CloneParams
 
 #TODO: Should we do a fetch, once existing repo is found?
 Write-Verbose -Message "Checking out [$Version] of [$Name]"
 $CheckoutParams = @('checkout', $Version)
-git @CheckoutParams
+Invoke-ExternalCommand git $CheckoutParams
 Pop-Location
 
 if($Dependency.AddToPath)

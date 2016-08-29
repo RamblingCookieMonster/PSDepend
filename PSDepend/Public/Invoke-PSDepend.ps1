@@ -83,9 +83,6 @@ Function Invoke-PSDepend {
         # This script reads a depend.psd1, deploys files or folders as defined
         Write-Verbose "Running Invoke-PSDepend with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
 
-        $RejectAll = $false
-        $ConfirmAll = $false
-
         # Do we want force?
         $InvokeParams = @{}
         if($Force)
@@ -118,15 +115,12 @@ Function Invoke-PSDepend {
             $GetPSDependParams.Add('Tags',$Tags)
         }
 
-        $DependencyScripts = Get-PSDependScript
-
         # Handle Dependencies
         $ToInstall = Get-Dependency @GetPSDependParams
 
         #TODO: Add ShouldProcess here.  Having it in Install-Dependency is bad.
         foreach($Dependency in $ToInstall)
         {
-            $Type = $Dependency.DependencyType
             $Install = $True #anti pattern! Best I could come up with to handle both prescript fail and dependencies
 
             if($Deployment.PreScripts.Count -gt 0)
