@@ -35,7 +35,10 @@ Function Invoke-PSDepend {
         Run tests for dependencies we find.
         
         Appends a 'DependencyExists' property indicating whether the dependency exists by default
-        Specify Quiet to return $true for dependencies that we find, $false for dependencies we do not
+        Specify Quiet to simply return $true or $false depending on whether all dependencies exist
+
+    .PARAMETER Quiet
+        If specified along with Test, we return $true, or $false depending on whether all dependencies were met
 
     .PARAMETER Install
         Run the install for a dependency
@@ -94,6 +97,9 @@ Function Invoke-PSDepend {
         [parameter(ParameterSetName = 'test')]
         [switch]$Test,
 
+        [parameter(ParameterSetName = 'test')]
+        [switch]$Quiet,
+
         [parameter(ParameterSetName = 'installimport')]
         [switch]$Import,
 
@@ -147,6 +153,11 @@ Function Invoke-PSDepend {
         # Handle Dependencies
         $Dependencies = Get-Dependency @GetPSDependParams
 
+        if($DoTest -and $Quiet)
+        {
+            $TestResult = [System.Collections.ArrayList]@()
+        }
+
         #TODO: Add ShouldProcess here if install is specified...
         foreach($Dependency in $Dependencies)
         {
@@ -180,7 +191,14 @@ Function Invoke-PSDepend {
 
                 if($PreScriptSuccess)
                 {
-                    Invoke-DependencyScript @InvokeParams -Dependency $Dependency
+                    if($DoTest -and $Quiet)
+                    {
+                        $null = $TestResult.Add( (Invoke-DependencyScript @InvokeParams -Dependency $Dependency -Quiet ) )
+                    }
+                    else
+                    {
+                        Invoke-DependencyScript @InvokeParams -Dependency $Dependency
+                    }
                 }
 
                 if($DoInstall -and $Dependency.PostScript.Count -gt 0)
@@ -191,6 +209,17 @@ Function Invoke-PSDepend {
                         . $Script
                     }
                 }
+            }
+        }
+        if($DoTest -and $Quiet)
+        {
+            if($TestResult -contains $false)
+            {
+                $false
+            }
+            else
+            {
+                $true
             }
         }
     }

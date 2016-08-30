@@ -13,7 +13,7 @@
                 If you specify only an Account/Repository, we assume GitHub is the source
             Name: Optional override for the Git URL, same rules as DependencyName (key)
             Version: Used with git checkout.  Specify a branch name, commit hash, or tags/<tag name>, for example.  Defaults to master
-            Target: Path to clone this repository.  Defaults to nothing (current path/repo name)
+            Target: Path to clone this repository.  e.g C:\Temp would result in C:\Temp\RepoName.  Defaults to nothing (current path/repo name)
             AddToPath: Prepend the Target to ENV:PATH and ENV:PSModulePath
 
     .PARAMETER Force
@@ -78,46 +78,32 @@ if($Name -match "^[a-zA-Z0-9]+/[a-zA-Z0-9_-]+$")
 {
     $Name = "https://github.com/$Name.git"
 }
-$GitName = $Name.split('/')[-1] -replace "\.git[/]?$", ''
-
-#TODO: PSDependAction Test should test that it exists, is a git repo, and if specified, the version...
-$GottaTest = $False
+$GitName = $Name.trimend('/').split('/')[-1] -replace "\.git$", ''
 $Target = $Dependency.Target
-if($Target)
+if(-not $Target)
 {
-    $RepoPath = $Target
-    if(-not (Test-Path $Target))
+    $Target = $PWD.Path
+}
+$RepoPath = Join-Path $Target $GitName
+
+if(-not (Test-Path $Target) -and $PSDependAction -contains 'Install')
+{
+    Write-Verbose "Creating folder [$Target] for git dependency [$Name]"
+    $null = mkdir $Target -Force
+}
+
+$GottaTest = $False
+if(-not (Test-Path $RepoPath))
+{
+    # Nothing found, return test output
+    if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
     {
-        # Nothing found, return test output
-        if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
-        {
-            return $False
-        }
-        if( $PSDependAction -contains 'Install')
-        {
-            Write-Verbose "Creating folder [$Target] for git dependency [$Name]"
-            $null = mkdir $Target -Force
-        }
-    }
-    else # Target exists
-    {
-        $GottaTest = $True
+        return $False
     }
 }
-else # Target not specified, use current path
+else # Target exists
 {
-    $RepoPath = Join-Path $PWD.Path $GitName
-    if(-not (Test-Path $RepoPath))
-    {
-        if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
-        {
-            return $False
-        }
-    }
-    else
-    {
-        $GottaTest = $True
-    }
+    $GottaTest = $True
 }
 
 if(-not (Get-Command git.exe -ErrorAction SilentlyContinue))
@@ -131,13 +117,13 @@ if(-not $Version)
     $Version = 'master'
 }
 
-Push-Location
-Set-Location $RepoPath
-
 if($GottaTest)
 {
-    $Branch = Invoke-ExternalCommand git (echo rev-parse --abbrev-ref HEAD)
-    $Commit = Invoke-ExternalCommand git (echo rev-parse HEAD)
+    Push-Location
+    Set-Location $RepoPath
+    $Branch = Invoke-ExternalCommand git -Arguments (echo rev-parse --abbrev-ref HEAD) -Passthru
+    $Commit = Invoke-ExternalCommand git -Arguments (echo rev-parse HEAD) -Passthru
+    Pop-Location
     if($Version -eq $Branch -or $Version -eq $Commit)
     {
         Write-Verbose "[$RepoPath] exists and is already at version [$Version]"
@@ -164,26 +150,22 @@ if($PSDependAction -notcontains 'Install')
     return
 }
 
-Write-Verbose -Message "Cloning dependency [$Name] with git"
-$CloneParams = @('clone', $Name)
-if($Target)
-{
-    $CloneParams += $Target
-}
-
-Invoke-ExternalCommand git $CloneParams
+Push-Location
+Set-Location $Target
+Write-Verbose -Message "Cloning dependency [$Name] with git from [$($Target)]"
+Invoke-ExternalCommand git 'clone', $Name
 
 #TODO: Should we do a fetch, once existing repo is found?
-Write-Verbose -Message "Checking out [$Version] of [$Name]"
-$CheckoutParams = @('checkout', $Version)
-Invoke-ExternalCommand git $CheckoutParams
+Set-Location $RepoPath
+Write-Verbose -Message "Checking out [$Version] of [$Name] from [$RepoPath]"
+Invoke-ExternalCommand git 'checkout', $Version
 Pop-Location
 
 if($Dependency.AddToPath)
 {
-    Write-Verbose "Setting PSModulePath to`n$($RepoPath, $env:PSModulePath -join ';' | Out-String)"
-    $env:PSModulePath = $RepoPath, $env:PSModulePath -join ';'
+    Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
+    $env:PSModulePath = $Target, $env:PSModulePath -join ';'
     
     Write-Verbose "Setting PATH to`n$($RepoPath, $env:PATH -join ';' | Out-String)"
-    $env:PATH = $RepoPath, $env:PATH -join ';'
+    $env:PATH = $Target, $env:PATH -join ';'
 }

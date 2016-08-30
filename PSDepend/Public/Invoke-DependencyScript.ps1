@@ -20,7 +20,12 @@ Function Invoke-DependencyScript {
         Only test dependencies that are tagged with all of the specified Tags (-and, not -or)
 
     .PARAMETER PSDependAction
-        
+        PSDependAction to run.  Test, Install, and Import are the most common.
+
+        Test can only be run by itself.
+
+    .PARAMETER Quiet
+        If PSDependAction is Test, and Quiet is specified, we return $true or $false based on whether a dependency exists
 
     .EXAMPLE
         Get-Dependency -Path C:\requirements.psd1 | Import-Dependency
@@ -58,7 +63,9 @@ Function Invoke-DependencyScript {
 
         [string[]]$PSDependAction,
 
-        [string[]]$Tags
+        [string[]]$Tags,
+
+        [switch]$Quiet
     )
     Begin
     {
@@ -99,7 +106,7 @@ Function Invoke-DependencyScript {
                 if($ValidPSDependActions -contains $Action) {$Action}
                 else
                 {
-                    Write-Error "Skipping PSDependAction [$Action] for dependency [$($Dependency.DependencyName)]. Valid actions: [$ValidPSDependActions]"
+                    Write-Warning "Skipping PSDependAction [$Action] for dependency [$($Dependency.DependencyName)]. Valid actions: [$ValidPSDependActions]"
                 }
             }
 
@@ -160,7 +167,15 @@ Function Invoke-DependencyScript {
                 }
                 else
                 {
-                    . $DependencyScript @splat
+                    $Output = . $DependencyScript @splat
+                    if($PSDependActions -contains 'Test' -and -not $Quiet)
+                    {
+                        Add-Member -InputObject $ThisDependency -MemberType NoteProperty -Name DependencyExists -Value $Output -Force -PassThru
+                    }
+                    else
+                    {
+                        $Output
+                    }
                 }
             }
         }
