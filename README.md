@@ -38,15 +38,15 @@ Get-Help about_PSDepend
 
 ### Example Use Case
 
-```
-# This is a quick demo illustrating a "virtual-environment-light" scenario
-# We pull down some dependencies and import them directly,
-# regardless of whether we have different versions elsewhere on the system
+This is a quick demo illustrating a "virtual-environment-light" scenario.
 
+We pull down some dependencies and import them directly, regardless of whether we have different versions elsewhere on the system
 
+```powershell
 # TLDR: This looks long, but that's mostly for your benefit.
 #       Here's the important bit, assuming you have a requirements.psd1 in place:
 Invoke-PSDepend -Path C:\ProjectX -Install -Import -Force
+
 
 # Set up a project folder, and a requirements.psd1
 dir C:\Proj*
