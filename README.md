@@ -28,7 +28,7 @@ iex (new-object System.Net.WebClient).DownloadString('https://raw.github.com/ram
 # Git
     # Download the repository
     # Unblock the zip
-    # Extract the PSDeploy folder to a module path (e.g. $env:USERPROFILE\Documents\WindowsPowerShell\Modules\)
+    # Extract the PSDepend folder to a module path (e.g. $env:USERPROFILE\Documents\WindowsPowerShell\Modules\)
 
 # Import and start exploring
 Import-Module PSDepend
