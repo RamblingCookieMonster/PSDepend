@@ -87,6 +87,33 @@ DETAILED DESCRIPTION
                     PostScripts = "C:\Finalize-ProjectX.ps1"
                 }
             }
+            
+        You can specify global defaults (and override them inside a Dependency):
+            
+            @{
+                PSDependOptions = @{
+                    Target = 'C:\MyProject' # I want all my modules installed here
+                    Parameters = @{
+                        Force = $True       # I want to use -Force on each dependency
+                    }
+                }
+                pester = 'latest'
+                psake = 'latest'
+                buildhelpers = 'latest'
+                psdeploy = @{
+                    Target = "C:\Exception" # Example overriding the global target
+                }
+            }
+            
+            Global defaults can be specified for the following attributes:
+                Parameters
+                Source
+                Target
+                AddToPath
+                Tags
+                DependsOn
+                PreScripts
+                PostScripts
 
     PSDepend configuration: PSDepend.Config
     =======================================

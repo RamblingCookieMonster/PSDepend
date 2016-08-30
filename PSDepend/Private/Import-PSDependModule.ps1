@@ -7,6 +7,6 @@
     if($PSDependAction -contains 'Import')
     {
         Write-Verbose "Importing [$Name]"
-        Import-Module $Name -Scope Global -Force 
+        Import-Module -Name $Name -Scope Global -Force 
     }
 }

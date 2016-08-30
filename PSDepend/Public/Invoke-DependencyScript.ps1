@@ -1,16 +1,10 @@
-Function Test-Dependency {
+Function Invoke-DependencyScript {
     <#
     .SYNOPSIS
-        Test a specific dependency
+        Invoke a dependency script
 
     .DESCRIPTION
-        Test a specific dependency.  Validates whether a dependency exists
-
-        Takes output from Get-Dependency
-
-          * Runs dependency scripts depending on each dependencies type.
-          * Appends a 'DependencyExists' property indicating whether the dependency exists; alternatively
-          * Returns $True or $False if the -Quiet switch is used
+        Invoke a dependency script
 
         See Get-Help about_PSDepend for more information.
 
@@ -25,10 +19,13 @@ Function Test-Dependency {
     .PARAMETER Tags
         Only test dependencies that are tagged with all of the specified Tags (-and, not -or)
 
-    .EXAMPLE
-        Get-Dependency -Path C:\requirements.psd1 | Test-Dependency
+    .PARAMETER PSDependAction
+        
 
-        Get dependencies from C:\requirements.psd1 and test whether they exist
+    .EXAMPLE
+        Get-Dependency -Path C:\requirements.psd1 | Import-Dependency
+
+        Get dependencies from C:\requirements.psd1 and import them
 
     .LINK
         about_PSDepend
@@ -59,14 +56,14 @@ Function Test-Dependency {
         [validatescript({Test-Path -Path $_ -PathType Leaf -ErrorAction Stop})]
         [string]$PSDependTypePath = $(Join-Path $ModuleRoot PSDependMap.psd1),
 
-        [string[]]$Tags,
+        [string[]]$PSDependAction,
 
-        [switch]$Quiet
+        [string[]]$Tags
     )
     Begin
     {
         # This script reads a depend.psd1, installs dependencies as defined
-        Write-Verbose "Running Test-Dependency with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
+        Write-Verbose "Running Invoke-DependencyScript with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
     }
     Process
     {
@@ -76,7 +73,7 @@ Function Test-Dependency {
         $DependencyDefs = Get-PSDependScript
         $TheseDependencyTypes = @( $Dependency.DependencyType | Sort-Object -Unique )
 
-        #call each dependencytype script for applicable dependencies
+        #Build up hash, we call each dependencytype script for applicable dependencies
         foreach($DependencyType in $TheseDependencyTypes)
         {
             $DependencyScript = $DependencyDefs.$DependencyType
@@ -91,11 +88,25 @@ Function Test-Dependency {
             #Each dependency type can have a hashtable to splat.
             $RawParameters = Get-Parameter -Command $DependencyScript
             $ValidParamNames = $RawParameters.Name
-
             if($ValidParamNames -notcontains 'PSDependAction')
             {
                 Write-Error "No PSDependAction found on PSDependScript [$DependencyScript]. Skipping [$($Dependency.DependencyName)]"
                 continue
+            }
+            [string[]]$ValidPSDependActions = $RawParameters | Where {$_.Name -like 'PSDependAction'} | Select -ExpandProperty ValidateSetValues -ErrorAction SilentlyContinue
+            [string[]]$PSDependActions = foreach($Action in $PSDependAction)
+            {
+                if($ValidPSDependActions -contains $Action) {$Action}
+                else
+                {
+                    Write-Error "Skipping PSDependAction [$Action] for dependency [$($Dependency.DependencyName)]. Valid actions: [$ValidPSDependActions]"
+                }
+            }
+
+            if($PSDependActions -contains 'Test' -and ( $PSDependActions -contains 'Import' -or $PSDependActions -contains 'Install'))
+            {
+                Write-Error "Removing [Test] from PSDependActions.  The Test action must run on its own."
+                $PSDependActions = $PSDependActions | Where {$_ -ne 'Test'}
             }
 
             foreach($ThisDependency in $TheseDependencies)
@@ -117,29 +128,39 @@ Function Test-Dependency {
                     }
                     if($splat.ContainsKey('PSDependAction'))
                     {
-                        $Splat['PSDependAction'] = 'Test'
+                        $Splat['PSDependAction'] = $PSDependActions
                     }
                     else
                     {
-                        $Splat.add('PSDependAction','Test')
+                        $Splat.add('PSDependAction', $PSDependActions)
                     }
                 }
                 else
                 {
-                    $splat = @{PSDependAction = 'Test'}
+                    $splat = @{PSDependAction = $PSDependActions}
                 }
 
                 #Define params for the script
                 $splat.add('Dependency', $ThisDependency)
 
-                $TestResult = . $DependencyScript @splat
-                if($Quiet)
+                # PITA, but tasks can run two ways, each different than typical dependency scripts
+                if($PSDependActions -contains 'Install' -and $DependencyType -eq 'Task')
                 {
-                    $TestResult
+                    foreach($TaskScript in $ThisDependency.Target)
+                    {
+                        if( Test-Path $TaskScript -PathType Leaf)
+                        {
+                            . $TaskScript @splat
+                        }
+                        else
+                        {
+                            Write-Error "Could not process task [$TaskScript].`nAre connectivity, privileges, and other needs met to access it?"
+                        }
+                    }
                 }
                 else
                 {
-                    Add-Member -InputObject $ThisDependency -MemberType NoteProperty -Name DependencyExists -Value $TestResult -Force
+                    . $DependencyScript @splat
                 }
             }
         }

@@ -14,6 +14,33 @@ PSDepend allows you to write simple *.depend.psd1 or requirements.psd1 files tha
 * This borrows quite heavily from PSDeploy.  There may be leftover components that haven't been adapted, or have been improperly adapted
 * Would love ideas, feedback, pull requests, etc., but if you rely on this, consider pinning a specific version to avoid hitting breaking changes.
 
+## Getting Started
+
+### Installing PSDepend
+
+```powershell
+# PowerShell 5
+Install-Module PSDepend
+
+# PowerShell 3 or 4, curl|bash bootstrap. Read before running something like this : )
+iex (new-object System.Net.WebClient).DownloadString('https://raw.github.com/ramblingcookiemonster/PSDepend/Examples/Install-PSDepend.ps1')
+
+# Git
+    # Download the repository
+    # Unblock the zip
+    # Extract the PSDeploy folder to a module path (e.g. $env:USERPROFILE\Documents\WindowsPowerShell\Modules\)
+```
+
+### Use and Explore PSDepend
+
+```powershell
+Import-Module PSDepend
+
+Get-Command -Module PSDepend
+
+Get-Help about_PSDepend
+```
+
 ## Defining Dependencies
 
 Store dependencies in a PowerShell data file, and use *.depend.psd1 or requirements.psd1 to allow Invoke-PSDepend to find your files for you.

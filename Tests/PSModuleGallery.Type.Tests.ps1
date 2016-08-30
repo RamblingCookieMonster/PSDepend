@@ -140,6 +140,17 @@ InModuleScope 'PSDepend' {
             }
         }
 
+        Context 'Imports dependencies' {
+            It 'Runs Import-Module when import is specified' {
+                Mock Get-PSRepository { Return $true }
+                Mock Install-Module {}
+                Mock Import-Module
+                $Results = Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.depend.psd1" | Import-Dependency @Verbose
+                Assert-MockCalled -CommandName Import-Module -Times 1 -Exactly
+                Assert-MockCalled -CommandName Install-Module -Times 0 -Exactly
+            }            
+        }
+
         Context 'Misc' {
             It 'Adds folder to path when specified' {
                 Mock Get-PSRepository { Return $true }
@@ -300,7 +311,7 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Context 'Test-Dependency' {
+        Context 'Tests dependencies' {
             It 'Returns $true when it finds an existing module' {
                 Mock Test-Path {return $True} -ParameterFilter {$Path -match 'jenkins'}
                 Mock Invoke-ExternalCommand {}
@@ -352,9 +363,20 @@ InModuleScope 'PSDepend' {
             }
         }
 
+        Context 'Imports dependencies' {
+            It 'Runs Import-Module when import is specified' {
+                Mock Invoke-ExternalCommand {$True}
+                Mock Import-Module
+                $Results = Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.depend.psd1" | Import-Dependency @Verbose
+                Assert-MockCalled -CommandName Import-Module -Times 1 -Exactly
+                Assert-MockCalled -CommandName Invoke-ExternalCommand -Times 0 -Exactly
+            }            
+        }
+
         Context 'Misc' {
             It 'Adds folder to path when specified' {
-                Mock Invoke-ExternalCommand {} {$True}
+                Mock Invoke-ExternalCommand {$True}
+                Mock Import-Module 
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.addtopath.depend.psd1" -Force -ErrorAction Stop
                 $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath

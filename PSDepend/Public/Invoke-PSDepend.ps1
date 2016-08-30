@@ -31,6 +31,20 @@ Function Invoke-PSDepend {
     .PARAMETER Force
         Force dependency, skipping prompts and confirmation
 
+    .PARAMETER Test
+        Run tests for dependencies we find.
+        
+        Appends a 'DependencyExists' property indicating whether the dependency exists by default
+        Specify Quiet to return $true for dependencies that we find, $false for dependencies we do not
+
+    .PARAMETER Install
+        Run the install for a dependency
+
+        Default behavior
+
+    .IMPORT Import 
+        If the dependency supports it, import it
+
     .EXAMPLE
         Invoke-PSDepend
 
@@ -61,7 +75,8 @@ Function Invoke-PSDepend {
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend
     #>
-    [cmdletbinding( SupportsShouldProcess = $True,
+    [cmdletbinding( DefaultParameterSetName = 'installimport',
+                    SupportsShouldProcess = $True,
                     ConfirmImpact='High' )]
     Param(
         [validatescript({Test-Path -Path $_ -ErrorAction Stop})]
@@ -76,6 +91,15 @@ Function Invoke-PSDepend {
 
         [bool]$Recurse = $True,
 
+        [parameter(ParameterSetName = 'test')]
+        [switch]$Test,
+
+        [parameter(ParameterSetName = 'installimport')]
+        [switch]$Import,
+
+        [parameter(ParameterSetName = 'installimport')]
+        [bool]$Install = $True,
+
         [switch]$Force
     )
     Begin
@@ -83,12 +107,17 @@ Function Invoke-PSDepend {
         # This script reads a depend.psd1, deploys files or folders as defined
         Write-Verbose "Running Invoke-PSDepend with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
 
-        # Do we want force?
-        $InvokeParams = @{}
-        if($Force)
-        {
-            $InvokeParams.Add('Force', $Force)
+        # Build parameters
+        $InvokeParams = @{
+            PSDependAction = @()
+            PSDependTypePath = $PSDependTypePath
         }
+        $DoInstall = $PSCmdlet.ParameterSetName -eq 'installimport' -and $Install
+        $DoImport = $PSCmdlet.ParameterSetName -eq 'installimport' -and $Import
+        $DoTest = $PSCmdlet.ParameterSetName -eq 'test' -and $Test
+        if($DoInstall){$InvokeParams.PSDependAction += 'Install'}
+        if($DoImport){$InvokeParams.PSDependAction += 'Import'}
+        if($DoTest){$InvokeParams.PSDependAction += 'Test'}
 
         $DependencyFiles = New-Object System.Collections.ArrayList
     }
@@ -116,45 +145,51 @@ Function Invoke-PSDepend {
         }
 
         # Handle Dependencies
-        $ToInstall = Get-Dependency @GetPSDependParams
+        $Dependencies = Get-Dependency @GetPSDependParams
 
-        #TODO: Add ShouldProcess here.  Having it in Install-Dependency is bad.
-        foreach($Dependency in $ToInstall)
+        #TODO: Add ShouldProcess here if install is specified...
+        foreach($Dependency in $Dependencies)
         {
-            $Install = $True #anti pattern! Best I could come up with to handle both prescript fail and dependencies
-
-            if($Deployment.PreScripts.Count -gt 0)
+            if( ($Force -and -not $WhatIf) -or
+                ($DoTest) -or
+                $PSCmdlet.ShouldProcess( "Processed the dependency '$($Dependency.DependencyName -join ", ")'",
+                                        "Process the dependency '$($Dependency.DependencyName -join ", ")'?",
+                                        "Processing dependency" ))
             {
-                $ExistingEA = $ErrorActionPreference
-                $ErrorActionPreference = 'Stop'
-                foreach($script in $Dependency.Prescripts)
+                $PreScriptSuccess = $True #anti pattern! Best I could come up with to handle both prescript fail and dependencies
+                if($DoInstall -and $Deployment.PreScripts.Count -gt 0)
                 {
-                    Try
+                    $ExistingEA = $ErrorActionPreference
+                    $ErrorActionPreference = 'Stop'
+                    foreach($script in $Dependency.Prescripts)
                     {
-                        Write-Verbose "Invoking pre script: [$Script]"
+                        Try
+                        {
+                            Write-Verbose "Invoking pre script: [$Script]"
+                            . $Script
+                        }
+                        Catch
+                        {
+                            $PreScriptSuccess = $False
+                            "Skipping installation due to failed pre script: [$Script]"
+                            Write-Error $_
+                        }
+                    }
+                    $ErrorActionPreference = $ExistingEA
+                }
+
+                if($PreScriptSuccess)
+                {
+                    Invoke-DependencyScript @InvokeParams -Dependency $Dependency
+                }
+
+                if($DoInstall -and $Dependency.PostScript.Count -gt 0)
+                {
+                    foreach($script in $Deployment.PostScript)
+                    {
+                        Write-Verbose "Invoking post script: $($Script)"
                         . $Script
                     }
-                    Catch
-                    {
-                        $Install = $False
-                        "Skipping installation due to failed pre script: [$Script]"
-                        Write-Error $_
-                    }
-                }
-                $ErrorActionPreference = $ExistingEA
-            }
-
-            if($Install)
-            {
-                Install-Dependency @InvokeParams -Dependency $Dependency
-            }
-
-            if($Dependency.PostScript.Count -gt 0)
-            {
-                foreach($script in $Deployment.PostScript)
-                {
-                    Write-Verbose "Invoking post script: $($Script)"
-                    . $Script
                 }
             }
         }
