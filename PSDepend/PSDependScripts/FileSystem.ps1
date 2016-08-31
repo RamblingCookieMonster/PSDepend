@@ -79,7 +79,7 @@ param (
     $Sources = @($Dependency.Source)
 
 $TestOutput = @()
-foreach($Source in $Sources)
+foreach($Source in @($Sources))
 {
     if(-not (Test-Path $Source))
     {
@@ -125,7 +125,7 @@ foreach($Source in $Sources)
     {
         $SourceFolderPath = Split-Path $Source -Parent
         $SourceFileName = Split-Path $Source -Leaf
-        $TargetFile = Join-Path $Target $FileName
+        $TargetFile = Join-Path $Target $SourceFileName
         $SourceHash = ( Get-Hash $Source ).SHA256
         $TargetHash = $null
         if(Test-Path $Target -PathType Leaf)
@@ -142,7 +142,7 @@ foreach($Source in $Sources)
 
         if($TargetHash -ne $SourceHash)
         {
-            Write-Verbose "Hashes do not match. [$($PSDependAction)] [$($PSDependAction.GetType())] [$($PSDependAction -like 'Test')] and $($PSDependAction.count)"
+            Write-Verbose "Hashes do not match"
             if($PSDependAction -like 'Install')
             {
                 Write-Verbose "Copying file [$Source] to [$Target]"
