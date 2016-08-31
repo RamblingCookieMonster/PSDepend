@@ -91,6 +91,7 @@ if(-not $Target)
     $Target = $PWD.Path
 }
 $RepoPath = Join-Path $Target $GitName
+$GottaInstall = $True
 
 if(-not (Test-Path $Target) -and $PSDependAction -contains 'Install')
 {
@@ -98,7 +99,6 @@ if(-not (Test-Path $Target) -and $PSDependAction -contains 'Install')
     $null = mkdir $Target -Force
 }
 
-$GottaTest = $False
 if(-not (Test-Path $RepoPath))
 {
     # Nothing found, return test output
@@ -137,7 +137,7 @@ if($GottaTest)
         {
             return $true
         }
-        return
+        $GottaInstall = $False
     }
     elseif($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
     {
@@ -147,7 +147,7 @@ if($GottaTest)
     else
     {
         Write-Verbose "[$RepoPath] exists and is at branch [$Branch], commit [$Commit].`nWe don't currently support moving to the requested version [$Version]"
-        return
+        $GottaInstall = $False
     }
 }
 
@@ -156,16 +156,19 @@ if($PSDependAction -notcontains 'Install')
     return
 }
 
-Push-Location
-Set-Location $Target
-Write-Verbose -Message "Cloning dependency [$Name] with git from [$($Target)]"
-Invoke-ExternalCommand git 'clone', $Name
+if($GottaInstall)
+{
+    Push-Location
+    Set-Location $Target
+    Write-Verbose -Message "Cloning dependency [$Name] with git from [$($Target)]"
+    Invoke-ExternalCommand git 'clone', $Name
 
-#TODO: Should we do a fetch, once existing repo is found?
-Set-Location $RepoPath
-Write-Verbose -Message "Checking out [$Version] of [$Name] from [$RepoPath]"
-Invoke-ExternalCommand git 'checkout', $Version
-Pop-Location
+    #TODO: Should we do a fetch, once existing repo is found?
+    Set-Location $RepoPath
+    Write-Verbose -Message "Checking out [$Version] of [$Name] from [$RepoPath]"
+    Invoke-ExternalCommand git 'checkout', $Version
+    Pop-Location
+}
 
 if($Dependency.AddToPath)
 {

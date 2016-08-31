@@ -79,11 +79,13 @@ param($URL)
     Write-Verbose "Using URL: $URL"
 
 # Act on target path....
+    $ToInstall = $False # Anti pattern
     $TargetParent = Split-Path $Target -Parent
     if( (Test-Path $TargetParent) -and -not (Test-Path $Target))
     {
         # They gave us a full path, don't parse the file name, use this!
         $Path = $Target
+        $ToInstall = $True
         Write-Verbose "Found parent [$TargetParent], not target [$Target], assuming this is target file path"
     }
     elseif(Test-Path $Target -PathType Leaf)
@@ -95,7 +97,6 @@ param($URL)
         {
             return $True
         }
-        return
     }
     elseif(-not (Test-Path $Target))
     {
@@ -105,7 +106,6 @@ param($URL)
         {
             return $False
         }
-        return
     }
     else
     {
@@ -129,7 +129,10 @@ param($URL)
             {
                 return $True
             }
-            return
+        }
+        else
+        {
+            $ToInstall = $True
         }
     }
     Write-Verbose "Using [$Path] as `$Target"
@@ -141,7 +144,7 @@ param($URL)
     }
     Write-Verbose "Downloading [$URL] to [$Path]"
 
-if($PSDependAction -contains 'Install')
+if($PSDependAction -contains 'Install' -and $ToInstall)
 {
     # Future considerations:
         # Should we check for existing? And if we find it, still download file, and compare sha256 hash, replace if it does not match?

@@ -270,6 +270,7 @@ InModuleScope 'PSDepend' {
             }
         }
     }
+    
     Describe "PSGalleryNuget Type PS$PSVersion" {
 
         Context 'Installs Modules' {
@@ -380,6 +381,55 @@ InModuleScope 'PSDepend' {
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.addtopath.depend.psd1" -Force -ErrorAction Stop
                 $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath
+            }
+        }
+    }
+
+    Describe "FileSystem Type PS$PSVersion" {
+
+        Context 'Installs dependency' {
+            Mock Copy-Item
+
+            $Dependencies = @(Get-Dependency @Verbose -Path "$TestDepends\filesystem.depend.psd1")
+
+            It 'Parses the FileDownload dependency type' {
+                $Dependencies.count | Should be 1
+                $Dependencies[0].DependencyType | Should be 'FileSystem'
+            }
+
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\filesystem.depend.psd1" -Force
+            
+            It 'Invokes the FileSystem dependency type' {
+                Assert-MockCalled Copy-Item -Times 1 -Exactly
+            }
+
+            New-Item -ItemType File -Path (Join-Path $SavePath 'notepad.exe')
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\filesystem.depend.psd1" -Force
+
+            It 'Still copies if file hashes do not match' {
+                Assert-MockCalled Copy-Item -Times 2 -Exactly # already called, so 2...
+            }
+        }
+
+        Remove-Item $SavePath -Force -Recurse
+        mkdir $SavePath -Force
+
+        Context 'Tests dependency' {
+            It 'Returns $false if file does not exist' {
+                Mock Copy-Item
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\filesystem.depend.psd1" | Test-Dependency @Verbose -Quiet)
+                $Results.count | Should be 1
+                $Results[0] | Should be $False
+                Assert-MockCalled -CommandName Copy-Item -Times 0 -Exactly
+            }
+
+            xcopy C:\Windows\notepad.exe $(Join-Path $SavePath '*') /Y
+            It 'Returns $true if file does exist' {
+                Mock Copy-Item
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\filesystem.depend.psd1" | Test-Dependency @Verbose -Quiet)
+                $Results.count | Should be 1
+                $Results[0] | Should be $true
+                Assert-MockCalled -CommandName Copy-Item -Times 0 -Exactly
             }
         }
     }

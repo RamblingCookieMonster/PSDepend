@@ -10,7 +10,7 @@
         Relevant Dependency metadata:
             DependencyName (Key): The key for this dependency is used as the URL. This can be overridden by 'Source'
             Name: Optional file name for the downloaded file.  Defaults to parsing filename from the URL
-            Target: The folder to copy the source to
+            Target: The folder to copy the source to.  If the source is a file, we adjust this in Robocopy to append the source folder name.
             Source: The source folder or file to copy
             AddToPath: If specified, prepend the target's parent container to PATH
 
@@ -27,13 +27,38 @@
         Import: Import the dependency 'Target'.  Override with ImportPath
 
     .PARAMETER ImportPath
-        If specified with PSDependAction Import, we import this path, instead of Target, the default
+        If specified with PSDependAction Import, we import this path, instead of the target (or target parent if target is a file)
 
     .PARAMETER Force
         If specified, and target is a folder, overwrite the target
 
     .PARAMETER Mirror
         If specified and the target is a folder, we effectively call robocopy /MIR (Can remove folders/files...)
+
+    .EXAMPLE
+
+        @{
+            'notepad' = @{
+                DependencyType = 'FileSystem'
+                Source = 'C:\windows\notepad.exe'
+                Target = 'C:\PSDependPesterTest'
+            }
+        }
+
+        # Copy C:\Windows\Notepad.exe to C:\PSDependPesterTest\notepad.exe
+
+    .EXAMPLE
+
+        @{
+            'psams' = @{
+                DependencyType = 'FileSystem'
+                Source = '\\FileServer\powershell\modules\psams'
+                Target = 'C:\ProjectX'
+            }
+        }
+
+        # Copy psams module to C:\ProjectX\psams
+
 #>
 [cmdletbinding()]
 param (
@@ -51,7 +76,7 @@ param (
     $DependencyName = $Dependency.DependencyName
     $Name = $Dependency.Name
     $Target = $Dependency.Target
-    $Sources = $Dependency.Source
+    $Sources = @($Dependency.Source)
 
 $TestOutput = @()
 foreach($Source in $Sources)
@@ -70,19 +95,19 @@ foreach($Source in $Sources)
 
     if($IsContainer)
     {
-        $DependencyFolder = $Source
-        if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+        $Folder = Split-Path $Source -Leaf
+        $Target = Join-Path $Target $Folder
+        if(-not $ImportPath) {$ImportPath = $Target}
+        # We don't test equality for containers yet
+        if(Test-Path $Target)
         {
-            if(Test-Path $Target)
-            {
-                $TestOutput += $true
-            }
-            else
-            {
-                $TestOutput += $false
-            }
+            $TestOutput += $true
         }
-        if($PSDependAction -contains 'Install')
+        else
+        {
+            $TestOutput += $false
+        }
+        if($PSDependAction -like 'Install')
         {
             # TODO: Add non Windows equivalent...
             [string[]]$Arguments = "/XO"
@@ -98,8 +123,8 @@ foreach($Source in $Sources)
     }
     else
     {
-        $DependencyFolder = Split-Path $Source -Parent
-        $FileName = Split-Path $Source -Leaf
+        $SourceFolderPath = Split-Path $Source -Parent
+        $SourceFileName = Split-Path $Source -Leaf
         $TargetFile = Join-Path $Target $FileName
         $SourceHash = ( Get-Hash $Source ).SHA256
         $TargetHash = $null
@@ -113,14 +138,17 @@ foreach($Source in $Sources)
             $TargetHash = ( Get-Hash $TargetFile -ErrorAction SilentlyContinue -WarningAction SilentlyContinue ).SHA256
             $TargetPath = $TargetFile
         }
+        Write-Verbose "Source [$Source] hash [$SourceHash]`n`tTarget [$TargetPath] hash [$TargetHash]"
+
         if($TargetHash -ne $SourceHash)
         {
-            if($PSDependAction -contains 'Install')
+            Write-Verbose "Hashes do not match. [$($PSDependAction)] [$($PSDependAction.GetType())] [$($PSDependAction -like 'Test')] and $($PSDependAction.count)"
+            if($PSDependAction -like 'Install')
             {
                 Write-Verbose "Copying file [$Source] to [$Target]"
                 Copy-Item -Path $Source -Destination $Target -Force
             }
-            if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+            if($PSDependAction -like 'Test' -and $PSDependAction.count -eq 1)
             {
                 $TestOutput += $false
             }
@@ -128,7 +156,7 @@ foreach($Source in $Sources)
         else
         {
             Write-Verbose "Matching hash: [$Source] = [$TargetFile]"
-            if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+            if($PSDependAction -like 'Test' -and $PSDependAction.count -eq 1)
             {
                 $TestOutput += $True
             }
@@ -136,21 +164,35 @@ foreach($Source in $Sources)
     }
 }
 
-if($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+if($PSDependAction -like 'Test' -and $PSDependAction.count -eq 1)
 {
-    if($TestOutput -contains $false)
+    if(@($TestOutput) -contains $false)
     {
-        $false
+        return $false
     }
     else
     {
-        $True
+        return $True
     }
 }
 
-$ToImport = $DependencyFolder
-if($ImportPath)
+if($PSDependAction -like 'Import')
 {
-    $ToImport = $ImportPath
+    if(-not $ImportPath)
+    {
+        if(Test-Path $Target -PathType Leaf)
+        {
+            $ImportPath = Split-Path $Target -Parent
+        }
+        elseif(Test-Path $Target -PathType Container)
+        {
+            $ImportPath = $Target
+        }
+        else
+        {
+            Write-Error "Could not import target [$Target], path not found"
+            return
+        }
+    }
+    Import-PSDependModule $ImportPath
 }
-Import-PSDependModule $ToImport
