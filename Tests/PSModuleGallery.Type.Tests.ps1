@@ -424,6 +424,7 @@ InModuleScope 'PSDepend' {
             }
 
             xcopy C:\Windows\notepad.exe $(Join-Path $SavePath '*') /Y
+
             It 'Returns $true if file does exist' {
                 Mock Copy-Item
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\filesystem.depend.psd1" | Test-Dependency @Verbose -Quiet)
