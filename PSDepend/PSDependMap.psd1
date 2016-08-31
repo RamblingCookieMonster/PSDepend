@@ -11,6 +11,11 @@
         Description = 'Download a file'
     }
 
+    FileSystem = @{
+        Script = 'FileSystem.ps1'
+        Description = 'Copy a file or folder'
+    }
+
     Git = @{
         Script = 'Git.ps1'
         Description = 'Clone a git repository'

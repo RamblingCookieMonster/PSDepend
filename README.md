@@ -36,7 +36,7 @@ Get-Command -Module PSDepend
 Get-Help about_PSDepend
 ```
 
-### Example Use Case
+### Example
 
 This is a quick demo illustrating a "virtual-environment-light" scenario.
 

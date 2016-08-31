@@ -1,9 +1,9 @@
 <#
     .SYNOPSIS
-        EXPERIMENTAL: Clone a git repository
+        Clone a git repository
 
     .DESCRIPTION
-        EXPERIMENTAL: Clone a git repository
+        Clone a git repository
 
         Note: We require git.exe in your path
 
@@ -24,6 +24,10 @@
 
         Test: Return true or false on whether the dependency is in place (Note: Currently only checks if path exists)
         Install: Install the dependency
+        Import: Import the dependency 'Target'.  Override with ImportPath
+
+    .PARAMETER ImportPath
+        If specified with PSDependAction Import, we import this path, instead of Target, the default
 
     .EXAMPLE
         @{
@@ -61,7 +65,9 @@ param(
     [switch]$Force,
 
     [ValidateSet('Test', 'Install')]
-    [string[]]$PSDependAction = @('Install')
+    [string[]]$PSDependAction = @('Install'),
+
+    [string]$ImportPath
 )
 
 # Extract data from Dependency
@@ -169,3 +175,10 @@ if($Dependency.AddToPath)
     Write-Verbose "Setting PATH to`n$($RepoPath, $env:PATH -join ';' | Out-String)"
     $env:PATH = $Target, $env:PATH -join ';'
 }
+
+$ToImport = $Target
+if($ImportPath)
+{
+    $ToImport = $ImportPath
+}
+Import-PSDependModule $ToImport

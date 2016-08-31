@@ -1,9 +1,9 @@
 <#
     .SYNOPSIS
-        EXPERIMENTAL: Installs a module from a PowerShell repository like the PowerShell Gallery using nuget.exe
+        Installs a module from a PowerShell repository like the PowerShell Gallery using nuget.exe
 
     .DESCRIPTION
-        EXPERIMENTAL: Installs a module from a PowerShell repository like the PowerShell Gallery using nuget.exe
+        Installs a module from a PowerShell repository like the PowerShell Gallery using nuget.exe
 
         Note: If we find an existing module that doesn't meet the specified criteria in the Target, we remove it.
 

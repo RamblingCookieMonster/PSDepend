@@ -1,12 +1,15 @@
 ﻿function Import-PSDependModule {
     [cmdletbinding()]
     param (
-        $Name = $ModulePath,
+        [string[]]$Name = $ModulePath,
         $Action = $PSDependAction
     )
     if($PSDependAction -contains 'Import')
     {
-        Write-Verbose "Importing [$Name]"
-        Import-Module -Name $Name -Scope Global -Force 
+        foreach($Mod in $Name)
+        {
+            Write-Verbose "Importing [$Mod]"
+            Import-Module -Name $Mod -Scope Global -Force 
+        }
     }
 }
