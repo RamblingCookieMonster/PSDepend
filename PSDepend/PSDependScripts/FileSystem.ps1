@@ -166,7 +166,7 @@ foreach($Source in @($Sources))
 
 if($PSDependAction -like 'Test' -and $PSDependAction.count -eq 1)
 {
-    if(@($TestOutput) -contains $false)
+    if(@($TestOutput) -contains $false -or @($TestOutput) -notcontains $true)
     {
         return $false
     }
