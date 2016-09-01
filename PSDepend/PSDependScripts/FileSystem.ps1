@@ -83,8 +83,10 @@ foreach($Source in @($Sources))
 {
     if(-not (Test-Path $Source))
     {
-        Write-Error "Skipping $DependencyName, could not find source [$Sources] due to error:"
-        Write-Error $_
+        if(-not $PSDependAction -like 'Test')
+        {
+            Write-Error "Skipping $DependencyName, could not find source [$Sources] due to error:"
+        }
         continue
     }
     $IsContainer = ( Get-Item $Source ).PSIsContainer
