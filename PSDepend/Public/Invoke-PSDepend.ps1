@@ -83,7 +83,8 @@ Function Invoke-PSDepend {
                     ConfirmImpact='High' )]
     Param(
         [validatescript({Test-Path -Path $_ -ErrorAction Stop})]
-        [parameter( ValueFromPipeline = $True,
+        [parameter( Position = 0,
+                    ValueFromPipeline = $True,
                     ValueFromPipelineByPropertyName = $True)]
         [string[]]$Path = '.',
 
@@ -104,15 +105,12 @@ Function Invoke-PSDepend {
         [switch]$Import,
 
         [parameter(ParameterSetName = 'installimport')]
-        [bool]$Install = $True,
+        [switch]$Install,
 
         [switch]$Force
     )
     Begin
     {
-        # This script reads a depend.psd1, deploys files or folders as defined
-        Write-Verbose "Running Invoke-PSDepend with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
-
         # Build parameters
         $InvokeParams = @{
             PSDependAction = @()
@@ -124,6 +122,11 @@ Function Invoke-PSDepend {
         if($DoInstall){$InvokeParams.PSDependAction += 'Install'}
         if($DoImport){$InvokeParams.PSDependAction += 'Import'}
         if($DoTest){$InvokeParams.PSDependAction += 'Test'}
+        if($InvokeParams.PSDependAction.count -like 0)
+        {
+            $InvokeParams.PSDependAction += 'Install'
+        }
+        Write-Verbose "Running Invoke-PSDepend with ParameterSetName '$($PSCmdlet.ParameterSetName)', PSDependAction $($InvokeParams.PSDependAction), and params: $($PSBoundParameters | Out-String)"
 
         $DependencyFiles = New-Object System.Collections.ArrayList
     }

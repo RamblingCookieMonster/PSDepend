@@ -25,6 +25,9 @@ Function Test-Dependency {
     .PARAMETER Tags
         Only test dependencies that are tagged with all of the specified Tags (-and, not -or)
 
+    .PARAMETER Quiet
+        Return $true or $false based on whether a dependency exists
+
     .EXAMPLE
         Get-Dependency -Path C:\requirements.psd1 | Test-Dependency
 
@@ -63,85 +66,8 @@ Function Test-Dependency {
 
         [switch]$Quiet
     )
-    Begin
+    process
     {
-        # This script reads a depend.psd1, installs dependencies as defined
-        Write-Verbose "Running Test-Dependency with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
-    }
-    Process
-    {
-        Write-Verbose "Dependencies:`n$($Dependency | Out-String)"
-
-        #Get definitions, and dependencies in this particular psd1
-        $DependencyDefs = Get-PSDependScript
-        $TheseDependencyTypes = @( $Dependency.DependencyType | Sort-Object -Unique )
-
-        #call each dependencytype script for applicable dependencies
-        foreach($DependencyType in $TheseDependencyTypes)
-        {
-            $DependencyScript = $DependencyDefs.$DependencyType
-            if(-not $DependencyScript)
-            {
-                Write-Error "DependencyType $DependencyType is not defined in PSDependMap.psd1"
-                continue
-            }
-            $TheseDependencies = @( $Dependency | Where-Object {$_.DependencyType -eq $DependencyType})
-
-            #Define params for the script
-            #Each dependency type can have a hashtable to splat.
-            $RawParameters = Get-Parameter -Command $DependencyScript
-            $ValidParamNames = $RawParameters.Name
-
-            if($ValidParamNames -notcontains 'PSDependAction')
-            {
-                Write-Error "No PSDependAction found on PSDependScript [$DependencyScript]. Skipping [$($Dependency.DependencyName)]"
-                continue
-            }
-
-            foreach($ThisDependency in $TheseDependencies)
-            {
-                #Parameters for dependency types.  Only accept valid params...
-                if($ThisDependency.Parameters.keys.count -gt 0)
-                {
-                    $splat = @{}
-                    foreach($key in $ThisDependency.Parameters.keys)
-                    {
-                        if($ValidParamNames -contains $key)
-                        {
-                            $splat.Add($key, $ThisDependency.Parameters.$key)
-                        }
-                        else
-                        {
-                            Write-Warning "Parameter [$Key] with value [$($ThisDependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring.  Valid params:`n[$ValidParamNames]"
-                        }
-                    }
-                    if($splat.ContainsKey('PSDependAction'))
-                    {
-                        $Splat['PSDependAction'] = 'Test'
-                    }
-                    else
-                    {
-                        $Splat.add('PSDependAction','Test')
-                    }
-                }
-                else
-                {
-                    $splat = @{PSDependAction = 'Test'}
-                }
-
-                #Define params for the script
-                $splat.add('Dependency', $ThisDependency)
-
-                $TestResult = . $DependencyScript @splat
-                if($Quiet)
-                {
-                    $TestResult
-                }
-                else
-                {
-                    Add-Member -InputObject $ThisDependency -MemberType NoteProperty -Name DependencyExists -Value $TestResult -Force
-                }
-            }
-        }
+        Invoke-DependencyScript @PSBoundParameters -PSDependAction Test
     }
 }

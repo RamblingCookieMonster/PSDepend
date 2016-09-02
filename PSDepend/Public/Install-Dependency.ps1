@@ -30,7 +30,7 @@ Function Install-Dependency {
     .EXAMPLE
         Get-Dependency -Path C:\requirements.psd1 | Install-Dependency
 
-        Get dependencies from C:\requirements.psd1 and resolve them
+        Get dependencies from C:\requirements.psd1 and install them
 
     .LINK
         about_PSDepend
@@ -65,101 +65,8 @@ Function Install-Dependency {
 
         [switch]$Force
     )
-    Begin
-    {
-        # This script reads a depend.psd1, installs dependencies as defined
-        Write-Verbose "Running Install-Dependency with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
-    }
     Process
     {
-        Write-Verbose "Dependencies:`n$($Dependency | Out-String)"
-
-        if( ($Force -and -not $WhatIf) -or
-            $PSCmdlet.ShouldProcess( "Processed the dependency '$($Dependency.DependencyName -join ", ")'",
-                                    "Process the dependency '$($Dependency.DependencyName -join ", ")'?",
-                                    "Processing dependency" ))
-        {
-            #Get definitions, and dependencies in this particular psd1
-            $DependencyDefs = Get-PSDependScript
-            $TheseDependencyTypes = @( $Dependency.DependencyType | Sort-Object -Unique )
-
-            #Build up hash, we call each dependencytype script for applicable dependencies
-            foreach($DependencyType in $TheseDependencyTypes)
-            {
-                $DependencyScript = $DependencyDefs.$DependencyType
-                if(-not $DependencyScript)
-                {
-                    Write-Error "DependencyType $DependencyType is not defined in PSDependMap.psd1"
-                    continue
-                }
-                $TheseDependencies = @( $Dependency | Where-Object {$_.DependencyType -eq $DependencyType})
-
-                #Define params for the script
-                #Each dependency type can have a hashtable to splat.
-                $RawParameters = Get-Parameter -Command $DependencyScript
-                $ValidParamNames = $RawParameters.Name
-
-                if($ValidParamNames -notcontains 'PSDependAction')
-                {
-                    Write-Error "No PSDependAction found on PSDependScript [$DependencyScript]. Skipping [$($Dependency.DependencyName)]"
-                    continue
-                }
-
-                foreach($ThisDependency in $TheseDependencies)
-                {
-                    #Parameters for dependency types.  Only accept valid params...
-                    if($ThisDependency.Parameters.keys.count -gt 0)
-                    {
-                        $splat = @{}
-                        foreach($key in $ThisDependency.Parameters.keys)
-                        {
-                            if($ValidParamNames -contains $key)
-                            {
-                                $splat.Add($key, $ThisDependency.Parameters.$key)
-                            }
-                            else
-                            {
-                                Write-Warning "Parameter [$Key] with value [$($ThisDependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring"
-                            }
-                        }
-
-                        if($splat.ContainsKey('PSDependAction'))
-                        {
-                            $Splat['PSDependAction'] = 'Install'
-                        }
-                        else
-                        {
-                            $Splat.add('PSDependAction','Install')
-                        }
-                    }
-                    else
-                    {
-                        $splat = @{}
-                    }
-                    #Define params for the script
-                    $splat.add('Dependency', $ThisDependency)
-
-                    # PITA, but tasks can run two ways, each different than typical dependency scripts
-                    if($DependencyType -eq 'Task')
-                    {
-                        foreach($TaskScript in $ThisDependency.Target)
-                        {
-                            if( Test-Path $TaskScript -PathType Leaf)
-                            {
-                                . $TaskScript @splat
-                            }
-                            else
-                            {
-                                Write-Error "Could not process task [$TaskScript].`nAre connectivity, privileges, and other needs met to access it?"
-                            }
-                        }
-                    }
-                    else
-                    {
-                        . $DependencyScript @splat
-                    }
-                }
-            }
-        }
+        Invoke-DependencyScript @PSBoundParameters -PSDependAction Install
     }
 }

@@ -72,8 +72,10 @@ Function Get-PSDependType {
     $Base = Split-Path $Path -Parent
     $File = Split-Path $Path -Leaf
     $DependencyDefinitions = Import-LocalizedData -BaseDirectory $Base -FileName $File
-
-    foreach($Type in ($DependencyDefinitions.Keys | Where-Object {$_ -like $DependencyType}))
+    $KeysToQuery = $DependencyDefinitions.Keys |
+        Where-Object {$_ -like $DependencyType} |
+        Sort
+    foreach($Type in $KeysToQuery)
     {
         #Determine the path to this script. Skip task dependencies...
         $Script =  $DependencyDefinitions.$Type.Script

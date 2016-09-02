@@ -56,7 +56,7 @@ Function Invoke-DependencyScript {
                     ParameterSetName='Map',
                     Mandatory = $True)]
         [PSTypeName('PSDepend.Dependency')]
-        [psobject[]]$Dependency,
+        [psobject]$Dependency,
 
         [validatescript({Test-Path -Path $_ -PathType Leaf -ErrorAction Stop})]
         [string]$PSDependTypePath = $(Join-Path $ModuleRoot PSDependMap.psd1),
@@ -133,6 +133,13 @@ Function Invoke-DependencyScript {
                             Write-Warning "Parameter [$Key] with value [$($ThisDependency.Parameters.$Key)] is not a valid parameter for [$DependencyType], ignoring.  Valid params:`n[$ValidParamNames]"
                         }
                     }
+
+                    if($ThisDependency.Parameters.Import -and $PSDependActions -notcontains 'Test')
+                    {
+                        $PSDependActions += 'Import'
+                        $PSDependActions = $PSDependActions | Sort -Unique
+                    } 
+
                     if($splat.ContainsKey('PSDependAction'))
                     {
                         $Splat['PSDependAction'] = $PSDependActions
