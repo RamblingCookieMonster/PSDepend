@@ -434,6 +434,118 @@ InModuleScope 'PSDepend' {
             }
         }
     }
+
+    Describe "Package Type PS$PSVersion" {
+        # So... these didn't work with mocking.  Create function, define alias to override any function call, mock that.
+        function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion)}
+        function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion)}
+        
+        <# WOrks, but waiting on https://github.com/pester/Pester/issues/604...
+         # Got past Get-Package, but Install-Package is still giving the parameter error
+        Context 'Installs Packages' {
+            Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+            Mock Get-Package
+            Mock Install-Package { $True }
+            
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\package.depend.psd1" -Force
+
+            It 'Should execute Install-Package' {
+                Assert-MockCalled Install-Package -Times 1 -Exactly
+            }
+
+            It 'Should Return Mocked output' {
+                $Results | Should be $True
+            }
+        }
+        #>
+
+        Context 'PackageSource does not Exist' {
+            Mock Install-Package
+            Mock Get-PackageSource
+
+            It 'Throws because Repository could not be found' {
+                $Results = { Invoke-PSDepend @Verbose -Path "$TestDepends\package.depend.psd1" -Force -ErrorAction Stop }
+                $Results | Should Throw
+            }
+        }
+
+        Context 'Same package version exists' {
+            Mock Install-Package
+            Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+            Mock Get-Package {
+                [pscustomobject]@{
+                    Version = '1.1'
+                }
+            }
+            Mock Find-Package {
+                [pscustomobject]@{
+                    Version = '1.1'
+                }
+            }
+
+            It 'Runs Get-Module and Find-Module, skips Install-Module' {
+                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-Package -Times 1 -Exactly
+                Assert-MockCalled Find-Package -Times 1 -Exactly
+                Assert-MockCalled Install-Package -Times 0 -Exactly
+            }
+        }
+
+        Context 'Test-Dependency' {
+            It 'Returns $true when it finds an existing module' {
+                Mock Install-Package {}
+                Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+                Mock Get-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
+                Mock Find-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+
+            It "Returns `$false when it doesn't find an existing module" {
+                Mock Install-Package {}
+                Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+                Mock Get-Package { $null }
+                Mock Find-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+            It "Returns `$false when it finds an existing module with a lower version" {
+                Mock Install-Package {}
+                Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+                Mock Get-Package {
+                    [pscustomobject]@{
+                        Version = '1.0'
+                    }
+                }
+                Mock Find-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+        }
+    }
 }
 
 Remove-Item C:\PSDependPesterTest -Force -Recurse

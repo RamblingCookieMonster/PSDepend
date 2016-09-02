@@ -26,6 +26,11 @@
         Description = 'Display parameters that a depends script would receive. Use for testing and validation.'
     }
 
+    Package = @{
+        Script = 'Package.ps1'
+        Description = 'Install a package via PackageManagement Install-Package'
+    }
+
     PSGalleryModule = @{
         Script= 'PSGalleryModule.ps1'
         Description = 'Install a PowerShell module from the PowerShell Gallery.'
