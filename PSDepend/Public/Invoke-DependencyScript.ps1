@@ -100,7 +100,9 @@ Function Invoke-DependencyScript {
                 Write-Error "No PSDependAction found on PSDependScript [$DependencyScript]. Skipping [$($Dependency.DependencyName)]"
                 continue
             }
-            [string[]]$ValidPSDependActions = $RawParameters | Where {$_.Name -like 'PSDependAction'} | Select -ExpandProperty ValidateSetValues -ErrorAction SilentlyContinue
+            [string[]]$ValidPSDependActions = $RawParameters |
+                Where-Object {$_.Name -like 'PSDependAction'} |
+                Select-Object -ExpandProperty ValidateSetValues -ErrorAction SilentlyContinue
             [string[]]$PSDependActions = foreach($Action in $PSDependAction)
             {
                 if($ValidPSDependActions -contains $Action) {$Action}
@@ -113,7 +115,7 @@ Function Invoke-DependencyScript {
             if($PSDependActions -contains 'Test' -and ( $PSDependActions -contains 'Import' -or $PSDependActions -contains 'Install'))
             {
                 Write-Error "Removing [Test] from PSDependActions.  The Test action must run on its own."
-                $PSDependActions = $PSDependActions | Where {$_ -ne 'Test'}
+                $PSDependActions = $PSDependActions | Where-Object {$_ -ne 'Test'}
             }
 
             foreach($ThisDependency in $TheseDependencies)
@@ -137,7 +139,7 @@ Function Invoke-DependencyScript {
                     if($ThisDependency.Parameters.Import -and $PSDependActions -notcontains 'Test')
                     {
                         $PSDependActions += 'Import'
-                        $PSDependActions = $PSDependActions | Sort -Unique
+                        $PSDependActions = $PSDependActions | Sort-Object -Unique
                     } 
 
                     if($splat.ContainsKey('PSDependAction'))

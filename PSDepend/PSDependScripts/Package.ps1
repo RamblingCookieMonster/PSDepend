@@ -10,6 +10,7 @@
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
             Target: Used as 'Scope' for Install-Package. Defaults to 'AllUsers', also accepts 'CurrentUser'
             Source: Package source to use (Get-PackageSource, Register-PackageSource)
+            Parameters: Every parameter you specify is splatted against Install-Package
 
         If you don't have the Nuget package provider, we install it for you
 
@@ -26,8 +27,6 @@
 param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]$Dependency,
-
-    [switch]$Import,
 
     [ValidateSet('Test', 'Install')]
     [string[]]$PSDependAction = @('Install')

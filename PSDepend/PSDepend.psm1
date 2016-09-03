@@ -19,8 +19,8 @@
 
 #Get nuget dependecy file if we don't have it
     Get-Content $ModuleRoot\PSDepend.Config |
-        Where{$_ -and $_ -notmatch "^\s*#"} |
-        Foreach {
+        Where-Object {$_ -and $_ -notmatch "^\s*#"} |
+        Foreach-Object {
             $Name = ( $_ -split '=')[0].trim()
             $Value = ( $_ -split '=')[1].trim()
             # Revisit later and only apply these for '*path', if we have other types of variables...

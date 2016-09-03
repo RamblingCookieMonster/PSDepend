@@ -138,6 +138,10 @@ DETAILED DESCRIPTION
                     [psobject[]]$Dependency
                     ...
 
+        Include a 'PSDependAction' parameter.
+        
+            Use ValidateSet to specify whether your type supports Test, Install, Import, or other actions.
+
         Include details on how you use Dependency properties in the comment-based help DESCRIPTION field.
         
             See \\Path\To\PSDepend\PSDependScripts\PSGalleryModule.ps1 DESCRIPTION field for an example
