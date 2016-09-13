@@ -37,6 +37,8 @@ DETAILED DESCRIPTION
             PostScripts:    One or more paths to scripts to process after the dependency is processed
             Raw:            Raw data from the dependency in the psd1 file
 
+            The Source and Target attributes allow the use of $PWD and . to refer to the current path
+
         A *.depend.ps1 file will have one or more dependency nodes like this:
 
             @{

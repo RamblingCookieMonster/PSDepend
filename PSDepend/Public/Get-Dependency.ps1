@@ -120,11 +120,45 @@ function Get-Dependency {
             $Prefer,
             $Default = $Null
         )
-
         # Check for preferred value, otherwise try to get value from key, otherwise use default....
-        if($Prefer){ return $Prefer}
-        try { return $Options[$Name] } catch { }
-        return $Default
+        $Output = $Default
+        if($Prefer)
+        {
+            $Output = $Prefer
+        }
+        else
+        {
+            try
+            {
+                $Output = $Options[$Name]
+            }
+            catch
+            {
+                $Output = $Default
+            }
+        }
+        
+        # Inject variables
+        if( $Name -eq 'Target' -or $Name -eq 'Source')
+        {
+            $Output = Inject-Variable $Output
+        }
+        $Output
+    }
+
+    function Inject-Variable {
+        param( $Value )
+        if($Value -match '^.$|^.\\|^./'){
+            return $Value.replace('.', $PWD.Path)
+        }
+        elseif($Value -Match '\$PWD')
+        {
+            return ($Value -replace '\$PWD', $PWD.Path)
+        }
+        else
+        {
+            return $Value
+        }
     }
 
     foreach($DependencyPath in $Path)

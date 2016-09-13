@@ -220,6 +220,8 @@ PostScripts    :
 Raw            : {Version, Name, Tags, DependsOn...}
 ```
 
+Note that you can use `$PWD` or `.` to refer to the current path in the Source and Target fields (Thanks to Mike Walker for the idea!)
+
 ## Exploring and Getting Help
 
 Each DependencyType - PSGalleryModule, FileDownload, Task, etc. - might treat these standard properties differently, and may include their own Parameters.  For example, in the BuildHelpers node above, we specified a Repository parameter.
