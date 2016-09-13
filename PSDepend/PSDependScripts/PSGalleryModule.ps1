@@ -69,7 +69,8 @@ param(
     {
         $Scope = $Dependency.Target
     }
-    if('AllUsers', 'CurrentUser' -notcontains $Scope -and (Test-Path $Scope -PathType Container))
+
+    if('AllUsers', 'CurrentUser' -notcontains $Scope)
     {
         $command = 'save'
     }

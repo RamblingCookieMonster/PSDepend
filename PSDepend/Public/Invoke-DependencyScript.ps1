@@ -74,7 +74,7 @@ Function Invoke-DependencyScript {
     }
     Process
     {
-        Write-Verbose "Dependencies:`n$($Dependency | Out-String)"
+        Write-Verbose "Dependencies:`n$($Dependency | Select -Property * | Out-String)"
 
         #Get definitions, and dependencies in this particular psd1
         $DependencyDefs = Get-PSDependScript
@@ -95,6 +95,8 @@ Function Invoke-DependencyScript {
             #Each dependency type can have a hashtable to splat.
             $RawParameters = Get-Parameter -Command $DependencyScript
             $ValidParamNames = $RawParameters.Name
+            Write-Verbose "Found parameters [$ValidParamNames]"
+
             if($ValidParamNames -notcontains 'PSDependAction')
             {
                 Write-Error "No PSDependAction found on PSDependScript [$DependencyScript]. Skipping [$($Dependency.DependencyName)]"
