@@ -440,7 +440,7 @@ InModuleScope 'PSDepend' {
         function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion)}
         function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion)}
         
-        <# WOrks, but waiting on https://github.com/pester/Pester/issues/604...
+        <# Works, but waiting on https://github.com/pester/Pester/issues/604...
          # Got past Get-Package, but Install-Package is still giving the parameter error
         Context 'Installs Packages' {
             Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
@@ -483,7 +483,7 @@ InModuleScope 'PSDepend' {
                 }
             }
 
-            It 'Runs Get-Module and Find-Module, skips Install-Module' {
+            It 'Runs Get-Package and Find-Package, skips Install-Package' {
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" -Force -ErrorAction Stop
 
                 Assert-MockCalled Get-Package -Times 1 -Exactly
