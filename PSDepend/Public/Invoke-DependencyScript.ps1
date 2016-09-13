@@ -178,6 +178,7 @@ Function Invoke-DependencyScript {
                 }
                 else
                 {
+                    Write-Verbose "Invoking '$DependencyScript' with parameters $($Splat | Out-String)"
                     $Output = . $DependencyScript @splat
                     if($PSDependActions -contains 'Test' -and -not $Quiet)
                     {

@@ -507,7 +507,7 @@ InModuleScope 'PSDepend' {
                     }
                 }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" |
-                        Test-Dependency -Quiet )
+                        Test-Dependency @Verbose -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $True
             }
@@ -522,7 +522,7 @@ InModuleScope 'PSDepend' {
                     }
                 }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" |
-                        Test-Dependency -Quiet )
+                        Test-Dependency @Verbose -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
             }
@@ -540,7 +540,7 @@ InModuleScope 'PSDepend' {
                     }
                 }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
-                        Test-Dependency -Quiet )
+                        Test-Dependency @Verbose -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
             }
