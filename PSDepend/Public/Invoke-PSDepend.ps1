@@ -45,6 +45,9 @@ Function Invoke-PSDepend {
 
         Default behavior
 
+    .PARAMETER Target
+        If specified, override the target in the PSDependOptions or Dependency.
+
     .IMPORT Import 
         If the dependency supports it, import it
 
@@ -107,7 +110,9 @@ Function Invoke-PSDepend {
         [parameter(ParameterSetName = 'installimport')]
         [switch]$Install,
 
-        [switch]$Force
+        [switch]$Force,
+
+        [String]$Target
     )
     Begin
     {
@@ -164,6 +169,12 @@ Function Invoke-PSDepend {
         #TODO: Add ShouldProcess here if install is specified...
         foreach($Dependency in $Dependencies)
         {
+            if($PSBoundParameters.ContainsKey('Target'))
+            {
+                Write-Verbose "Overriding Dependency target [$($Dependency.Target)] with target parameter value [$Target]"
+                $Dependency.Target = $Target
+            }
+
             if( ($Force -and -not $WhatIf) -or
                 ($DoTest) -or
                 $PSCmdlet.ShouldProcess( "Processed the dependency '$($Dependency.DependencyName -join ", ")'",

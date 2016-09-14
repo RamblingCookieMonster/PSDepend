@@ -2,7 +2,7 @@
     DependencyName = @{
         Name = 'Name'
         DependencyType = 'noop'
-        Source = '$PWD'
+        Source = 'PWD=$PWD'
         Target = '.\Dependencies'
     }
 }

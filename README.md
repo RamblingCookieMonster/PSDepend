@@ -220,7 +220,12 @@ PostScripts    :
 Raw            : {Version, Name, Tags, DependsOn...}
 ```
 
-Note that you can use `$PWD` or `.` to refer to the current path in the Source and Target fields (Thanks to Mike Walker for the idea!)
+Note that we replace certain strings in Target and Source fields:
+
+* $PWD (or .) refer to the current path
+* Variables need to be in single quotes or the $ needs to be escaped.  We replace the raw strings with the values for you. This will not work: Target = "$PWD\dependencies".  This will: Target = '$PWD\dependencies'
+* If you call Invoke-PSDepend -Target $Something, we override any value for target
+* Thanks to Mike Walker for the idea!
 
 ## Exploring and Getting Help
 

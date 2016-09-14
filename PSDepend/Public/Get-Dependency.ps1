@@ -147,18 +147,21 @@ function Get-Dependency {
     }
 
     function Inject-Variable {
+        [cmdletbinding()]
         param( $Value )
-        if($Value -match '^.$|^.\\|^./'){
-            return $Value.replace('.', $PWD.Path)
-        }
-        elseif($Value -Match '\$PWD')
+        $Output = $Value
+        switch($Value)
         {
-            return ($Value -replace '\$PWD', $PWD.Path)
+            {$_ -match '^\.$|^\.\\|^\./'}{
+                $Output = $Output -replace '^\.', $PWD.Path
+            }
+
+            {$_ -Match '\$PWD'} {
+                $Output = $Output -replace '\$PWD', $PWD.Path
+
+            }
         }
-        else
-        {
-            return $Value
-        }
+        $Output
     }
 
     foreach($DependencyPath in $Path)
