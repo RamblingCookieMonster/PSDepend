@@ -73,8 +73,9 @@ Describe "Get-Dependency PS$PSVersion" {
 
         It 'Should inject variables' {
             $Dependencies = Get-Dependency -Path $TestDepends\inject.variables.depend.psd1
+            $DependencyFolder = Split-Path $Dependencies.DependencyFile -Parent
             $Dependencies.Source | Should Be "PWD=$($PWD.Path)"
-            $Dependencies.Target | Should Be "$($PWD.Path)\Dependencies"
+            $Dependencies.Target | Should Be "$($PWD.Path)\Dependencies;$DependencyFolder"
         }
     }
 }

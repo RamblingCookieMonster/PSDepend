@@ -3,6 +3,6 @@
         Name = 'Name'
         DependencyType = 'noop'
         Source = 'PWD=$PWD'
-        Target = '.\Dependencies'
+        Target = '.\Dependencies;$DependencyFolder'
     }
 }

@@ -158,7 +158,11 @@ function Get-Dependency {
 
             {$_ -Match '\$PWD'} {
                 $Output = $Output -replace '\$PWD', $PWD.Path
+            }
 
+            {$_ -Match '\$DependencyFolder|\$DependencyPath'} {
+                $DependencyFolder = Split-Path $DependencyFile -Parent
+                $Output = $Output -replace '\$DependencyFolder|\$DependencyPath', $DependencyFolder
             }
         }
         $Output
