@@ -1,0 +1,60 @@
+<#
+    .SYNOPSIS
+        Invoke a PowerShell command
+
+    .DESCRIPTION
+        Invoke a PowerShell command
+
+        Converts the provided string into a scriptblock, invokes it in the current session.
+
+        If a terminating error occurs, we write it and continue processing.  Use FailOnError to change this.
+
+        Relevant Dependency metadata:
+            Source: The code to run
+            Parameters:
+                FailOnError: If specified, throw a terminating error if the command errors out.
+    
+    .PARAMETER PSDependAction
+        Only option is to install the module.  Defaults to Install
+
+        Install: Install the dependency
+    
+    .PARAMETER Dependency
+        Dependency to process
+#>
+[cmdletbinding()]
+param (
+    [PSTypeName('PSDepend.Dependency')]
+    [psobject[]]$Dependency,
+
+    [switch]$FailOnError,
+
+    [ValidateSet('Install')]
+    [string[]]$PSDependAction = @('Install') # No logic for this
+)
+
+Write-Verbose "Executing $($Dependency.count) commands"
+
+foreach($Depend in $Dependency)
+{
+    foreach($Command in $Depend.Source)
+    {
+        $ScriptBlock = [ScriptBlock]::Create($Command)
+        Try
+        {
+            . $ScriptBlock
+        }
+        Catch
+        {
+            if($FailOnError)
+            {
+                Write-Error $_
+                continue
+            }
+            else
+            {
+                throw $_
+            }
+        }
+    }
+}

@@ -546,6 +546,24 @@ InModuleScope 'PSDepend' {
             }
         }
     }
+
+    Describe "Command Type PS$PSVersion" {
+
+        Context 'Invokes a command' {
+
+            $Dependencies = @(Get-Dependency @Verbose -Path "$TestDepends\command.depend.psd1")
+
+            It 'Parses the command dependency type' {
+                $Dependencies.count | Should be 1
+                $Dependencies[0].DependencyType | Should be 'Command'
+            }
+
+            It 'Invokes a command' {
+                $Output = Invoke-PSDepend @Verbose -Path "$TestDepends\command.depend.psd1" -Force
+                $Output | Should be 'hello world'
+            }
+        }
+    }
 }
 
 Remove-Item C:\PSDependPesterTest -Force -Recurse

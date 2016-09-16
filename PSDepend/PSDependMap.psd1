@@ -6,6 +6,11 @@
 # In some cases, it may be beneficial to include 'aliases'.  Just add nodes for these.
 @{
 
+    Command = @{
+        Script= 'Command.ps1'
+        Description = 'Invoke a command in PowerShell'
+    }
+
     FileDownload = @{
         Script= 'FileDownload.ps1'
         Description = 'Download a file'

@@ -9,16 +9,21 @@
             Target: One or more scripts to run for this task
             Parameters: Parameters to call against the task scripts
 
+    .PARAMETER PSDependAction
+        Only option is to install the module.  Defaults to Install
+
+        Install: Install the dependency
+
     .PARAMETER Dependency
         Dependency to process
-
-    .PARAMETER Target
-        One or more Task scripts to process
 #>
 [cmdletbinding()]
 param (
     [PSTypeName('PSDepend.Dependency')]
-    [psobject[]]$Dependency
+    [psobject[]]$Dependency,
+
+    [ValidateSet('Install')]
+    [string[]]$PSDependAction = @('Install') # No logic for this
 )
 
 Write-Verbose "Executing $($Dependency.count) tasks"
