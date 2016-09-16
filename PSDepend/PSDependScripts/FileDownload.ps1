@@ -81,6 +81,7 @@ param($URL)
 # Act on target path....
     $ToInstall = $False # Anti pattern
     $TargetParent = Split-Path $Target -Parent
+    $PathToAdd = $Target
     if( (Test-Path $TargetParent) -and -not (Test-Path $Target))
     {
         # They gave us a full path, don't parse the file name, use this!
@@ -97,6 +98,7 @@ param($URL)
         {
             return $True
         }
+        $PathToAdd = Split-Path $Target -Parent
     }
     elseif(-not (Test-Path $Target))
     {
@@ -154,6 +156,6 @@ if($PSDependAction -contains 'Install' -and $ToInstall)
 
 if($Dependency.AddToPath)
 {   
-    Write-Verbose "Setting PATH to`n$($TargetParent, $env:PATH -join ';' | Out-String)"
-    $env:PATH = $TargetParent, $env:PATH -join ';'
+    Write-Verbose "Setting PATH to`n$($PathToAdd, $env:PATH -join ';' | Out-String)"
+    Add-ToItemCollection -Reference Env:\Path -Item $PathToAdd
 }

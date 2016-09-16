@@ -114,6 +114,12 @@ Function Invoke-DependencyScript {
                 }
             }
 
+            if($PSDependActions.count -like 0)
+            {
+                Write-Verbose "Skipped dependency [$($Dependency.DependencyName)] due to filtered PSDependAction.  See Warnings above."
+                continue
+            }
+
             if($PSDependActions -contains 'Test' -and ( $PSDependActions -contains 'Import' -or $PSDependActions -contains 'Install'))
             {
                 Write-Error "Removing [Test] from PSDependActions.  The Test action must run on its own."

@@ -39,6 +39,7 @@ foreach($Depend in $Dependency)
 {
     foreach($Command in $Depend.Source)
     {
+        Write-Verbose "Invoking command [$($Dependency.DependencyName)]:`n$Command"
         $ScriptBlock = [ScriptBlock]::Create($Command)
         Try
         {

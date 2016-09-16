@@ -173,10 +173,10 @@ if($GottaInstall)
 if($Dependency.AddToPath)
 {
     Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
-    $env:PSModulePath = $Target, $env:PSModulePath -join ';'
+    Add-ToItemCollection -Reference Env:\PSModulePath -Item $Target
     
     Write-Verbose "Setting PATH to`n$($RepoPath, $env:PATH -join ';' | Out-String)"
-    $env:PATH = $Target, $env:PATH -join ';'
+    Add-ToItemCollection -Reference Env:\Path -Item $Target
 }
 
 $ToImport = $Target

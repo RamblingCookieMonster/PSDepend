@@ -12,7 +12,6 @@
             Name: Optional file name for the downloaded file.  Defaults to parsing filename from the URL
             Target: The folder to copy the source to.  If the source is a file, we adjust this in Robocopy to append the source folder name.
             Source: The source folder or file to copy
-            AddToPath: If specified, prepend the target's parent container to PATH
 
     .PARAMETER Deployment
         Dependency to run
