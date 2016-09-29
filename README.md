@@ -23,7 +23,7 @@ PSDepend allows you to write simple requirements.psd1 files that describe what d
 Install-Module PSDepend
 
 # PowerShell 3 or 4, curl|bash bootstrap. Read before running something like this : )
-iex (new-object System.Net.WebClient).DownloadString('https://raw.github.com/ramblingcookiemonster/PSDepend/Examples/Install-PSDepend.ps1')
+iex (new-object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/RamblingCookieMonster/PSDepend/master/Examples/Install-PSDepend.ps1')
 
 # Git
     # Download the repository
