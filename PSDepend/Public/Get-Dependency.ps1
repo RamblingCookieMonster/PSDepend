@@ -288,10 +288,6 @@ function Get-Dependency {
                             $DependencyHash.add('DependencyType', 'PSGalleryModule')
                         }
                     }
-                    if(-not $DependencyHash.Name)
-                    {
-                        $DependencyHash.Name = $Dependency
-                    }
 
                     [pscustomobject]@{
                         PSTypeName = 'PSDepend.Dependency'

@@ -96,7 +96,10 @@ param(
 
 # Extract data from Dependency
     $DependencyName = $Dependency.DependencyName
-    $Name = $Dependency.Name
+    if(-not ($Name = $Dependency.Name))
+    {
+        $Name = $DependencyName
+    }
     $Target = $Dependency.Target
    
     $Source = $Dependency.Source
