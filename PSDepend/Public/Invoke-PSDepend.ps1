@@ -48,7 +48,7 @@ Function Invoke-PSDepend {
     .PARAMETER Target
         If specified, override the target in the PSDependOptions or Dependency.
 
-    .IMPORT Import 
+    .PARAMETER Import 
         If the dependency supports it, import it
 
     .EXAMPLE
