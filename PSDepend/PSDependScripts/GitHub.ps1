@@ -12,12 +12,10 @@
             optionally, select out a specific subfolder for PowerShell based projects.
 
         Relevant Dependency metadata:
-            DependencyName (Key): The key for this dependency is used as the URL. This can be overridden by 'Source'
-            Name: Optional file name for the downloaded file.  Defaults to parsing filename from the URL
-            Target: The folder to download this file to.  If a full path to a new file is used, this overrides any other file name.
-            Source: Optional override for URL
-            Version:  Specify a branch name, commit hash, or tags
-            AddToPath: If specified, prepend the target's parent container to PATH
+            DependencyName (Key): The key for this dependency is used as Name, if none is specified
+            Name: Used to specify the GitHub entity/reponame to download
+            Target: The folder to download repo to.  Defaults to "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules".  Created if it doesn't exist.
+            Version:  Specify a branch name or commit hash to download
 
     .NOTES
         A huge thanks to Doug Finke for the idea and some code!
@@ -26,11 +24,13 @@
     .PARAMETER PSDependAction
         Test or Install the module.  Defaults to Install
 
+        NOTE: Test is currently not implemented.
+
         Test: Return true or false on whether the dependency is in place
         Install: Install the dependency
 
     .PARAMETER ExtractPath
-        Download the repo, and extract only these specified file(s) or folder(s) to the target
+        Download the repo, and extract only these specified file(s) or folder(s) to the target.  Defaults to $True
 
     .PARAMETER ExtractProject
         Downoad the repo, parse it for a common PowerShell project hierarchy, and extract only the project folder
@@ -87,13 +87,6 @@ param(
     [string[]]$ExtractPath
 )
 
-# Parse arguments to extract GitHub URL
-# Download
-# Extract
-# Optionally, identify PowerShell project within file hierarchy and use this
-# Parse arguments to identify target
-# Move data to target
-
 # Extract data from Dependency
     $DependencyName = $Dependency.DependencyName
     if(-not ($Name = $Dependency.Name))
@@ -101,7 +94,11 @@ param(
         $Name = $DependencyName
     }
     $Target = $Dependency.Target
-   
+    if(-not $Target)
+    {
+        $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+    }
+
     $Source = $Dependency.Source
 
     # Default to master branch
@@ -168,6 +165,10 @@ Write-Verbose "ToCopy: $ToCopy"
 #TODO: Implement test and import PSDependActions.
 if($PSDependAction -contains 'install')
 {
+    if(-not (Test-Path $Target))
+    {
+        mkdir $Target -Force
+    }
     foreach($Item in $ToCopy)
     {
         Copy-Item -Path $Item -Destination $Target -Force -Confirm:$False -Recurse
