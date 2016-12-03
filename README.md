@@ -10,7 +10,7 @@ PSDepend allows you to write simple requirements.psd1 files that describe what d
 **WARNING**:
 
 * Opening this up quite early to get feedback and direction.  There will be breaking changes without notice until we hit version 0.1.0
-* Minimal to no testing.  This is in my backlog, but PRs would be welcome!
+* Minimal testing.  This is in my backlog, but PRs would be welcome!
 * This borrows quite heavily from PSDeploy.  There may be leftover components that haven't been adapted, have been improperly adapted, or shouldn't have been adapted
 * Would love ideas, feedback, pull requests, etc., but if you rely on this, consider pinning a specific version to avoid hitting breaking changes.
 
@@ -70,7 +70,7 @@ DependencyName                   DependencyType  Version Tags
 psake                            PSGalleryModule latest      
 BuildHelpers                     PSGalleryModule 0.0.20      
 Pester                           PSGalleryModule latest      
-RamblingCookieMonster/PowerShell Git             master      
+RamblingCookieMonster/PowerShell GitHub          master      
 PSDeploy                         PSGalleryModule 0.1.21   
 ```
 
