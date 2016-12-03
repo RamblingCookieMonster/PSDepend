@@ -181,8 +181,8 @@ InModuleScope 'PSDepend' {
             It 'Parses the Git dependency type' {
                 $Dependencies.count | Should be 3
                 ( $Dependencies | Where {$_.DependencyType -eq 'Git'} ).Count | Should Be 3
-                ( $Dependencies | Where {$_.DependencyName -like 'nightroman/Invoke-Build'}).Version | Should be 'ac54571010d8ca5107fc8fa1a69278102c9aa077'
-                ( $Dependencies | Where {$_.DependencyName -like 'ramblingcookiemonster/PSDeploy'}).Version | Should be 'master'
+                ( $Dependencies | Where {$_.DependencyName -like '*nightroman/Invoke-Build'}).Version | Should be 'ac54571010d8ca5107fc8fa1a69278102c9aa077'
+                ( $Dependencies | Where {$_.DependencyName -like '*ramblingcookiemonster/PSDeploy'}).Version | Should be 'master'
             }
 
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\git.depend.psd1" -Force

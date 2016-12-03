@@ -225,6 +225,28 @@ function Get-Dependency {
                         Raw = $null
                     }
                 }
+                # It looks like a git repo, simple syntax, and not a full URI
+                elseif($DependencyHash -is [string] -and $Dependency -match '/' -and $Dependency.split('/').count -eq 2)
+                {
+                    [pscustomobject]@{
+                        PSTypeName = 'PSDepend.Dependency'
+                        DependencyFile = $DependencyFile
+                        DependencyName = $Dependency
+                        DependencyType = 'GitHub'
+                        Name = $Dependency
+                        Version = $DependencyHash
+                        Parameters = Get-GlobalOption -Name Parameters
+                        Source = Get-GlobalOption -Name Source
+                        Target = Get-GlobalOption -Name Target
+                        AddToPath = Get-GlobalOption -Name AddToPath
+                        Tags = Get-GlobalOption -Name Tags
+                        DependsOn = Get-GlobalOption -Name DependsOn
+                        PreScripts = Get-GlobalOption -Name PreScripts
+                        PostScripts = Get-GlobalOption -Name PostScripts
+                        PSDependOptions = $PSDependOptions
+                        Raw = $null
+                    }
+                }
                 # It looks like a git repo, and simple syntax: Git
                 elseif($DependencyHash -is [string] -and $Dependency -match '/')
                 {
@@ -265,6 +287,10 @@ function Get-Dependency {
                         {
                             $DependencyHash.add('DependencyType', 'PSGalleryModule')
                         }
+                    }
+                    if(-not $DependencyHash.Name)
+                    {
+                        $DependencyHash.Name = $Dependency
                     }
 
                     [pscustomobject]@{
