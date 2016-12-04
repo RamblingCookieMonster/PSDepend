@@ -160,6 +160,19 @@ function Get-Dependency {
                 $Output = $Output -replace '\$PWD', $PWD.Path
             }
 
+            {$_ -Match '\$ENV:ProgramData'} {
+                $Output = $Output -replace '\$ENV:ProgramData', $ENV:ProgramData
+            }
+            {$_ -Match '\$ENV:USERPROFILE'} {
+                $Output = $Output -replace '\$ENV:USERPROFILE', $ENV:USERPROFILE
+            }
+            {$_ -Match '\$ENV:APPDATA'} {
+                $Output = $Output -replace '\$ENV:APPDATA', $ENV:APPDATA
+            }
+            {$_ -Match '\$ENV:TEMP'} {
+                $Output = $Output -replace '\$ENV:TEMP', $ENV:TEMP
+            }
+
             {$_ -Match '\$DependencyFolder|\$DependencyPath'} {
                 $DependencyFolder = Split-Path $DependencyFile -Parent
                 $Output = $Output -replace '\$DependencyFolder|\$DependencyPath', $DependencyFolder

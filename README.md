@@ -140,6 +140,7 @@ Raw            : {Version, Name, Tags, DependsOn...}
 Note that we replace certain strings in Target and Source fields:
 
 * $PWD (or .) refer to the current path
+* $ENV:USERPROFILE, $ENV:TEMP, $ENV:ProgramData, $ENV:APPDATA
 * Variables need to be in single quotes or the $ needs to be escaped.  We replace the raw strings with the values for you. This will not work: Target = "$PWD\dependencies".  This will: Target = '$PWD\dependencies'
 * If you call Invoke-PSDepend -Target $Something, we override any value for target
 * Thanks to Mike Walker for the idea!
