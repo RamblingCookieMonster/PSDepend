@@ -16,7 +16,7 @@
             AddToPath: Prepend the Target to ENV:PSModulePath
 
     .PARAMETER Force
-        If specified and Target is specified, create folders to Target if needed
+        If specified and Target already exists, remove existing item before saving
 
     .PARAMETER Import
         If specified, import the module in the global scope
@@ -177,31 +177,26 @@ if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
 
 if($PSDependAction -contains 'Install')
 {
-    if(($TargetExists = Test-Path $Target -PathType Container) -or $Force)
-    {
-        Write-Verbose "Saving [$Name] with path [$Target]"
-        $NugetParams = '-Source', $Source, '-ExcludeVersion', '-NonInteractive', '-OutputDirectory', $Target
-        if($Force -and -not $TargetExists)
-        {
-            Write-Verbose "Force creating directory path to [$Target]"
-            $Null = New-Item -ItemType Directory -Path $Target -Force -ErrorAction SilentlyContinue
-        }
-        if($Version -and $Version -notlike 'latest')
-        {
-            $NugetParams += '-version', $Version
-        }
-        $NugetParams = 'install', $Name + $NugetParams
-        Invoke-ExternalCommand nuget.exe -Arguments $NugetParams
+    $TargetExists = Test-Path $Target -PathType Container
 
-        if($Dependency.AddToPath)
-        {
-            Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
-            Add-ToItemCollection -Reference Env:\PSModulePath -Item $Target
-        }
-    }
-    else
+    Write-Verbose "Saving [$Name] with path [$Target]"
+    $NugetParams = '-Source', $Source, '-ExcludeVersion', '-NonInteractive', '-OutputDirectory', $Target
+    if(-not $TargetExists)
     {
-        Write-Error "Target [$Target] exists must be true, and is [$TargetExists]. Alternatively, specify -Force to create the Target"
+        Write-Verbose "Creating directory path to [$Target]"
+        $Null = New-Item -ItemType Directory -Path $Target -Force -ErrorAction SilentlyContinue
+    }
+    if($Version -and $Version -notlike 'latest')
+    {
+        $NugetParams += '-version', $Version
+    }
+    $NugetParams = 'install', $Name + $NugetParams
+    Invoke-ExternalCommand nuget.exe -Arguments $NugetParams
+
+    if($Dependency.AddToPath)
+    {
+        Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
+        Add-ToItemCollection -Reference Env:\PSModulePath -Item $Target
     }
 }
 

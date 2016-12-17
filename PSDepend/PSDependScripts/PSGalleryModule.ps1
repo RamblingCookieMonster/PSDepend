@@ -16,9 +16,6 @@
     .PARAMETER Repository
         PSRepository to download from.  Defaults to PSGallery
 
-    .PARAMETER Force
-        If specified and Target is specified, create folders if needed
-
     .PARAMETER Import
         If specified, import the module in the global scope
 
@@ -37,8 +34,6 @@ param(
     [psobject[]]$Dependency,
 
     [string]$Repository = 'PSGallery', # From Parameters...
-
-    [switch]$Force,
 
     [switch]$Import,
 
@@ -173,14 +168,16 @@ if($PSDependAction -contains 'Install')
         Write-Verbose "Installing [$Name] with scope [$Scope]"
         Install-Module @params -Scope $Scope
     }
-    elseif((Test-Path $Scope -PathType Container) -or $Force)
+    else
     {
         Write-Verbose "Saving [$Name] with path [$Scope]"
-        if($Force)
+
+        Write-Verbose "Creating directory path to [$Scope]"
+        if(-not (Test-Path $Scope -ErrorAction SilentlyContinue))
         {
-            Write-Verbose "Force creating directory path to [$Scope]"
             $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
         }
+
         Save-Module @params -Path $Scope
 
         if($Dependency.AddToPath)
