@@ -308,8 +308,13 @@ function Get-Dependency {
                         if($DependencyType) {}
                         # GitHub first
                         elseif(
-                            ($Dependency -match '/' -and -not $Dependency.Name -and $Dependency.split('/').count -eq 2) -or
-                            ( $DependencyHash.Name -match '/' -and $DependencyHash.split('/').count -eq 2)
+                            # Ugly right? Watch out for split called on hashtable...
+                            ($Dependency -match '/' -and -not $Dependency.Name -and
+                                ($Dependency -is [string] -and $Dependency.split('/').count -eq 2)
+                            ) -or
+                            ($DependencyHash.Name -match '/' -and 
+                                ($Dependency -is [string] -and $DependencyHash.split('/').count -eq 2)
+                            )
                         )
                         {
                             $DependencyType = 'GitHub'
