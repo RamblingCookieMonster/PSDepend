@@ -313,7 +313,7 @@ function Get-Dependency {
                                 ($Dependency -is [string] -and $Dependency.split('/').count -eq 2)
                             ) -or
                             ($DependencyHash.Name -match '/' -and 
-                                ($Dependency -is [string] -and $DependencyHash.split('/').count -eq 2)
+                                ($DependencyHash -is [string] -and $DependencyHash.split('/').count -eq 2)
                             )
                         )
                         {
@@ -331,6 +331,10 @@ function Get-Dependency {
                         {
                             $DependencyType = 'PSGalleryModule'
                         }
+                    }
+                    else
+                    {
+                        $DependencyType = $DependencyHash.DependencyType
                     }
 
                     [pscustomobject]@{
