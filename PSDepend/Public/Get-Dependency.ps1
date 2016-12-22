@@ -32,7 +32,10 @@ function Get-Dependency {
 
             With the simple syntax:
                * The DependencyName (key) is used as the Name
-               * We default to Git as the DependencyType if we see a '/', otherwise we default to PSGalleryModule
+               * If no DependencyType is specified, we parse the DependencyName to pick a default:
+                 * We default to GitHub if the DependencyName has a single / (e.g. aaa/bbb)
+                 * We default to git if the DependencyName has more than one / (e.g. https://gitlab.fqdn/org/some.git)
+                 * We default to PSGalleryModule in all other cases
                * The Version (value) is a string, and is used as the Version
                * Other properties are set to $null
 
@@ -52,6 +55,8 @@ function Get-Dependency {
                     PostScripts = 'C:\script2.ps1' # Script(s) to run after this dependency
                 }
             }
+
+        We use the same default DeploymentTypes for this advanced syntax
 
         Global options:
            @{
@@ -210,6 +215,7 @@ function Get-Dependency {
                 $PSDependOptions = $Dependencies.PSDependOptions
                 $Dependencies.Remove('PSDependOptions')
             }
+            $DependencyType = Get-GlobalOption -Name DependencyType
 
             foreach($Dependency in $Dependencies.keys)
             {
@@ -217,7 +223,10 @@ function Get-Dependency {
 
                 #Parse simple key=name, value=version format
                 # It doesn't look like a git repo, and simple syntax: PSGalleryModule
-                if( $DependencyHash -is [string] -and $Dependency -notmatch '/')
+                if( $DependencyHash -is [string] -and
+                    $Dependency -notmatch '/' -and
+                    -not $DependencyType -or
+                    $DependencyType -eq 'PSGalleryModule')
                 {
                     [pscustomobject]@{
                         PSTypeName = 'PSDepend.Dependency'
@@ -239,7 +248,11 @@ function Get-Dependency {
                     }
                 }
                 # It looks like a git repo, simple syntax, and not a full URI
-                elseif($DependencyHash -is [string] -and $Dependency -match '/' -and $Dependency.split('/').count -eq 2)
+                elseif($DependencyHash -is [string] -and
+                       $Dependency -match '/' -and
+                       $Dependency.split('/').count -eq 2 -and
+                       -not $DependencyType -or
+                       $DependencyType -eq 'GitHub')
                 {
                     [pscustomobject]@{
                         PSTypeName = 'PSDepend.Dependency'
@@ -261,7 +274,10 @@ function Get-Dependency {
                     }
                 }
                 # It looks like a git repo, and simple syntax: Git
-                elseif($DependencyHash -is [string] -and $Dependency -match '/')
+                elseif($DependencyHash -is [string] -and
+                       $Dependency -match '/' -and
+                       -not $DependencyType -or
+                       $DependencyType -eq 'Git' )
                 {
                     [pscustomobject]@{
                         PSTypeName = 'PSDepend.Dependency'
@@ -286,19 +302,29 @@ function Get-Dependency {
                 {
                     # Parse dependency hash format
                     # Default type is module, unless it's in a git-style format
-                    if(-not $DependencyHash.ContainsKey('DependencyType'))
+                    if(-not $DependencyHash.DependencyType)
                     {
-                        # Look for git format:
-                        if(
+                        # Is it a global option?
+                        if($DependencyType) {}
+                        # GitHub first
+                        elseif(
+                            ($Dependency -match '/' -and -not $Dependency.Name -and $Dependency.split('/').count -eq 2) -or
+                            ( $DependencyHash.Name -match '/' -and $DependencyHash.split('/').count -eq 2)
+                        )
+                        {
+                            $DependencyType = 'GitHub'
+                        }
+                        # Now git...
+                        elseif(
                             ($Dependency -match '/' -and -not $Dependency.Name) -or
                             $DependencyHash.Name -match '/'
                         )
                         {
-                            $DependencyHash.add('DependencyType', 'Git')
+                            $DependencyType = 'Git'
                         }
-                        else
+                        else # finally, psgallerymodule
                         {
-                            $DependencyHash.add('DependencyType', 'PSGalleryModule')
+                            $DependencyType = 'PSGalleryModule'
                         }
                     }
 
@@ -306,7 +332,7 @@ function Get-Dependency {
                         PSTypeName = 'PSDepend.Dependency'
                         DependencyFile = $DependencyFile
                         DependencyName = $Dependency
-                        DependencyType = $DependencyHash.DependencyType
+                        DependencyType = $DependencyType
                         Name = $DependencyHash.Name
                         Version = $DependencyHash.Version
                         Parameters = Get-GlobalOption -Name Parameters -Prefer $DependencyHash.Parameters
