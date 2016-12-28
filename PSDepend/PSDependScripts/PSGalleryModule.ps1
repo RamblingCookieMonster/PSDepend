@@ -118,8 +118,8 @@ if($Existing)
     Write-Verbose "Found existing module [$Name]"
     # Thanks to Brandon Padgett!
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $GalleryVersion = Find-Module -Name $Name -Repository PSGallery | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    
+    $GalleryVersion = Find-Module -Name $Name -Repository $Repository | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
@@ -133,7 +133,7 @@ if($Existing)
         }
         return $null
     }
-    
+
     # latest, and we have latest
     if( $Version -and
         ($Version -eq 'latest' -or $Version -like '') -and
@@ -141,7 +141,7 @@ if($Existing)
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
-        
+
         # Conditional import
         Import-PSDependModule -Name $ModuleName -Action $PSDependAction
 
@@ -164,7 +164,7 @@ if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
 if($PSDependAction -contains 'Install')
 {
     if('AllUsers', 'CurrentUser' -contains $Scope)
-    {   
+    {
         Write-Verbose "Installing [$Name] with scope [$Scope]"
         Install-Module @params -Scope $Scope
     }
