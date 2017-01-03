@@ -77,5 +77,16 @@ Describe "Get-Dependency PS$PSVersion" {
             $Dependencies.Source | Should Be "PWD=$($PWD.Path)"
             $Dependencies.Target | Should Be "$($PWD.Path)\Dependencies;$DependencyFolder"
         }
+
+        It 'Should not mangle dependencies if multiple PSGallery modules specified' {
+            $Dependencies = Get-Dependency -Path $TestDepends\multiplepsgallerymodule.depend.psd1
+            $Dependencies.Count | Should be 3
+            $Dependencies[0].Version | Should BeNullOrEmpty
+            $Dependencies[1].Version | Should BeNullOrEmpty
+            $Dependencies[2].Version | Should BeNullOrEmpty
+            @($Dependencies[0].Tags) -contains 'prd' | Should Be $True
+            @($Dependencies[1].Tags) -contains 'prd' | Should Be $True
+            @($Dependencies[2].Tags) -contains 'prd' | Should Be $True
+        }
     }
 }

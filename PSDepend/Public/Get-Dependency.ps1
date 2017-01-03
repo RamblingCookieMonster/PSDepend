@@ -123,7 +123,7 @@ function Get-Dependency {
             $Options = $PSDependOptions,
             $Name,
             $Prefer,
-            $Default = $Null
+            $Default = $null
         )
         # Check for preferred value, otherwise try to get value from key, otherwise use default....
         $Output = $Default
@@ -215,11 +215,11 @@ function Get-Dependency {
                 $PSDependOptions = $Dependencies.PSDependOptions
                 $Dependencies.Remove('PSDependOptions')
             }
-            $DependencyType = Get-GlobalOption -Name DependencyType
 
             foreach($Dependency in $Dependencies.keys)
             {
                 $DependencyHash = $Dependencies.$Dependency
+                $DependencyType = Get-GlobalOption -Name DependencyType
 
                 #Parse simple key=name, value=version format
                 # It doesn't look like a git repo, and simple syntax: PSGalleryModule
