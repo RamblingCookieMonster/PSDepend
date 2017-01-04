@@ -57,7 +57,7 @@ Here's the simplest syntax.  If this meets your needs, you can stop here:
     Pester       = 'latest'
     BuildHelpers = '0.0.20'  # I don't trust this Warren guy...
     PSDeploy     = '0.1.21'  # Maybe pin the version in case he breaks this...
-    
+
     RamblingCookieMonster/PowerShell = 'master'
 }
 ```
@@ -67,11 +67,11 @@ And what PSDepend sees:
 ```
 DependencyName                   DependencyType  Version Tags
 --------------                   --------------  ------- ----
-psake                            PSGalleryModule latest      
-BuildHelpers                     PSGalleryModule 0.0.20      
-Pester                           PSGalleryModule latest      
-RamblingCookieMonster/PowerShell GitHub          master      
-PSDeploy                         PSGalleryModule 0.1.21   
+psake                            PSGalleryModule latest
+BuildHelpers                     PSGalleryModule 0.0.20
+Pester                           PSGalleryModule latest
+RamblingCookieMonster/PowerShell GitHub          master
+PSDeploy                         PSGalleryModule 0.1.21
 ```
 
 There's a bit more behind the scenes - we assume you want PSGalleryModules or GitHub repos unless you specify otherwise, and we hide a few dependency properties.
@@ -106,7 +106,7 @@ What else can we put in a dependency?  Here's an example using a more flexible s
         DependencyType = 'FileDownload'
         Source = 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
         Target = 'C:\nuget.exe'
-    }  
+    }
 }
 ```
 
@@ -127,13 +127,13 @@ DependencyType : PSGalleryModule
 Name           : buildhelpers
 Version        : 0.0.20
 Parameters     : {Repository}
-Source         : 
-Target         : 
-AddToPath      : 
+Source         :
+Target         :
+AddToPath      :
 Tags           : {prod, test}
 DependsOn      : some_task
 PreScripts     : C:\RunThisFirst.ps1
-PostScripts    : 
+PostScripts    :
 Raw            : {Version, Name, Tags, DependsOn...}
 ```
 
@@ -156,8 +156,8 @@ Get-PSDependType
 ```
 
 ```
-DependencyType  Description                                                 DependencyScript                                    
---------------  -----------                                                 ----------------                                    
+DependencyType  Description                                                 DependencyScript
+--------------  -----------                                                 ----------------
 PSGalleryModule Install a PowerShell module from the PowerShell Gallery.    C:\...\PSDepend\PSDepen...
 Task            Support dependencies by handling simple tasks.              C:\...\PSDepend\PSDepen...
 Noop            Display parameters that a depends script would receive...   C:\...\PSDepend\PSDepen...

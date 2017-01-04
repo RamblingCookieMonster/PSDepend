@@ -3,13 +3,15 @@
         EXPERIMENTAL: Download a GitHub repository
 
     .DESCRIPTION
-        Download a GitHub repository
+        EXPERIMENTAL: Download a GitHub repository
 
         The Git dependency type requires git.exe.  The FileDownload type would just pull an archive down.
         This type will...
             download a repository via HTTP,
             extract it,
             optionally, select out a specific subfolder for PowerShell based projects.
+
+        IMPORTANT: We currently download the repo temporarily to inspect and find the project path, regardless of PSDependAction.
 
         Relevant Dependency metadata:
             DependencyName (Key): The key for this dependency is used as Name, if none is specified

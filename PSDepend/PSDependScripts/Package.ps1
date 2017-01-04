@@ -1,9 +1,9 @@
 <#
     .SYNOPSIS
-        EXPERIMENTAL: Installs a package using the PackageManagement module
+        Installs a package using the PackageManagement module
 
     .DESCRIPTION
-        EXPERIMENTAL: Installs a package using the PackageManagement module
+        Installs a package using the PackageManagement module
 
         Relevant Dependency metadata:
             Name: The name for this Package

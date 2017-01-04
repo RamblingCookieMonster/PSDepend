@@ -14,9 +14,6 @@ Set-Content C:\ProjectX\Requirements.psd1 -Value @'
     PSDependOptions = @{
         Target = '$DependencyFolder' # I want all my dependencies installed here
         AddToPath = $True            # I want to prepend project to $ENV:Path and $ENV:PSModulePath
-        Parameters = @{
-            Force = $True            # I want to use -Force on each dependency
-        }
     }
 
     # Grab some modules

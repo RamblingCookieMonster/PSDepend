@@ -85,7 +85,7 @@ function Get-ProjectDetail {
         }
         else
         {
-            Write-Warning "Could not find a project from $($Path), using root"
+            Write-Verbose "Could not find a project from [$Path], using root"
             Resolve-ProjectDetail -Path $Path -Name $CurrentFolder
         }
     }
