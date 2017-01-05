@@ -38,8 +38,14 @@ Get-Help about_PSDepend
 
 ### Example Scenarios
 
+In-depth:
+
 * [Creating a virtual-environment-light](/Examples/VirtualEnvironment.md)
 * [Handling module dependencies](/Examples/ModuleDependencies.md)
+
+Recipes:
+
+* [How Do I...](/Examples/HowDoI.md)
 
 ## Defining Dependencies
 
