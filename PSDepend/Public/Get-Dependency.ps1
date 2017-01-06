@@ -142,7 +142,7 @@ function Get-Dependency {
                 $Output = $Default
             }
         }
-        
+
         # Inject variables
         if( $Name -eq 'Target' -or $Name -eq 'Source')
         {
@@ -312,7 +312,7 @@ function Get-Dependency {
                             ($Dependency -match '/' -and -not $Dependency.Name -and
                                 ($Dependency -is [string] -and $Dependency.split('/').count -eq 2)
                             ) -or
-                            ($DependencyHash.Name -match '/' -and 
+                            ($DependencyHash.Name -match '/' -and
                                 ($DependencyHash -is [string] -and $DependencyHash.split('/').count -eq 2)
                             )
                         )
@@ -355,6 +355,8 @@ function Get-Dependency {
                         PSDependOptions = $PSDependOptions
                         Raw = $DependencyHash
                     }
+
+                    Clear-Variable DependencyType
                 }
             }
         }
