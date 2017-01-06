@@ -202,6 +202,127 @@ Get-Help about_PSDepend_Definitions
 Get-Help Get-Dependency -Full
 ```
 
+## Extending PSDepend
+
+PSDepend is extensible.  To create a new dependency type:
+
+* Pick a name.  We'll use `Nothing` as an example
+* Create `DependencyType.ps1` (substituting in your name, e.g. `Nothing.ps1`) in the [PSDependScripts folder](https://github.com/RamblingCookieMonster/PSDepend/tree/master/PSDepend/PSDependScripts)
+* Your `DependencyType.ps1` (`Nothing.ps1` in this example) should...
+  * Have comment based help
+  * Include details on how you use Dependency metadata.  For example, in [Git.ps1](https://github.com/RamblingCookieMonster/PSDepend/blob/master/PSDepend/PSDependScripts/Git.ps1), `Version` is used in git checkout
+  * Include a PSDependAction parameter that takes `Install`, `Test`, `Import`, or a subset of these.  [Example parameter declaration](https://github.com/RamblingCookieMonster/PSDepend/blob/master/PSDepend/PSDependScripts/PSGalleryModule.ps1#L40)
+  * Depending on which PSDependAction is specified by the user, your script should `install`, `test` (return true or false depending on whether the dependency exists - sometimes this is impossible to check), and `import` (import the dependency - if appropriate, this might import a module or dot source code, for example)
+* Add your new dependency type to [PSDependMap.psd1](https://github.com/RamblingCookieMonster/PSDepend/blob/master/PSDepend/PSDependMap.psd1)
+
+So!  In our example, we would create `PSDepend\PSDependScripts\Nothing.ps1`, with the following code:
+
+```powershell
+<#
+    .SYNOPSIS
+        Example Dependency
+
+    .DESCRIPTION
+        Example Dependency
+
+        Relevant Dependency metadata:
+            Version: Used for nonsense output
+
+    .PARAMETER Dependency
+        Dependency to process
+
+    .PARAMETER StringParameter
+        An example parameter that does nothing
+
+    .PARAMETER PSDependAction
+        Test, Install, or Import the dependency.  Defaults to Install
+
+        Test: Return true or false on whether the dependency is in place
+        Install: Install the dependency
+        Import: Import the dependency
+#>
+[cmdletbinding()]
+param (
+    [PSTypeName('PSDepend.Dependency')]
+    [psobject[]]$Dependency,
+
+    [ValidateSet('Test', 'Install', 'Import')]
+    [string[]]$PSDependAction = @('Install'),
+
+    [string]$StringParameter
+)
+
+$Output = [PSCustomobject]@{
+    DependencyName = $Dependency.DependencyName
+    Status = "Invoking $PSDependAction action"
+    BoundParameters = $PSBoundParameters.Keys
+    Message = "Version [$Version]"
+}
+
+# Notice that we end the script if we're testing.
+if( $PSDependAction -Contains 'Test' )
+{
+    Write-Verbose $Output
+    return $true
+}
+
+$Output
+```
+
+Finally, we'll add an entry to `PSDependMap.psd1`:
+
+```powershell
+    Nothing = @{
+        Script= 'Nothing.ps1'
+        Description = 'Example dependency'
+    }
+```
+
+Lastly, we'll define a requirements.psd1 using this dependency:
+
+```powershell
+@{
+    ExampleDependency = @{
+        DependencyType = 'Nothing'
+        Version = 1
+        Parameters = @{
+            StringParameter = 'A thing'
+        }
+    }
+}
+```
+
+Finally, run it!
+
+```powershell
+Invoke-PSDepend -Path C:\requirements.psd1 -Test -Quiet
+```
+
+`True`
+
+```powershell
+Invoke-PSDepend -Path C:\requirements.psd1
+```
+
+```
+DependencyName    Status                  BoundParameters                               Message
+--------------    ------                  ---------------                               -------
+ExampleDependency Invoking Install action {StringParameter, PSDependAction, Dependency} Version [1]
+```
+
+```powershell
+Invoke-PSDepend -Path C:\requirements.psd1 -Import
+```
+
+```
+DependencyName    Status                 BoundParameters                               Message
+--------------    ------                 ---------------                               -------
+ExampleDependency Invoking Import action {StringParameter, PSDependAction, Dependency} Version [1]
+```
+
+
+
+
 ## Notes
 
 Major props to Michael Willis for the idea - check out his [PSRequire](https://github.com/Xainey/PSRequire), a similar but more feature-full solution.
