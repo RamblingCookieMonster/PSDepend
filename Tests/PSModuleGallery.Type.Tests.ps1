@@ -471,7 +471,7 @@ InModuleScope 'PSDepend' {
 
         Context 'Same package version exists' {
             Mock Install-Package
-            Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+            Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'}) }
             Mock Get-Package {
                 [pscustomobject]@{
                     Version = '1.1'
