@@ -443,7 +443,7 @@ InModuleScope 'PSDepend' {
         <# Works, but waiting on https://github.com/pester/Pester/issues/604...
          # Got past Get-Package, but Install-Package is still giving the parameter error
         Context 'Installs Packages' {
-            Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+            Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
             Mock Get-Package
             Mock Install-Package { $True }
             
@@ -471,7 +471,7 @@ InModuleScope 'PSDepend' {
 
         Context 'Same package version exists' {
             Mock Install-Package
-            Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'}) }
+            Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
             Mock Get-Package {
                 [pscustomobject]@{
                     Version = '1.1'
@@ -495,7 +495,7 @@ InModuleScope 'PSDepend' {
         Context 'Test-Dependency' {
             It 'Returns $true when it finds an existing module' {
                 Mock Install-Package {}
-                Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+                Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
                 Mock Get-Package {
                     [pscustomobject]@{
                         Version = '1.1'
@@ -514,7 +514,7 @@ InModuleScope 'PSDepend' {
 
             It "Returns `$false when it doesn't find an existing module" {
                 Mock Install-Package {}
-                Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+                Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
                 Mock Get-Package { $null }
                 Mock Find-Package {
                     [pscustomobject]@{
@@ -528,7 +528,7 @@ InModuleScope 'PSDepend' {
             }
             It "Returns `$false when it finds an existing module with a lower version" {
                 Mock Install-Package {}
-                Mock Get-PackageSource { @([pscustomobject]@{ProviderName = 'chocolatey'}) }
+                Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
                 Mock Get-Package {
                     [pscustomobject]@{
                         Version = '1.0'
