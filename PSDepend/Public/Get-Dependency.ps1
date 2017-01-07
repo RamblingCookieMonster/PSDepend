@@ -89,6 +89,17 @@ function Get-Dependency {
     .PARAMETER Recurse
         If specified and path is a container, search for *.depend.psd1 and requirements.psd1 files recursively under $Path
 
+    .PARAMETER InputObject
+        If specified instead of Path, treat this hashtable as the contents of a dependency file.
+
+        For example:
+
+            -InputObject @{
+                BuildHelpers = 'latest'
+                PSDeploy = 'latest'
+                InvokeBuild = 'latest'
+            }
+
     .LINK
         about_PSDepend
 
@@ -382,6 +393,7 @@ function Get-Dependency {
     }
     elseif($PSCmdlet.ParameterSetName -eq 'Hashtable')
     {
+        $DependencyFile = 'Hashtable'
         $ParsedDependencies = foreach($InputDependency in $InputObject)
         {
             $Dependencies = $InputDependency

@@ -20,6 +20,17 @@ Function Invoke-PSDepend {
 
         Defaults to $True
 
+    .PARAMETER InputObject
+        If specified instead of Path, treat this hashtable as the contents of a dependency file.
+
+        For example:
+
+            -InputObject @{
+                BuildHelpers = 'latest'
+                PSDeploy = 'latest'
+                InvokeBuild = 'latest'
+            }
+
     .PARAMETER Tags
         Only invoke dependencies that are tagged with all of the specified Tags (-and, not -or)
 
@@ -81,33 +92,54 @@ Function Invoke-PSDepend {
     .LINK
         https://github.com/RamblingCookieMonster/PSDepend
     #>
-    [cmdletbinding( DefaultParameterSetName = 'installimport',
+    [cmdletbinding( DefaultParameterSetName = 'installimport-file',
                     SupportsShouldProcess = $True,
                     ConfirmImpact='High' )]
     Param(
         [validatescript({Test-Path -Path $_ -ErrorAction Stop})]
-        [parameter( Position = 0,
+        [parameter( ParameterSetName = 'installimport-file',
+                    Position = 0,
+                    ValueFromPipeline = $True,
+                    ValueFromPipelineByPropertyName = $True)]
+        [parameter( ParameterSetName = 'test-file',
+                    Position = 0,
                     ValueFromPipeline = $True,
                     ValueFromPipelineByPropertyName = $True)]
         [string[]]$Path = '.',
+
+        [parameter( ParameterSetName = 'installimport-hashtable',
+                    Position = 0,
+                    ValueFromPipeline = $True,
+                    ValueFromPipelineByPropertyName = $True)]
+        [parameter( ParameterSetName = 'test-hashtable',
+                    Position = 0,
+                    ValueFromPipeline = $True,
+                    ValueFromPipelineByPropertyName = $True)]
+        [hashtable[]]$InputObject,
 
         [validatescript({Test-Path -Path $_ -PathType Leaf -ErrorAction Stop})]
         [string]$PSDependTypePath = $(Join-Path $ModuleRoot PSDependMap.psd1),
 
         [string[]]$Tags,
 
+        [parameter(ParameterSetName = 'installimport-file')]
+        [parameter(ParameterSetName = 'test-file')]
         [bool]$Recurse = $True,
 
-        [parameter(ParameterSetName = 'test')]
+        [parameter(ParameterSetName = 'test-file')]
+        [parameter(ParameterSetName = 'test-hashtable')]
         [switch]$Test,
 
-        [parameter(ParameterSetName = 'test')]
+        [parameter(ParameterSetName = 'test-file')]
+        [parameter(ParameterSetName = 'test-hashtable')]
         [switch]$Quiet,
 
-        [parameter(ParameterSetName = 'installimport')]
+        [parameter(ParameterSetName = 'installimport-file')]
+        [parameter(ParameterSetName = 'installimport-hashtable')]
         [switch]$Import,
 
-        [parameter(ParameterSetName = 'installimport')]
+        [parameter(ParameterSetName = 'installimport-file')]
+        [parameter(ParameterSetName = 'installimport-hashtable')]
         [switch]$Install,
 
         [switch]$Force,
@@ -121,9 +153,9 @@ Function Invoke-PSDepend {
             PSDependAction = @()
             PSDependTypePath = $PSDependTypePath
         }
-        $DoInstall = $PSCmdlet.ParameterSetName -eq 'installimport' -and $Install
-        $DoImport = $PSCmdlet.ParameterSetName -eq 'installimport' -and $Import
-        $DoTest = $PSCmdlet.ParameterSetName -eq 'test' -and $Test
+        $DoInstall = $PSCmdlet.ParameterSetName -like 'installimport-*' -and $Install
+        $DoImport = $PSCmdlet.ParameterSetName -like 'installimport-*' -and $Import
+        $DoTest = $PSCmdlet.ParameterSetName -like 'test-*' -and $Test
         if($DoInstall){$InvokeParams.PSDependAction += 'Install'}
         if($DoImport){$InvokeParams.PSDependAction += 'Import'}
         if($DoTest){$InvokeParams.PSDependAction += 'Test'}
@@ -137,22 +169,31 @@ Function Invoke-PSDepend {
     }
     Process
     {
-        foreach( $PathItem in $Path )
+        $GetPSDependParams = @{}
+
+        if($PSCmdlet.ParameterSetName -like '*-file')
         {
-            # Create a map for dependencies
-            [void]$DependencyFiles.AddRange( @( Resolve-DependScripts -Path $PathItem -Recurse $Recurse ) )
-            if ($DependencyFiles.count -gt 0)
+            foreach( $PathItem in $Path )
             {
-                Write-Verbose "Working with [$($DependencyFiles.Count)] dependency files from [$PathItem]:`n$($DependencyFiles | Out-String)"
+                # Create a map for dependencies
+                [void]$DependencyFiles.AddRange( @( Resolve-DependScripts -Path $PathItem -Recurse $Recurse ) )
+                if ($DependencyFiles.count -gt 0)
+                {
+                    Write-Verbose "Working with [$($DependencyFiles.Count)] dependency files from [$PathItem]:`n$($DependencyFiles | Out-String)"
+                }
+                else
+                {
+                    Write-Warning "No *.depend.ps1 files found under [$PathItem]"
+                }
             }
-            else
-            {
-                Write-Warning "No *.depend.ps1 files found under [$PathItem]"
-            }
+            $GetPSDependParams.add('Path',$DependencyFiles)
+        }
+        elseif($PSCmdlet.ParameterSetName -like '*-hashtable')
+        {
+            $GetPSDependParams.add('InputObject',$InputObject)
         }
 
         # Parse
-        $GetPSDependParams = @{Path = $DependencyFiles}
         if($PSBoundParameters.ContainsKey('Tags'))
         {
             $GetPSDependParams.Add('Tags',$Tags)
