@@ -47,15 +47,15 @@
     .EXAMPLE
 
         @{
-            'ramblingcookiemonster/PSDeploy' = 'master'
-            'ramblingcookiemonster/BuildHelpers' = 'd32a9495c39046c851ceccfb7b1a85b17d5be051'
+            'https://github.com/RamblingCookieMonster/PSDeploy.git' = 'master'
+            'https://internal.gitlab.fqdn/jdoe/BuildHelpers.git' = 'd32a9495c39046c851ceccfb7b1a85b17d5be051'
         }
 
         # Simple syntax
-          # First example shows cloning PSDeploy from ramblingcookiemonster's GitHub account
-          # Second example shows clonging PSDeploy from ramblingcookiemonster's GitHub account and checking out a specific commit
+          # First example shows cloning PSDeploy from ramblingcookiemonster's GitHub repo
+          # Second example shows clonging BuildHelpers from jdoe's internal GitLab account and checking out a specific commit
           # Both are cloned to the current path (e.g. .\<repo name>)
-          # This syntax assumes GitHub as a source. The right hand side is the version (branch, commit, tags/<tag name>, etc.
+          # This syntax assumes git as a source. The right hand side is the version (branch, commit, tags/<tag name>, etc.)
 #>
 [cmdletbinding()]
 param(

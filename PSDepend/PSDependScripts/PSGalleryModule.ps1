@@ -27,6 +27,41 @@
         Test: Return true or false on whether the dependency is in place
         Install: Install the dependency
         Import: Import the dependency
+
+    .EXAMPLE
+        @{
+            BuildHelpers = 'latest'
+            PSDeploy = ''
+            InvokeBuild = '3.2.1'
+        }
+
+        # From the PSGallery repository (PowerShellGallery.com)...
+            # Install the latest BuildHelpers and PSDeploy ('latest' and '' both evaluate to latest)
+            # Install version 3.2.1
+
+    .EXAMPLE
+        @{
+            BuildHelpers = @{
+                Target = 'C:\Build'
+            }
+        }
+
+        # Install the latest BuildHelpers module from PSGallery to C:\Build (i.e. C:\Build\BuildHelpers will be the module folder)
+        # No version is specified - we assume latest in this case.
+
+    .EXAMPLE
+        @{
+            BuildHelpers = @{
+                Parameters @{
+                    Repository = 'PSPrivateGallery'
+                }
+            }
+        }
+
+        # Install the latest BuildHelpers module from a custom gallery* that you registered
+        # No version is specified - we assume latest in this case.
+
+        # * Perhaps you use this https://github.com/PowerShell/PSPrivateGallery, or Artifactory, ProGet, etc.
 #>
 [cmdletbinding()]
 param(

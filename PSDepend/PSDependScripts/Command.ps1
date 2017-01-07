@@ -5,7 +5,7 @@
     .DESCRIPTION
         Invoke a PowerShell command
 
-        Converts the provided string into a scriptblock, invokes it in the current session.
+        Converts the provided string into a scriptblock, invokes it in the current session.  Beware quoting rules
 
         If a terminating error occurs, we write it and continue processing.  Use FailOnError to change this.
 
@@ -21,6 +21,17 @@
     
     .PARAMETER Dependency
         Dependency to process
+
+    .EXAMPLE
+        @{
+            ExampleCommand = @{
+                DependencyType = 'Command'
+                Source = '$x = hostname; "Running a command on $x"'
+            }
+        }
+
+        # Run some aribtrary PowerShell code that assigns a variable and uses it in a string
+        # Output: Running a command on WJ-LAB
 #>
 [cmdletbinding()]
 param (

@@ -16,6 +16,34 @@
 
     .PARAMETER Dependency
         Dependency to process
+
+    .EXAMPLE
+        # Assumption: you prestage a script somewhere or include it in your solution
+        Set-Content C:\Example.ps1 ' "Running a task on $(hostname)" '
+
+        # Dependency syntax with C:\Example.ps1 already in place
+        @{
+            ExampleTask = @{
+                DependencyType = 'Task'
+                Target = 'C:\Example.ps1'
+            }
+        }
+
+        # Run C:\Example.ps1
+        # Output: Running a task on WJ-LAB
+
+    .EXAMPLE
+
+        # Dependency syntax with $PWD\Example.ps1 already in place
+        @{
+            ExampleTask = @{
+                DependencyType = 'Task'
+                Target = '$PWD\Example.ps1'
+            }
+        }
+
+        # Run Example.ps1 from the current directory
+        # Alternatively, you can use $DependencyPath to refer to the folder containing this dependency file
 #>
 [cmdletbinding()]
 param (
