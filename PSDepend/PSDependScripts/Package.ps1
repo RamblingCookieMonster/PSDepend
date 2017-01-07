@@ -1,27 +1,54 @@
 <#
     .SYNOPSIS
-        Installs a package using the PackageManagement module
+        EXPERIMENTAL: Installs a package using the PackageManagement module
 
     .DESCRIPTION
-        Installs a package using the PackageManagement module
+        EXPERIMENTAL: Installs a package using the PackageManagement module
 
         Relevant Dependency metadata:
             Name: The name for this Package
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
-            Target: Used as 'Scope' for Install-Package. Defaults to 'AllUsers', also accepts 'CurrentUser'
+            Target: Used as 'Scope' for PowerShellGet provider, Destination for Nuget provider
             Source: Package source to use (Get-PackageSource, Register-PackageSource)
             Parameters: Every parameter you specify is splatted against Install-Package
 
         If you don't have the Nuget package provider, we install it for you
 
-    .PARAMETER Repository
-        PSRepository to download from.  Defaults to PSGallery
+    .PARAMETER ProviderName
+        Optionally specify the Provider name to use (Get-PackageProvider, Register-PackageProvider)
 
     .PARAMETER PSDependAction
         Test, Install, or Import the module.  Defaults to Install
 
         Test: Return true or false on whether the dependency is in place
         Install: Install the dependency
+
+    .EXAMPLE
+        @{
+            jquery = @{
+                DependencyType = 'Package'
+                Target = 'C:\MyProject'
+                Source = 'nuget.org'
+            }
+        }
+
+        # Install jquery from the nuget.org PackageSource to C:\MyProject
+        # IMPORTANT: Only certain providers support specifying a target destination
+
+    .EXAMPLE
+        @{
+            jquery = @{
+                DependencyType = 'Package'
+                Source = 'https://my.internal.nuget.feed/api'
+                Target = 'C:\MyProject'
+                Parameters = @{
+                    ProviderName = 'nuget'
+                }
+            }
+        }
+
+        # Install jquery from my internal nuget feed to C:\MyProject
+
 #>
 [cmdletbinding()]
 param(
@@ -29,7 +56,9 @@ param(
     [psobject[]]$Dependency,
 
     [ValidateSet('Test', 'Install')]
-    [string[]]$PSDependAction = @('Install')
+    [string[]]$PSDependAction = @('Install'),
+
+    [String]$ProviderName
 )
 
 # Extract data from Dependency
@@ -47,24 +76,30 @@ param(
         $Version = 'latest'
     }
 
-    # We use target as a proxy for Scope
-    if(-not $Dependency.Target)
-    {
-        $Scope = 'AllUsers'
-    }
-    else
-    {
-        $Scope = $Dependency.Target
-    }
-
 $PackageSources = @( Get-PackageSource )
-if($PackageSources.ProviderName -notcontains $Source)
+if($PackageSources.Name -notcontains $Source -and -not $PSBoundParameters.ContainsKey('ProviderName'))
 {
     Write-Error "PackageSource [$Source] is not valid.  Valid sources:`n$($PackageSources.ProviderName | Out-String)"
     return
 }
+
+$PackageProviders = @( Get-PackageProvider )
+if($PSBoundParameters.ContainsKey('ProviderName') -and $PackageProviders.Name -notcontains $ProviderName)
+{
+    Write-Error "ProviderName [$ProviderName] is not valid.  Valid sources:`n$($PackageProviders.Name | Out-String)"
+    return
+}
+
 Write-Verbose -Message "Getting dependency [$name] from Package source [$Source]"
-$ThisProvider = $PackageSources | Where {$_.Name -eq $Source} | Select -ExpandProperty ProviderName
+
+if($PSBoundParameters.ContainsKey('ProviderName'))
+{
+    $ThisProvider = $ProviderName
+}
+else # Pick providername from this packagesource
+{
+    $ThisProvider = $PackageSources | Where {$_.Name -eq $Source} | Select -ExpandProperty ProviderName
+}
 
 $GetParam = @{
     Name = $Name
@@ -75,13 +110,41 @@ $InstallParam = @{
     Name = $Name
     Source = $Source
     Force = $True
-    Scope = $Scope
 }
 if($Version -notlike 'latest')
 {
     $GetParam.add('RequiredVersion', $Version)
     $InstallParam.add('RequiredVersion', $Version)
 }
+
+# Parse target for PowerShellGet
+If($ThisProvider -eq 'PowerShellGet')
+{
+    $ValidScope = 'CurrentUser', 'AllUsers'
+    if(-not $Dependency.Target)
+    {
+        $Scope = 'AllUsers'
+        $InstallParam.Add('Scope', $Scope)
+    }
+    elseif($ValidScope -contains $Scope)
+    {
+        $Scope = $Dependency.Target
+        $InstallParam.Add('Scope', $Scope)
+    }
+}
+# Parse target for Nuget
+if($ThisProvider -eq 'Nuget')
+{
+    if(-not $Dependency.Target)
+    {
+        throw 'Nuget provider requires that you specify a target destination.  Use the dependency Target for this.'
+    }
+    $GetParam.Add('Destination', $Dependency.Target)
+    $InstallParam.Add('Destination', $Dependency.Target)
+}
+
+
+# Add arbitrary keys to support DynamicOptions...
 if($Dependency.Parameters.Keys.Count -gt 0)
 {
     foreach($Key in $Dependency.Parameters.Keys)
@@ -144,7 +207,7 @@ if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
 
 if($PSDependAction -contains 'Install')
 {
-    Write-Verbose "Installing [$Name] with scope [$Scope]"
-    Install-Module @InstallParam
+    Write-Verbose "Installing [$Name] with params $($InstallParam | Out-String)"
+    Install-Package @InstallParam
 }
 

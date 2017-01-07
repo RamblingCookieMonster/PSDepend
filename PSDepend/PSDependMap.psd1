@@ -38,7 +38,7 @@
 
     Package = @{
         Script = 'Package.ps1'
-        Description = 'Install a package via PackageManagement Install-Package'
+        Description = 'EXPERIMENTAL: Install a package via PackageManagement Install-Package'
     }
 
     PSGalleryModule = @{
