@@ -5,6 +5,7 @@ Get-PackageProvider -Name NuGet -ForceBootstrap | Out-Null
 
 Install-Module Psake, PSDeploy, BuildHelpers -force
 Install-Module Pester -RequiredVersion 3.4.2 -Force
+Install-Module AWSPowerShell -force
 Import-Module Psake, BuildHelpers
 
 Set-BuildEnvironment

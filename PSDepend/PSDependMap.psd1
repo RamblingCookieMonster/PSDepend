@@ -55,4 +55,9 @@
         Script = 'Task.ps1'
         Description = 'Support dependencies by handling simple tasks.'
     }
+
+    AWSS3Object = @{
+        Script = 'AWSS3Object.ps1'
+        Description = 'Support Amazon Web Services (AWS) S3 buckets.'
+    }
 }
