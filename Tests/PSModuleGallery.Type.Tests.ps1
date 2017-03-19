@@ -493,6 +493,10 @@ InModuleScope 'PSDepend' {
         }
 
         Context 'Test-Dependency' {
+            
+            function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion)}
+            function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion)}
+            
             It 'Returns $true when it finds an existing module' {
                 Mock Install-Package {}
                 Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }

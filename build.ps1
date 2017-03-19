@@ -4,10 +4,10 @@
 Get-PackageProvider -Name NuGet -ForceBootstrap | Out-Null
 
 Install-Module Psake, PSDeploy, BuildHelpers -force
-Install-Module Pester -RequiredVersion 3.4.2 -Force
+Install-Module Pester -RequiredVersion 4.0.2 -Force
 Import-Module Psake, BuildHelpers
 
 Set-BuildEnvironment
 
-Invoke-psake -buildFile .\psake.ps1 -taskList $Task -nologo
+Invoke-psake -buildFile $ENV:BHProjectPath\psake.ps1 -taskList $Task -nologo
 exit ( [int]( -not $psake.build_success ) )

@@ -40,6 +40,7 @@ DETAILED DESCRIPTION
             The Source and Target attributes allow the substitution of select variables:
                 $PWD (or .) refer to the current path
                 $DependencyFolder or $DependencyPath refer to the parent of the DependencyFile
+                $ENV:ProgramData, USERPROFILE, APPDATA, and TEMP
                 Variables need to be in single quotes or the $ needs to be escaped.  We replace the raw strings with the values for you. This will not work: Target = "$PWD\dependencies".  This will: Target = '$PWD\dependencies'
 
         A *.depend.ps1 file will have one or more dependency nodes like this:
