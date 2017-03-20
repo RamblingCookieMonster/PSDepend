@@ -435,7 +435,7 @@ InModuleScope 'PSDepend' {
         }
     }
 
-    Describe "Package Type PS$PSVersion" {
+    Describe "Package Type PS$PSVersion" -tag pkg {
         # So... these didn't work with mocking.  Create function, define alias to override any function call, mock that.
         function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion)}
         function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion)}
@@ -469,21 +469,25 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Context 'Same package version exists' {
-            Mock Install-Package
-            Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
-            Mock Get-Package {
-                [pscustomobject]@{
-                    Version = '1.1'
-                }
-            }
-            Mock Find-Package {
-                [pscustomobject]@{
-                    Version = '1.1'
-                }
-            }
+        Context 'Same package version exists' {    
 
+            function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
+            function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
+            
             It 'Runs Get-Package and Find-Package, skips Install-Package' {
+
+                Mock Install-Package
+                Mock Get-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
+                Mock Find-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
+
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" -Force -ErrorAction Stop
 
                 Assert-MockCalled Get-Package -Times 1 -Exactly
@@ -494,12 +498,12 @@ InModuleScope 'PSDepend' {
 
         Context 'Test-Dependency' {
             
-            function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion)}
-            function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion)}
+            function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion) write-verbose "WTF NOW"}
+            function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
             
             It 'Returns $true when it finds an existing module' {
+                function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
                 Mock Install-Package {}
-                Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
                 Mock Get-Package {
                     [pscustomobject]@{
                         Version = '1.1'
@@ -517,8 +521,8 @@ InModuleScope 'PSDepend' {
             }
 
             It "Returns `$false when it doesn't find an existing module" {
+                function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
                 Mock Install-Package {}
-                Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
                 Mock Get-Package { $null }
                 Mock Find-Package {
                     [pscustomobject]@{
