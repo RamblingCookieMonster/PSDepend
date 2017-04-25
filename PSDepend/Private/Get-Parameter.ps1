@@ -165,7 +165,7 @@ Function Get-Parameter {
             $ParameterNames = $Parameters.Keys + $Aliases
             foreach ($p in $($Parameters.Keys)) {
                $short = "^"
-               $aliases = @($p) + @($Parameters.$p.Aliases) | sort { $_.Length }
+               $aliases = @($p) + @($Parameters.$p.Aliases) | sort-object { $_.Length }
                $shortest = "^" + @($aliases)[0]
 
                foreach($name in $aliases) {
