@@ -218,7 +218,7 @@ if($PSDependAction -contains 'Install')
         if($Dependency.AddToPath)
         {
             Write-Verbose "Setting PSModulePath to`n$($Scope, $env:PSModulePath -join ';' | Out-String)"
-            Add-ToItemCollection -Reference Env:\PSModulePath -Item $Scope
+            Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $Scope).FullName
         }
     }
 }
