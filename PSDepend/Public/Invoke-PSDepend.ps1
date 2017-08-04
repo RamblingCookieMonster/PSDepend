@@ -256,12 +256,12 @@ Function Invoke-PSDepend {
                     }
                 }
 
-                if($DoInstall -and $Dependency.PostScript.Count -gt 0)
+                if($DoInstall -and $Dependency.PostScripts.Count -gt 0)
                 {
-                    foreach($script in $Deployment.PostScript)
+                    foreach($script in $Dependency.PostScripts)
                     {
-                        Write-Verbose "Invoking post script: $($Script)"
-                        . $Script
+                        Write-Verbose "Invoking post script: $($script)"
+                        . $script
                     }
                 }
             }
