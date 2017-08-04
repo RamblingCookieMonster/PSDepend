@@ -56,7 +56,7 @@ function Get-Dependency {
                 }
             }
 
-        We use the same default DeploymentTypes for this advanced syntax
+        We use the same default DependencyTypes for this advanced syntax
 
         Global options:
            @{
@@ -163,7 +163,10 @@ function Get-Dependency {
         }
         
         # Inject variables
-        if( $Name -eq 'Target' -or $Name -eq 'Source')
+        if( $Name -eq 'Target' -or
+            $Name -eq 'Source' -or
+            $Name -eq 'PreScripts' -or
+            $Name -eq 'PostScripts')
         {
             $Output = Inject-Variable $Output
         }
