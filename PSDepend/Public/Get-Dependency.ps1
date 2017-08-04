@@ -163,7 +163,10 @@ function Get-Dependency {
         }
         
         # Inject variables
-        if( $Name -eq 'Target' -or $Name -eq 'Source')
+        if( $Name -eq 'Target' -or
+            $Name -eq 'Source' -or
+            $Name -eq 'PreScripts' -or
+            $Name -eq 'PostScripts')
         {
             $Output = Inject-Variable $Output
         }
