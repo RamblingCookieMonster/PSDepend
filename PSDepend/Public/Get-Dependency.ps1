@@ -56,7 +56,7 @@ function Get-Dependency {
                 }
             }
 
-        We use the same default DeploymentTypes for this advanced syntax
+        We use the same default DependencyTypes for this advanced syntax
 
         Global options:
            @{

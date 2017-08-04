@@ -21,7 +21,7 @@ DETAILED DESCRIPTION
                                 The default type is PSGalleryModule.
                                 This is extensible.
 
-        Deployment Script:      These are scripts associated to a particular dependency type.
+        Dependency Script:      These are scripts associated to a particular dependency type.
                                 They tell PSDepend how to install a dependency type.
                                 All should accept a 'Dependency' parameter.
                                 For example, the PSGalleryModule script uses PowerShellGet to find

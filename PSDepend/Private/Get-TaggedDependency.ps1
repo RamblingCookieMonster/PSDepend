@@ -4,7 +4,7 @@
         [string[]]$Tags
     )
 
-    # Only return deployment with all specified tags
+    # Only return dependency with all specified tags
     foreach($Depend in $Dependency)
     {
         $Include = $False
