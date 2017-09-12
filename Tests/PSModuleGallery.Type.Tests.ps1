@@ -572,6 +572,70 @@ InModuleScope 'PSDepend' {
             }
         }
     }
+
+    Describe "AWSS3Ojbect Type PS$PSVersion" {
+        $expectedLocalFile=Join-Path $SavePath 'AWSS3Object.mock'
+        Context 'Installs dependency (Mock)' {
+            Mock Copy-S3ObjectWrap {
+                [pscustomobject]@{
+                    PSB = $PSBoundParameters
+                    Arg = $Args
+                }
+            }
+
+            $Dependencies = @(Get-Dependency @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1")
+
+            It 'Parses the AWSS3Object dependency type' {
+                $Dependencies.count | Should be 1
+                $Dependencies[0].DependencyType | Should be 'AWSS3Object'
+            }
+
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1" -Force
+            
+            It 'Invokes the AWSS3Object dependency type' {
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$BucketName -eq "BucketName"} # already called, so still 1, not 2...
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$Region -eq "Region"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$Key -eq "Key"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$AccessKey -eq "AccessKey"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$SecretKey -eq "SecretKey"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$LocalFile -eq $expectedLocalFile}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$LocalFolder -eq $null}
+            }
+
+            New-Item -ItemType File -Path $expectedLocalFile
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1" -Force
+
+            It 'Invokes the AWSS3Object dependency type (Overwrite)' {
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$BucketName -eq "BucketName"} # already called, so still 1, not 2...
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$Region -eq "Region"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$Key -eq "Key"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$AccessKey -eq "AccessKey"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$SecretKey -eq "SecretKey"}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$LocalFile -eq $expectedLocalFile}
+                Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$LocalFolder -eq $null}
+            }
+        }
+        
+        Context 'Tests dependency' {
+            It 'Returns $false if file does not exist' {
+                Mock Copy-S3ObjectWrap {}
+                Remove-Item $expectedLocalFile -Force
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1" | Test-Dependency @Verbose -Quiet)
+                $Results.count | Should be 1
+                $Results[0] | Should be $False
+                Assert-MockCalled -CommandName Copy-S3ObjectWrap -Times 0 -Exactly
+            }
+
+            It 'Returns $true if file does exist' {
+                Mock Copy-S3ObjectWrap {}
+                New-Item -ItemType File -Path $expectedLocalFile -Force
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1" | Test-Dependency @Verbose -Quiet)
+                $Results.count | Should be 1
+                $Results[0] | Should be $true
+                Assert-MockCalled -CommandName Copy-S3ObjectWrap -Times 0 -Exactly
+            }
+        }
+    }
 }
 
 Remove-Item C:\PSDependPesterTest -Force -Recurse
