@@ -617,27 +617,6 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Remove-Item $SavePath -Force -Recurse
-        Context 'Installs dependency' {
-
-            $Dependencies = @(Get-Dependency @Verbose -Path "$TestDepends\awss3object.depend.psd1")
-
-            It 'Parses the AWSS3Object dependency type' {
-                $Dependencies.count | Should be 2
-                $Dependencies[0].DependencyType | Should be 'AWSS3Object'
-            }
-
-            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\awss3object.depend.psd1" -Force
-            $expectedLocalFile1=Join-Path $SavePath 'Windows_Single_Server_SharePoint_Foundation.template'
-            $expectedLocalFile2=Join-Path $SavePath 'Windows_Single_Server_SharePoint_Foundation.template.changed'
-            
-            It 'Files downloaded' {
-                Test-Path -Path $expectedLocalFile1 | Should BeExactly $true
-                Test-Path -Path $expectedLocalFile2 | Should BeExactly $true
-            }
-        }
-#        mkdir $SavePath -Force
-
         Context 'Tests dependency' {
             It 'Returns $false if file does not exist' {
                 Mock Copy-S3ObjectWrap {}
@@ -656,9 +635,7 @@ InModuleScope 'PSDepend' {
                 Assert-MockCalled -CommandName Copy-S3ObjectWrap -Times 0 -Exactly
             }
         }
-
     }
-    
 }
 
 Remove-Item C:\PSDependPesterTest -Force -Recurse
