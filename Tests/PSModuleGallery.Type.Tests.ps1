@@ -574,7 +574,7 @@ InModuleScope 'PSDepend' {
     }
 
     Describe "AWSS3Ojbect Type PS$PSVersion" {
-
+        $expectedLocalFile=Join-Path $SavePath 'AWSS3Object.mock'
         Context 'Installs dependency (Mock)' {
             Mock Copy-S3ObjectWrap {
                 [pscustomobject]@{
@@ -592,7 +592,6 @@ InModuleScope 'PSDepend' {
 
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1" -Force
             
-            $expectedLocalFile=Join-Path $SavePath 'AWSS3Object.mock'
             It 'Invokes the AWSS3Object dependency type' {
                 Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$BucketName -eq "BucketName"} # already called, so still 1, not 2...
                 Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$Region -eq "Region"}
@@ -616,19 +615,20 @@ InModuleScope 'PSDepend' {
                 Assert-MockCalled Copy-S3ObjectWrap -Times 1 -Exactly  -ParameterFilter {$LocalFolder -eq $null}
             }
         }
-
+        
         Context 'Tests dependency' {
             It 'Returns $false if file does not exist' {
                 Mock Copy-S3ObjectWrap {}
+                Remove-Item $expectedLocalFile -Force
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1" | Test-Dependency @Verbose -Quiet)
                 $Results.count | Should be 1
                 $Results[0] | Should be $False
                 Assert-MockCalled -CommandName Copy-S3ObjectWrap -Times 0 -Exactly
             }
 
-            New-Item -ItemType File -Path (Join-Path $SavePath 'AWSS3Object.mock')
             It 'Returns $true if file does exist' {
                 Mock Copy-S3ObjectWrap {}
+                New-Item -ItemType File -Path $expectedLocalFile -Force
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\awss3object.depend.mock.psd1" | Test-Dependency @Verbose -Quiet)
                 $Results.count | Should be 1
                 $Results[0] | Should be $true
