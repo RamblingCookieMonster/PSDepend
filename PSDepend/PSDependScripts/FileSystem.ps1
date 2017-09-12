@@ -13,7 +13,7 @@
             Target: The folder to copy the source to.  If the source is a file, we adjust this in Robocopy to append the source folder name.
             Source: The source folder or file to copy
 
-    .PARAMETER Deployment
+    .PARAMETER Dependency
         Dependency to run
 
     .PARAMETER PSDependAction

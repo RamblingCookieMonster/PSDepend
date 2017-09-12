@@ -26,7 +26,7 @@
     .PARAMETER PSDependAction
         Test or Install the module.  Defaults to Install
 
-        NOTE: Test is currently not implemented.
+        NOTE: Test is currently not implemented
 
         Test: Return true or false on whether the dependency is in place
         Install: Install the dependency
@@ -81,7 +81,7 @@ param(
     [psobject[]]
     $Dependency,
 
-    [ValidateSet('Test', 'Install')]
+    [ValidateSet( 'Install')]
     [string[]]$PSDependAction = @('Install'),
 
     [bool]$ExtractProject = $True,
@@ -123,7 +123,12 @@ $GitHubProject = $URL.split('/')[-3]
 $OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
 $null = New-Item -ItemType Directory -Path $OutPath -Force
 $OutFile= Join-Path $OutPath "$Version.zip"
-Invoke-RestMethod $URL -OutFile $OutFile
+Invoke-RestMethod $URL -OutFile $OutFile -ErrorAction Stop
+if(-not (Test-Path $OutFile))
+{
+    Write-Error "Could not download [$URL] to [$OutFile]. See error details and verbose output for more information"
+    return
+}
 
 #TODO: platform specific bits, e.g. System.IO.Compression.ZipFile for core
     Unblock-File $OutFile -Confirm:$False
@@ -133,7 +138,17 @@ Invoke-RestMethod $URL -OutFile $OutFile
     $Destination = (New-Object -com shell.application).NameSpace($OutPath)
     $Destination.CopyHere($Zipfile.Items())
 
-$GitHubFolder = Rename-Item (Join-Path $OutPath "$GitHubProject-$Version") $GitHubProject -PassThru
+$TargetV = (Join-Path $OutPath "$GitHubProject-$Version")
+$TargetNoV = (Join-Path $OutPath "$GitHubProject-$($Version.TrimStart('v'))")
+
+if(Test-Path $TargetNoV)
+{
+    $GitHubFolder = Rename-Item $TargetNoV $GitHubProject -PassThru
+}
+elseif(Test-Path $TargetV)
+{
+    $GitHubFolder = Rename-Item $TargetV $GitHubProject -PassThru
+}
 
 Remove-Item $OutFile -Force -Confirm:$False
 

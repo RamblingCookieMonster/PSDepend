@@ -223,21 +223,21 @@ Function Invoke-PSDepend {
                                         "Processing dependency" ))
             {
                 $PreScriptSuccess = $True #anti pattern! Best I could come up with to handle both prescript fail and dependencies
-                if($DoInstall -and $Deployment.PreScripts.Count -gt 0)
+                if($DoInstall -and $Dependency.PreScripts.Count -gt 0)
                 {
                     $ExistingEA = $ErrorActionPreference
                     $ErrorActionPreference = 'Stop'
-                    foreach($script in $Dependency.Prescripts)
+                    foreach($script in $Dependency.PreScripts)
                     {
                         Try
                         {
-                            Write-Verbose "Invoking pre script: [$Script]"
-                            . $Script
+                            Write-Verbose "Invoking pre script: [$script]"
+                            . $script
                         }
                         Catch
                         {
                             $PreScriptSuccess = $False
-                            "Skipping installation due to failed pre script: [$Script]"
+                            "Skipping installation due to failed pre script: [$script]"
                             Write-Error $_
                         }
                     }
@@ -256,12 +256,12 @@ Function Invoke-PSDepend {
                     }
                 }
 
-                if($DoInstall -and $Dependency.PostScript.Count -gt 0)
+                if($DoInstall -and $Dependency.PostScripts.Count -gt 0)
                 {
-                    foreach($script in $Deployment.PostScript)
+                    foreach($script in $Dependency.PostScripts)
                     {
-                        Write-Verbose "Invoking post script: $($Script)"
-                        . $Script
+                        Write-Verbose "Invoking post script: $($script)"
+                        . $script
                     }
                 }
             }

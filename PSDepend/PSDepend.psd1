@@ -4,7 +4,7 @@
 RootModule = 'PSDepend.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.30'
+ModuleVersion = '0.1.49'
 
 # ID used to uniquely identify this module
 GUID = '63ea9e2a-320d-43ff-a11a-4930ca03cce6'
@@ -96,7 +96,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'WARNING: This is a pre-release. See ProjectUri for details: https://github.com/RamblingCookieMonster/PSDepend/'
+        # ReleaseNotes = ''
 
     } # End of PSData hashtable
 
