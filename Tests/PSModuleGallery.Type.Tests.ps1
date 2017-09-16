@@ -572,6 +572,60 @@ InModuleScope 'PSDepend' {
             }
         }
     }
+
+    Describe "Npm Type PS$PSVersion" {
+
+        Context 'Installs Dependency' {
+            Mock Get-NodeModule {return $null}
+            Mock Install-NodeModule {}
+            Mock mkdir {return true}
+            Mock Push-Location
+            Mock Pop-Location
+
+            $Dependencies = Get-Dependency @Verbose -Path "$TestDepends\npm.depend.psd1"
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\npm.depend.psd1" -Force
+
+            It 'Parses the Npm dependency type' {
+                $Dependencies.count | Should be 2
+                ( $Dependencies | Where-Object {$_.DependencyType -eq 'Npm'} ).Count | Should Be 2
+                ( $Dependencies | Where-Object {$_.DependencyName -like 'gitbook-cli'}).Version | Should be '2.3.0'
+                ( $Dependencies | Where-Object {$_.DependencyName -like 'gitbook-cli'}).Target | Should be 'Global'
+                ( $Dependencies | Where-Object {$_.DependencyName -like 'gitbook-summary'}).Version | Should BeNullOrEmpty
+            }
+
+            It 'Invokes the Nppm dependency type' {
+                Assert-MockCalled -CommandName Install-NodeModule -Times 2 -Exactly
+            }
+        }
+
+        Context 'Tests Dependency' {
+            Mock Install-NodeModule {}
+            Mock mkdir {return true}
+            Mock Push-Location
+            Mock Pop-Location
+
+            $Dependencies = Get-Dependency @Verbose -Path "$TestDepends\npm.depend.psd1"
+
+            It 'Returns $false if the module is not installed' {
+                Mock Get-NodeModule {return $null}
+                Invoke-PSDepend @Verbose -Path "$TestDepends\npm.depend.psd1" -Test -Quiet | Should Be $false
+            }
+
+            It 'Returns $true if the module is installed' {
+                Mock Get-NodeModule {return [pscustomobject]@{
+                    'gitbook-cli' = @{
+                        version = '2.3.0'
+                    }
+                }} -ParameterFilter {$Target -eq 'Global'}
+                Mock Get-NodeModule {return [pscustomobject]@{
+                    'gitbook-summary' = @{
+                        version = '1.2.3'
+                    }
+                }}
+                Invoke-PSDepend @Verbose -Path "$TestDepends\npm.depend.psd1" -Test -Quiet | Should Be $true
+            }
+        }
+    }
 }
 
 Remove-Item C:\PSDependPesterTest -Force -Recurse
