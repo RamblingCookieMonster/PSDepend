@@ -31,6 +31,11 @@
         Description = 'EXPERIMENTAL: Download and extract a GitHub repo'
     }
 
+    Npm = @{
+        Script = 'Npm.ps1'
+        Description = 'Install a node package'
+    }
+
     Noop = @{
         Script = 'noop.ps1'
         Description = 'Display parameters that a depends script would receive. Use for testing and validation.'
