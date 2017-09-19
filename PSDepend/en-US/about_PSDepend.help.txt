@@ -40,6 +40,7 @@ DETAILED DESCRIPTION
                                 If we don't find it there, we download to that path
                                 If we do find it there, we add the parent container to $ENV:Path
       * Git: Requires git.exe in your path, or in the file path specified in PSDepend\PSDepend.Config's GitPath
+      * Npm: Requires npm in your path
                             
     Example use (*.PSDepend.ps1)
     ============================
