@@ -25,18 +25,28 @@ function Get-Dependency {
 
         These are parsed from dependency PSD1 files as follows:
 
-        Simple syntax:
+        Simple syntax, intepreted:
             @{
                 DependencyName = 'Version'
             }
 
-            With the simple syntax:
+            With the simple syntax using interpretation:
                * The DependencyName (key) is used as the Name
                * If no DependencyType is specified, we parse the DependencyName to pick a default:
                  * We default to GitHub if the DependencyName has a single / (e.g. aaa/bbb)
                  * We default to git if the DependencyName has more than one / (e.g. https://gitlab.fqdn/org/some.git)
                  * We default to PSGalleryModule in all other cases
                * The Version (value) is a string, and is used as the Version
+               * Other properties are set to $null
+
+        Simple syntax, with helpers:
+            @{
+                DependencyType::DependencyName = 'Version'
+            }
+
+            With the simple syntax using helpers:
+               * The dependency type and dependency name are included in the key (DependencyType::DependencyName, e.g. PSGalleryModule::Pester)
+               * The version (value) is a string, and is used as the Version
                * Other properties are set to $null
 
         Advanced syntax:
@@ -228,9 +238,35 @@ function Get-Dependency {
             $DependencyHash = $Dependencies.$Dependency
             $DependencyType = Get-GlobalOption -Name DependencyType
 
+
+            # Look simple syntax with helpers in the key first
+            If( $DependencyHash -is [string] -and
+                $Dependency -match '::' -and
+                ($Dependency -split '::').count -eq 2
+            )
+            {
+                [pscustomobject]@{
+                    PSTypeName = 'PSDepend.Dependency'
+                    DependencyFile = $DependencyFile
+                    DependencyName = ($Dependency -split '::')[1]
+                    DependencyType = ($Dependency -split '::')[0]
+                    Name = ($Dependency -split '::')[1]
+                    Version = $DependencyHash
+                    Parameters = Get-GlobalOption -Name Parameters
+                    Source = Get-GlobalOption -Name Source
+                    Target = Get-GlobalOption -Name Target
+                    AddToPath = Get-GlobalOption -Name AddToPath
+                    Tags = Get-GlobalOption -Name Tags
+                    DependsOn = Get-GlobalOption -Name DependsOn
+                    PreScripts =  Get-GlobalOption -Name PreScripts
+                    PostScripts =  Get-GlobalOption -Name PostScripts
+                    PSDependOptions = $PSDependOptions
+                    Raw = $null
+                }
+            }
             #Parse simple key=name, value=version format
             # It doesn't look like a git repo, and simple syntax: PSGalleryModule
-            if( $DependencyHash -is [string] -and
+            elseif( $DependencyHash -is [string] -and
                 $Dependency -notmatch '/' -and
                 -not $DependencyType -or
                 $DependencyType -eq 'PSGalleryModule')

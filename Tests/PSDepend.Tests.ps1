@@ -42,6 +42,14 @@ Describe "Get-Dependency PS$PSVersion" {
             @( $Dependencies | Where {$_.Name -like $_.DependencyName} ).count | Should be 4
         }
 
+        It 'Should read DependencyType::DependencyName=Version syntax' {
+            $Dependencies = Get-Dependency -Path $TestDepends\simple.helpers.depend.psd1
+            $Dependencies.Count | Should be 2
+            @( $Dependencies.DependencyType -like 'PSGalleryModule' ).count | Should be 1
+            @( $Dependencies.DependencyType -like 'GitHub' ).count | Should be 1
+            @( $Dependencies | Where {$_.Name -like $_.DependencyName} ).count | Should be 2
+        }
+
         It 'Should read each property correctly' {
             $Dependencies = Get-Dependency -Path $TestDepends\allprops.depend.psd1
             @( $Dependencies ).count | Should Be 1
