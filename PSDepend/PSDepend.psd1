@@ -4,7 +4,7 @@
 RootModule = 'PSDepend.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.1.49'
+ModuleVersion = '0.1.56'
 
 # ID used to uniquely identify this module
 GUID = '63ea9e2a-320d-43ff-a11a-4930ca03cce6'
@@ -58,7 +58,7 @@ PowerShellVersion = '3.0'
 # NestedModules = @()
 
 # Functions to export from this module
-FunctionsToExport = '*'
+FunctionsToExport = @('Get-Dependency','Get-PSDependScript','Get-PSDependType','Import-Dependency','Install-Dependency','Invoke-DependencyScript','Invoke-PSDepend','Test-Dependency')
 
 # Cmdlets to export from this module
 CmdletsToExport = '*'

@@ -67,7 +67,9 @@ param(
     [ValidateSet('Test', 'Install')]
     [string[]]$PSDependAction = @('Install'),
 
-    [string]$ImportPath
+    [string]$ImportPath,
+    
+    [bool]$ExtractProject = $False
 )
 
 # Extract data from Dependency
@@ -156,7 +158,7 @@ if($PSDependAction -notcontains 'Install')
     return
 }
 
-if($GottaInstall)
+if($GottaInstall -and !$ExtractProject)
 {
     Push-Location
     Set-Location $Target
@@ -169,14 +171,51 @@ if($GottaInstall)
     Invoke-ExternalCommand git 'checkout', $Version
     Pop-Location
 }
+elseif($GottaInstall -and $ExtractProject) {
+    $OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
+    $RepoFolder = Join-Path -Path $OutPath -ChildPath $Name
+
+    $null = New-Item -ItemType Directory -Path $OutPath -Force
+    Push-Location $OutPath
+    
+    Write-Verbose -Message "Cloning dependency [$Name] with git from [$($Target)]"
+    Invoke-ExternalCommand git 'clone', $Name
+
+    Push-Location $Name
+    Write-Verbose -Message "Checking out [$Version] of [$Name] from [$RepoFolder]"
+    Invoke-ExternalCommand git 'checkout', $Version
+
+    if($ExtractProject)
+    {
+        $ProjectDetails = Get-ProjectDetail -Path $RepoFolder
+        [string[]]$ToCopy = $ProjectDetails.Path
+    }
+    else
+    {
+        [string[]]$ToCopy = $RepoFolder
+    }
+
+
+    #TODO: Implement test and import PSDependActions.
+    if(-not (Test-Path $Target))
+    {
+        $null = New-Item -ItemType Directory -Path $Target -Force
+    }
+    foreach($Item in $ToCopy)
+    {
+        Write-Verbose "Copy From: $ToCopy To: $Target"
+        Copy-Item -Path $Item -Destination $Target -Force -Confirm:$False -Recurse
+    }
+    Remove-Item $OutPath -Force -Recurse
+}
 
 if($Dependency.AddToPath)
 {
     Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
-    Add-ToItemCollection -Reference Env:\PSModulePath -Item $Target
+    Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $Target).FullName
     
     Write-Verbose "Setting PATH to`n$($RepoPath, $env:PATH -join ';' | Out-String)"
-    Add-ToItemCollection -Reference Env:\Path -Item $Target
+    Add-ToItemCollection -Reference Env:\Path -Item (Get-Item $Target).FullName
 }
 
 $ToImport = $Target
