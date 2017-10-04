@@ -186,15 +186,9 @@ elseif($GottaInstall -and $ExtractProject) {
     Invoke-ExternalCommand git 'checkout', $Version
     Pop-Location
 
-    if($ExtractProject)
-    {
-        $ProjectDetails = Get-ProjectDetail -Path $RepoFolder
-        [string[]]$ToCopy = $ProjectDetails.Path
-    }
-    else
-    {
-        [string[]]$ToCopy = $RepoFolder
-    }
+
+    $ProjectDetails = Get-ProjectDetail -Path $RepoFolder
+    [string[]]$ToCopy = $ProjectDetails.Path
     Pop-Location
 
     #TODO: Implement test and import PSDependActions.

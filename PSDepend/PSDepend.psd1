@@ -58,7 +58,7 @@ PowerShellVersion = '3.0'
 # NestedModules = @()
 
 # Functions to export from this module
-FunctionsToExport = @('Get-Dependency','Get-PSDependScript','Get-PSDependType','Import-Dependency','Install-Dependency','Invoke-DependencyScript','Invoke-PSDepend','Test-Dependency')
+FunctionsToExport = '*'
 
 # Cmdlets to export from this module
 CmdletsToExport = '*'
