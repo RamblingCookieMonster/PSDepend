@@ -173,17 +173,18 @@ if($GottaInstall -and !$ExtractProject)
 }
 elseif($GottaInstall -and $ExtractProject) {
     $OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
-    $RepoFolder = Join-Path -Path $OutPath -ChildPath $Name
+    $RepoFolder = Join-Path -Path $OutPath -ChildPath $GitName
 
     $null = New-Item -ItemType Directory -Path $OutPath -Force
     Push-Location $OutPath
     
-    Write-Verbose -Message "Cloning dependency [$Name] with git from [$($Target)]"
+    Write-Verbose -Message "Cloning dependency [$GitName] with git from [$($Target)]"
     Invoke-ExternalCommand git 'clone', $Name
 
-    Push-Location $Name
-    Write-Verbose -Message "Checking out [$Version] of [$Name] from [$RepoFolder]"
+    Push-Location $GitName
+    Write-Verbose -Message "Checking out [$Version] of [$GitName] from [$RepoFolder]"
     Invoke-ExternalCommand git 'checkout', $Version
+    Pop-Location
 
     if($ExtractProject)
     {
@@ -194,7 +195,7 @@ elseif($GottaInstall -and $ExtractProject) {
     {
         [string[]]$ToCopy = $RepoFolder
     }
-
+    Pop-Location
 
     #TODO: Implement test and import PSDependActions.
     if(-not (Test-Path $Target))
