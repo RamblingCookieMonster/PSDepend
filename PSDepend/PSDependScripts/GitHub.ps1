@@ -95,16 +95,17 @@ $NameParts = $Dependency.Name.Split("/")
 $Name = $NameParts[1]
 $Version = $Dependency.Version
 
+if(-not $Target)
+{
+    $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+}
+
+# Search for an already existing version of the dependency
 $Module = Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue
 $ModuleExisting = $null
 $ExistingVersion = $null
 $ShouldInstall = $false
 $URL = $null
-
-if(-not $Target)
-{
-    $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
-}
 
 if($Module)
 {
@@ -120,6 +121,7 @@ if($ModuleExisting)
     Write-Verbose "Found existing module [$Name]"
     $ExistingVersion = $Module | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
 
+    # Check if the version that is should be used is a version number
     if($Version -match "^\d+(?:\.\d+)+$") {
         switch($ExistingVersion.CompareTo($Version))
         {
@@ -136,16 +138,20 @@ if($ModuleExisting)
     }
     else
     {
+        # The version that is to be used is probably a GitHub branch name
         $ShouldInstall = $true
     }
 }
 else
 {
+    Write-Verbose "Did not find existing module [$Name]"
     $ShouldInstall = $true
 }
 
+# Skip the case when the version that is to be used already exists
 if($ShouldInstall)
 {
+    # API-fetch the latest release on GitHub
     $LatestRelease = $null
 
     try
@@ -154,15 +160,19 @@ if($ShouldInstall)
     }
     catch
     {
-        # Nothing
+        # Stupid, but needed error handler for Invoke-RestMethod
     }
 
     if($LatestRelease)
     {
+        # A remote version is available
         $GitHubVersion = New-Object "System.Version" $LatestRelease.tag_name
+
+        Write-Verbose "Found release version [$GitHubVersion] for [$DependencyName] on GitHub"
 
         if ($ExistingVersion)
         {
+            # A remote and a local version exists already
             switch($ExistingVersion.CompareTo($GitHubVersion))
             {
                 1 {
@@ -184,24 +194,29 @@ if($ShouldInstall)
         }
         else
         {
+            # A remote but no local version exists already, so use the release link
             $URL = $LatestRelease.zipball_url
         }
     }
     else
     {
-        Write-Verbose "[$DependencyName] has no releases"
+        Write-Verbose "[$DependencyName] has no releases on GitHub"
 
+        # Translate version "latest" to "master"
         if($Version -Eq "latest")
         {
             $Version = "master"
         }
 
+        # Link for a .zip archive of the repository's branch
         $URL = "https://api.github.com/repos/$DependencyName/zipball/$Version"
     }
 }
 
+# Install action needs to be wanted and logical
 if(($PSDependAction -contains 'Install') -and $ShouldInstall)
 {
+    # Create a temporary directory and download the repository to it
     $OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
     New-Item -ItemType Directory -Path $OutPath -Force | Out-Null
     $OutFile = Join-Path $OutPath "$Version.zip"
@@ -213,16 +228,19 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
         return
     }
     
+    # Extract the zip file
     $Zipfile = (New-Object -com shell.application).NameSpace($OutFile)
     $Destination = (New-Object -com shell.application).NameSpace($OutPath)
     $Destination.CopyHere($Zipfile.Items())
 
+    # Remove the zip file
     Remove-Item $OutFile -Force -Confirm:$False
 
     $OutPath = (Get-ChildItem -Path $OutPath)[0].FullName
     
     if($ExtractPath)
     {
+        # Filter only the contents wanted
         [string[]]$ToCopy = foreach($RelativePath in $ExtractPath)
         {
             $AbsolutePath = Join-Path $OutPath $RelativePath
@@ -238,16 +256,19 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     }
     elseif($ExtractProject)
     {
+        # Filter only the project contents
         $ProjectDetails = Get-ProjectDetail -Path $OutPath
         [string[]]$ToCopy = $ProjectDetails.Path
     }
     else
     {
+        # Use the standard download path
         [string[]]$ToCopy = $OutPath
     }
     
-    Write-Verbose "ToCopy: $ToCopy"
+    Write-Verbose "Contents that will be copied: $ToCopy"
     
+    # Copy the contents to their target
     if(-not (Test-Path $Target))
     {
         mkdir $Target -Force
@@ -257,14 +278,18 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
         Copy-Item -Path $Item -Destination "$Target$Name" -Force -Confirm:$False -Recurse
     }
     
+    # Delete the temporary folder
     Remove-Item (Get-Item $OutPath).parent.FullName -Force -Recurse
 }
 
+# Conditional import
 Import-PSDependModule -Name $Name -Action $PSDependAction
 
+# Return true or false if Test action is wanted
 if($PSDependAction -contains 'Test')
 {
     return $ModuleExisting
 }
 
+# Otherwise return null
 return $null
