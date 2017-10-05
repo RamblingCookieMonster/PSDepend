@@ -1,41 +1,33 @@
 <#
     .SYNOPSIS
-        EXPERIMENTAL: Download a GitHub repository
+        Installs a module from a GitHub repository.
 
     .DESCRIPTION
-        EXPERIMENTAL: Download a GitHub repository
-
-        The Git dependency type requires git.exe.  The FileDownload type would just pull an archive down.
-        This type will...
-            download a repository via HTTP,
-            extract it,
-            optionally, select out a specific subfolder for PowerShell based projects.
-
-        IMPORTANT: We currently download the repo temporarily to inspect and find the project path, regardless of PSDependAction.
+        Installs a module from a GitHub repository.
 
         Relevant Dependency metadata:
             DependencyName (Key): The key for this dependency is used as Name, if none is specified
-            Name: Used to specify the GitHub entity/reponame to download
+            Name: Used to specify the GitHub repository name to download
+            Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
             Target: The folder to download repo to.  Defaults to "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules".  Created if it doesn't exist.
-            Version:  Specify a branch name or commit hash to download
 
     .NOTES
-        A huge thanks to Doug Finke for the idea and some code!
+        A huge thanks to Doug Finke for the idea and some code and to Jonas Thelemann for a rewrite for releases!
             https://github.com/dfinke/InstallModuleFromGitHub
+            https://github.com/dargmuesli
 
     .PARAMETER PSDependAction
-        Test or Install the module.  Defaults to Install
-
-        NOTE: Test is currently not implemented
+        Test, Install, or Import the module.  Defaults to Install
 
         Test: Return true or false on whether the dependency is in place
         Install: Install the dependency
+        Import: Import the dependency
 
     .PARAMETER ExtractPath
-        Download the repo, and extract only these specified file(s) or folder(s) to the target.  Defaults to $True
+        Extract only these specified file(s) or folder(s) to the target.
 
     .PARAMETER ExtractProject
-        Downoad the repo, parse it for a common PowerShell project hierarchy, and extract only the project folder
+        Parse the GitHub repository for a common PowerShell project hierarchy and extract only the project folder
 
         Example:  ramblingcookiemonster/psslack looks like this:
                   PSSlack/         Repo root
@@ -53,16 +45,22 @@
 
     .EXAMPLE
         @{
-            'bundyfx/vamp' = 'master'
+            'Dargmuesli/powershell-lib' = '0.1.0'
         }
 
-        # Download the master branch of vamp from bundyfx on GitHub
+        # Download version 0.1.0 of powershell-lib by Dargmuesli on GitHub
 
     .EXAMPLE
+        @{
+            'Dargmuesli/powershell-lib' = ''
+        }
 
+        # Download latest version of powershell-lib by Dargmuesli on GitHub
+
+    .EXAMPLE
         @{
             'powershell/demo_ci' = @{
-                Version = 'master'
+                Version = 'latest'
                 DependencyType = 'GitHub'
                 Parameters = @{
                     ExtractPath = 'Assets/DscPipelineTools',
@@ -71,125 +69,202 @@
             }
         }
 
-        # Download the master branch of demo_ci from powershell on GitHub
+        # Download the latest version of demo_ci by powershell on GitHub
         # Extract repo-root/Assets/DscPipelineTools to the target
         # Extract repo-root/InfraDNS/Configs/DNSServer.ps1 to the target
 #>
 [cmdletbinding()]
 param(
     [PSTypeName('PSDepend.Dependency')]
-    [psobject[]]
-    $Dependency,
+    [psobject[]]$Dependency,
 
-    [ValidateSet( 'Install')]
+    [ValidateSet('Test', 'Install', 'Import')]
     [string[]]$PSDependAction = @('Install'),
 
-    [bool]$ExtractProject = $True,
-
-    [string[]]$ExtractPath
+    [string[]]$ExtractPath,
+    
+    [bool]$ExtractProject = $True
 )
 
-# Extract data from Dependency
-    $DependencyName = $Dependency.DependencyName
-    if(-not ($Name = $Dependency.Name))
-    {
-        $Name = $DependencyName
-    }
-    $Target = $Dependency.Target
-    if(-not $Target)
-    {
-        $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
-    }
+Write-Verbose -Message "Examining GitHub dependency [$DependencyName]"
 
-    $Source = $Dependency.Source
+# Extract data from dependency
+$DependencyName = $Dependency.DependencyName
+$Target = $Dependency.Target
+$NameParts = $Dependency.Name.Split("/")
+$Name = $NameParts[1]
+$Version = $Dependency.Version
 
-    # Default to master branch
-    if(-not ($Version = $Dependency.Version))
-    {
-        $Version = 'master'
-    }
+$Module = Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue
+$ModuleExisting = $null
+$ExistingVersion = $null
+$ShouldInstall = $false
+$URL = $null
 
-# entity/project?
-if( ($Name -split '/' ).count -eq 2 )
+if(-not $Target)
 {
-    $URL = 'https://github.com/{0}/archive/{1}.zip' -f $Name, $Version
-}
-else #URL
-{
-    $URL = $Name
-}
-$GitHubProject = $URL.split('/')[-3]
-
-$OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
-$null = New-Item -ItemType Directory -Path $OutPath -Force
-$OutFile= Join-Path $OutPath "$Version.zip"
-Invoke-RestMethod $URL -OutFile $OutFile -ErrorAction Stop
-if(-not (Test-Path $OutFile))
-{
-    Write-Error "Could not download [$URL] to [$OutFile]. See error details and verbose output for more information"
-    return
+    $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
 }
 
-#TODO: platform specific bits, e.g. System.IO.Compression.ZipFile for core
-    Unblock-File $OutFile -Confirm:$False
+if($Module)
+{
+    $ModuleExisting = $true
+}
+else
+{
+    $ModuleExisting = $false
+}
 
-    # Compat with older .net...
+if($ModuleExisting)
+{
+    Write-Verbose "Found existing module [$Name]"
+    $ExistingVersion = $Module | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+
+    if($Version -match "^\d+(?:\.\d+)+$") {
+        switch($ExistingVersion.CompareTo($Version))
+        {
+            {@(-1, 1) -contains $_} {
+                Write-Verbose "For [$Name], the version you specified [$ExistingVersion] does not match the already existing version [$ExistingVersion]"
+                $ShouldInstall = $true
+                break
+            }
+            0 {
+                Write-Verbose "For [$Name], the version you specified [$ExistingVersion] matches the already existing version [$ExistingVersion]"
+                break
+            }
+        }
+    }
+    else
+    {
+        $ShouldInstall = $true
+    }
+}
+else
+{
+    $ShouldInstall = $true
+}
+
+if($ShouldInstall)
+{
+    $LatestRelease = $null
+
+    try
+    {
+        $LatestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyName/releases/latest"
+    }
+    catch
+    {
+        # Nothing
+    }
+
+    if($LatestRelease)
+    {
+        $GitHubVersion = New-Object "System.Version" $LatestRelease.tag_name
+
+        if ($ExistingVersion)
+        {
+            switch($ExistingVersion.CompareTo($GitHubVersion))
+            {
+                1 {
+                    Write-Verbose "For [$Name], you have a more recent version [$ExistingVersion] than the version available on GitHub [$ExistingVersion]"
+                    $ShouldInstall = $false
+                    break
+                }
+                0 {
+                    Write-Verbose "For [$Name], you already have the lastest version [$ExistingVersion]"
+                    $ShouldInstall = $false
+                    break
+                }
+                -1 {
+                    Write-Verbose "For [$Name], you have an older version [$ExistingVersion] than the version available on GitHub [$ExistingVersion]"
+                    $URL = $LatestRelease.zipball_url
+                    break
+                }
+            }
+        }
+        else
+        {
+            $URL = $LatestRelease.zipball_url
+        }
+    }
+    else
+    {
+        Write-Verbose "[$DependencyName] has no releases"
+
+        if($Version -Eq "latest")
+        {
+            $Version = "master"
+        }
+
+        $URL = "https://api.github.com/repos/$DependencyName/zipball/$Version"
+    }
+}
+
+if(($PSDependAction -contains 'Install') -and $ShouldInstall)
+{
+    $OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
+    New-Item -ItemType Directory -Path $OutPath -Force | Out-Null
+    $OutFile = Join-Path $OutPath "$Version.zip"
+    Invoke-RestMethod -Uri $URL -OutFile $OutFile
+
+    if(-not (Test-Path $OutFile))
+    {
+        Write-Error "Could not download [$URL] to [$OutFile]. See error details and verbose output for more information"
+        return
+    }
+    
     $Zipfile = (New-Object -com shell.application).NameSpace($OutFile)
     $Destination = (New-Object -com shell.application).NameSpace($OutPath)
     $Destination.CopyHere($Zipfile.Items())
 
-$TargetV = (Join-Path $OutPath "$GitHubProject-$Version")
-$TargetNoV = (Join-Path $OutPath "$GitHubProject-$($Version.TrimStart('v'))")
+    Remove-Item $OutFile -Force -Confirm:$False
 
-if(Test-Path $TargetNoV)
-{
-    $GitHubFolder = Rename-Item $TargetNoV $GitHubProject -PassThru
-}
-elseif(Test-Path $TargetV)
-{
-    $GitHubFolder = Rename-Item $TargetV $GitHubProject -PassThru
-}
-
-Remove-Item $OutFile -Force -Confirm:$False
-
-if($ExtractPath)
-{
-    [string[]]$ToCopy = foreach($RelativePath in $ExtractPath)
+    $OutPath = (Get-ChildItem -Path $OutPath)[0].FullName
+    
+    if($ExtractPath)
     {
-        $AbsolutePath = Join-Path $GitHubFolder $RelativePath
-        if(-not (Test-Path $AbsolutePath))
+        [string[]]$ToCopy = foreach($RelativePath in $ExtractPath)
         {
-            Write-Warning "Expected ExtractPath [$RelativePath], did not find at [$AbsolutePath]"
-        }
-        else
-        {
-            $AbsolutePath
+            $AbsolutePath = Join-Path $OutPath $RelativePath
+            if(-not (Test-Path $AbsolutePath))
+            {
+                Write-Warning "Expected ExtractPath [$RelativePath], did not find at [$AbsolutePath]"
+            }
+            else
+            {
+                $AbsolutePath
+            }
         }
     }
-}
-elseif($ExtractProject)
-{
-    $ProjectDetails = Get-ProjectDetail -Path $GitHubFolder
-    [string[]]$ToCopy = $ProjectDetails.Path
-}
-else
-{
-    [string[]]$ToCopy = $GitHubFolder
-}
-
-Write-Verbose "ToCopy: $ToCopy"
-
-#TODO: Implement test and import PSDependActions.
-if($PSDependAction -contains 'install')
-{
+    elseif($ExtractProject)
+    {
+        $ProjectDetails = Get-ProjectDetail -Path $OutPath
+        [string[]]$ToCopy = $ProjectDetails.Path
+    }
+    else
+    {
+        [string[]]$ToCopy = $OutPath
+    }
+    
+    Write-Verbose "ToCopy: $ToCopy"
+    
     if(-not (Test-Path $Target))
     {
         mkdir $Target -Force
     }
     foreach($Item in $ToCopy)
     {
-        Copy-Item -Path $Item -Destination $Target -Force -Confirm:$False -Recurse
+        Copy-Item -Path $Item -Destination "$Target$Name" -Force -Confirm:$False -Recurse
     }
+    
+    Remove-Item (Get-Item $OutPath).parent.FullName -Force -Recurse
 }
 
-Remove-Item $OutPath -Force -Recurse
+Import-PSDependModule -Name $Name -Action $PSDependAction
+
+if($PSDependAction -contains 'Test')
+{
+    return $ModuleExisting
+}
+
+return $null
