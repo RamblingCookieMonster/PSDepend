@@ -90,10 +90,15 @@ Write-Verbose -Message "Examining GitHub dependency [$DependencyName]"
 
 # Extract data from dependency
 $DependencyName = $Dependency.DependencyName
+$Version = $Dependency.Version
 $Target = $Dependency.Target
 $NameParts = $Dependency.Name.Split("/")
 $Name = $NameParts[1]
-$Version = $Dependency.Version
+
+if($Version -eq "")
+{
+    $Version = "latest"
+}
 
 if(-not $Target)
 {
@@ -123,6 +128,8 @@ if($ModuleExisting)
 
     # Check if the version that is should be used is a version number
     if($Version -match "^\d+(?:\.\d+)+$") {
+        $Version = New-Object "System.Version" $Version
+        
         switch($ExistingVersion.CompareTo($Version))
         {
             {@(-1, 1) -contains $_} {
@@ -275,7 +282,24 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     }
     foreach($Item in $ToCopy)
     {
-        Copy-Item -Path $Item -Destination "$Target$Name" -Force -Confirm:$False -Recurse
+        $Destination = $null
+
+        if($Version -match "^\d+(?:\.\d+)+$") {
+            # For versioned GitHub releases
+            $Destination = "$Target$Name\$Version"
+        }
+        elseif(($Version -eq "latest") -and ($LatestRelease))
+        {
+            # For latest GitHub releases
+            $Destination = "$Target$Name\$GitHubVersion"
+        }
+        else
+        {
+            # For GitHub branches
+            $Destination = "$Target$Name\$Version\$Name"
+        }
+
+        Copy-Item -Path $Item -Destination $Destination -Force -Confirm:$False -Recurse
     }
     
     # Delete the temporary folder
