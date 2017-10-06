@@ -12,7 +12,7 @@
             Target: The folder to download repo to.  Defaults to "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules".  Created if it doesn't exist.
 
     .NOTES
-        A huge thanks to Doug Finke for the idea and some code and to Jonas Thelemann for a rewrite for releases!
+        A huge thanks to Doug Finke for the idea and some code and to Jonas Thelemann for a rewrite for tags!
             https://github.com/dfinke/InstallModuleFromGitHub
             https://github.com/dargmuesli
 
@@ -110,6 +110,7 @@ $Module = Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue
 $ModuleExisting = $null
 $ExistingVersion = $null
 $ShouldInstall = $false
+$RemoteAvailable = $false
 $URL = $null
 
 if($Module)
@@ -158,56 +159,77 @@ else
 # Skip the case when the version that is to be used already exists
 if($ShouldInstall)
 {
-    # API-fetch the latest release on GitHub
-    $LatestRelease = $null
+    # API-fetch the tags on GitHub
+    $GitHubVersion = $null
+    $GitHubTag
+    $Page = 0
 
     try
     {
-        $LatestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyName/releases/latest"
+        :nullcheck while($GitHubVersion -Eq $null)
+        {
+            $Page++
+            $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyName/tags?per_page=100&page=$Page"
+
+            foreach($GitHubTag in $GitHubTags)
+            {
+                if($GitHubTag.name -match "^\d+(?:\.\d+)+$")
+                {
+                    $GitHubVersion = New-Object "System.Version" $GitHubTag.name
+
+                    switch($Version.CompareTo($GitHubVersion))
+                    {
+                        -1 {
+                            # Version is older compared to the GitHub version, continue searching
+                            break
+                        }
+                        0 {
+                            Write-Verbose "For [$Name], a matching version [$Version] has been found in the GitHub tags"
+                            $RemoteAvailable = $true
+                            break
+                        }
+                        1 {
+                            # Version is newer compared to the GitHub version, which means we can stop searching (given version history is reasonable)
+                            break nullcheck
+                        }
+                    }
+                }
+            }
+        }
     }
     catch
     {
         # Stupid, but needed error handler for Invoke-RestMethod
     }
 
-    if($LatestRelease)
+    if($RemoteAvailable)
     {
-        # A remote version is available
-        $GitHubVersion = New-Object "System.Version" $LatestRelease.tag_name
-
-        Write-Verbose "Found release version [$GitHubVersion] for [$DependencyName] on GitHub"
-
         if ($ExistingVersion)
         {
-            # A remote and a local version exists already
+            # A remote and a local version exist
             switch($ExistingVersion.CompareTo($GitHubVersion))
             {
-                1 {
-                    Write-Verbose "For [$Name], you have a more recent version [$ExistingVersion] than the version available on GitHub [$ExistingVersion]"
-                    $ShouldInstall = $false
+                {@(-1, 1) -contains $_} {
+                    Write-Verbose "For [$Name], you have a different version [$ExistingVersion] compared to the version available on GitHub [$GitHubVersion]"
+                    $URL = $GitHubTag.zipball_url
                     break
                 }
                 0 {
-                    Write-Verbose "For [$Name], you already have the lastest version [$ExistingVersion]"
+                    Write-Verbose "For [$Name], you already have the version [$ExistingVersion]"
                     $ShouldInstall = $false
-                    break
-                }
-                -1 {
-                    Write-Verbose "For [$Name], you have an older version [$ExistingVersion] than the version available on GitHub [$ExistingVersion]"
-                    $URL = $LatestRelease.zipball_url
                     break
                 }
             }
         }
         else
         {
-            # A remote but no local version exists already, so use the release link
-            $URL = $LatestRelease.zipball_url
+            # A remote but no local version exist, so use the tags link
+            $URL = $GitHubTag.zipball_url
         }
     }
     else
     {
-        Write-Verbose "[$DependencyName] has no releases on GitHub"
+        Write-Verbose "[$DependencyName] has no tags on GitHub"
 
         # Translate version "latest" to "master"
         if($Version -Eq "latest")
@@ -285,12 +307,12 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
         $Destination = $null
 
         if($Version -match "^\d+(?:\.\d+)+$") {
-            # For versioned GitHub releases
+            # For versioned GitHub tags
             $Destination = "$Target$Name\$Version"
         }
-        elseif(($Version -eq "latest") -and ($LatestRelease))
+        elseif(($Version -eq "latest") -and ($RemoteAvailable))
         {
-            # For latest GitHub releases
+            # For latest GitHub tags
             $Destination = "$Target$Name\$GitHubVersion"
         }
         else
