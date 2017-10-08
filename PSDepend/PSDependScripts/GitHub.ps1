@@ -115,7 +115,7 @@ if(-not $Target)
 # Search for an already existing version of the dependency
 $Module = Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue
 $ModuleExisting = $null
-$ExistingVersion = $null
+$ExistingVersions = $null
 $ShouldInstall = $false
 $RemoteAvailable = $false
 $URL = $null
@@ -132,20 +132,24 @@ else
 if($ModuleExisting)
 {
     Write-Verbose "Found existing module [$Name]"
-    $ExistingVersion = $Module | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    $ExistingVersions = $Module | Select-Object -ExpandProperty "Version"
 
     # Check if the version that is should be used is a version number
     if($Version -match "^\d+(?:\.\d+)+$") {
-        switch($ExistingVersion.CompareTo($Version))
+        :versions foreach($ExistingVersion in $ExistingVersions)
         {
-            {@(-1, 1) -contains $_} {
-                Write-Verbose "For [$Name], the version you specified [$ExistingVersion] does not match the already existing version [$ExistingVersion]"
-                $ShouldInstall = $true
-                break
-            }
-            0 {
-                Write-Verbose "For [$Name], the version you specified [$ExistingVersion] matches the already existing version [$ExistingVersion]"
-                break
+            switch($ExistingVersion.CompareTo($Version))
+            {
+                {@(-1, 1) -contains $_} {
+                    Write-Verbose "For [$Name], the version you specified [$Version] does not match the already existing version [$ExistingVersion]"
+                    $ShouldInstall = $true
+                    break
+                }
+                0 {
+                    Write-Verbose "For [$Name], the version you specified [$Version] matches the already existing version [$ExistingVersion]"
+                    $ShouldInstall = $false
+                    break versions
+                }
             }
         }
     }
