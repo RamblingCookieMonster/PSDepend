@@ -161,7 +161,7 @@ if($ShouldInstall)
 {
     # API-fetch the tags on GitHub
     $GitHubVersion = $null
-    $GitHubTag
+    $GitHubTag = $null
     $Page = 0
 
     try
