@@ -186,6 +186,11 @@ if($ShouldInstall)
                 {
                     $GitHubVersion = New-Object "System.Version" $GitHubTag.name
 
+                    if($Version -Eq "latest")
+                    {
+                        $Version = $GitHubVersion
+                    }
+
                     switch($Version.CompareTo($GitHubVersion))
                     {
                         -1 {
