@@ -326,7 +326,12 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
             $Destination = "$Target$Name\$Version\$Name"
         }
 
-        Copy-Item -Path $Item -Destination $Destination -Force -Confirm:$False -Recurse
+        if(Test-Path -Path $Destination)
+        {
+            Remove-Item -Path $Destination -Force -Recurse
+        }
+
+        Copy-Item -Path $Item -Destination $Destination -Force -Recurse
     }
     
     # Delete the temporary folder
