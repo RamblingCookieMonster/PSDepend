@@ -95,11 +95,18 @@ $Target = $Dependency.Target
 $NameParts = $Dependency.Name.Split("/")
 $Name = $NameParts[1]
 
+# Translate "" to "latest"
 if($Version -eq "")
 {
     $Version = "latest"
 }
 
+# Check if the version that is should be used is a version number
+if($Version -match "^\d+(?:\.\d+)+$") {
+    $Version = New-Object "System.Version" $Version
+}
+
+# Set default target
 if(-not $Target)
 {
     $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
@@ -129,8 +136,6 @@ if($ModuleExisting)
 
     # Check if the version that is should be used is a version number
     if($Version -match "^\d+(?:\.\d+)+$") {
-        $Version = New-Object "System.Version" $Version
-        
         switch($ExistingVersion.CompareTo($Version))
         {
             {@(-1, 1) -contains $_} {
@@ -186,7 +191,7 @@ if($ShouldInstall)
                         0 {
                             Write-Verbose "For [$Name], a matching version [$Version] has been found in the GitHub tags"
                             $RemoteAvailable = $true
-                            break
+                            break nullcheck
                         }
                         1 {
                             # Version is newer compared to the GitHub version, which means we can stop searching (given version history is reasonable)
