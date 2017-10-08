@@ -326,10 +326,19 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     
     # Delete the temporary folder
     Remove-Item (Get-Item $OutPath).parent.FullName -Force -Recurse
+
+    $ModuleExisting = $true
 }
 
 # Conditional import
-Import-PSDependModule -Name $Name -Action $PSDependAction
+if($ModuleExisting -and ($PSDependAction -contains 'Import'))
+{
+    Import-PSDependModule -Name $Name -Action $PSDependAction
+}
+elseif($PSDependAction -contains 'Import')
+{
+    Write-Warning "[$Name] should be imported, but does not exist"
+}
 
 # Return true or false if Test action is wanted
 if($PSDependAction -contains 'Test')
