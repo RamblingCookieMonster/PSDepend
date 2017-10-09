@@ -44,18 +44,50 @@
                   In this case, we would extract the whole root vamp folder
 
     .EXAMPLE
+        Image a GitHub repository containing a PowerShell module with git tags named "1.0.0" and "0.1.0".
+
         @{
-            'Dargmuesli/powershell-lib' = '0.1.0'
+            'Dargmuesli/powershell-lib' = '1.0.0'
         }
-
-        # Download version 0.1.0 of powershell-lib by Dargmuesli on GitHub
-
-    .EXAMPLE
+        @{
+            'Dargmuesli/powershell-lib' = 'latest'
+        }
         @{
             'Dargmuesli/powershell-lib' = ''
         }
+        These download version 1.0.0 to "powershell-lib\1.0.0"
 
-        # Download latest version of powershell-lib by Dargmuesli on GitHub
+        @{
+            'Dargmuesli/powershell-lib' = '0.1.0'
+        }
+        This downloads version 0.1.0 to "powershell-lib\0.1.0"
+
+        @{
+            'Dargmuesli/powershell-lib' = 'master'
+        }
+        This downloads branch "master" (most recent commit version) to "powershell-lib\master\powershell-lib"
+
+    .EXAMPLE
+        Image a GitHub repository containing a PowerShell module with no git tags.
+
+        @{
+            'Dargmuesli/powershell-lib' = 'latest'
+        }
+        @{
+            'Dargmuesli/powershell-lib' = 'master'
+        }
+        @{
+            'Dargmuesli/powershell-lib' = ''
+        }
+        @{
+            'Dargmuesli/powershell-lib' = 'master'
+        }
+        These download branch "master" (most recent commit version) to "powershell-lib\master\powershell-lib"
+
+        @{
+            'Dargmuesli/powershell-lib' = 'feature'
+        }
+        This downloads branch "feature" (most recent commit version) to "powershell-lib\feature\powershell-lib"
 
     .EXAMPLE
         @{
