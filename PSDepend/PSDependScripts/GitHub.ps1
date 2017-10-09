@@ -168,7 +168,7 @@ if($ModuleExisting)
 
     # Check if the version that is should be used is a version number
     if($Version -match "^\d+(?:\.\d+)+$") {
-        :versions foreach($ExistingVersion in $ExistingVersions)
+        :versionslocal foreach($ExistingVersion in $ExistingVersions)
         {
             switch($ExistingVersion.CompareTo($Version))
             {
@@ -180,7 +180,7 @@ if($ModuleExisting)
                 0 {
                     Write-Verbose "For [$Name], the version you specified [$Version] matches the already existing version [$ExistingVersion]"
                     $ShouldInstall = $false
-                    break versions
+                    break versionslocal
                 }
             }
         }
@@ -250,27 +250,28 @@ if($ShouldInstall)
 
     if($RemoteAvailable)
     {
-        if ($ExistingVersion)
+        # Use the tag's link
+        $URL = $GitHubTag.zipball_url
+
+        if ($ExistingVersions)
         {
-            # A remote and a local version exist
-            switch($ExistingVersion.CompareTo($GitHubVersion))
+            :versionsremote foreach($ExistingVersion in $ExistingVersions)
             {
-                {@(-1, 1) -contains $_} {
-                    Write-Verbose "For [$Name], you have a different version [$ExistingVersion] compared to the version available on GitHub [$GitHubVersion]"
-                    $URL = $GitHubTag.zipball_url
-                    break
-                }
-                0 {
-                    Write-Verbose "For [$Name], you already have the version [$ExistingVersion]"
-                    $ShouldInstall = $false
-                    break
+                # Because a remote and a local version exist
+                # Prevent a module from getting installed twice
+                switch($ExistingVersion.CompareTo($GitHubVersion))
+                {
+                    {@(-1, 1) -contains $_} {
+                        Write-Verbose "For [$Name], you have a different version [$ExistingVersion] compared to the version available on GitHub [$GitHubVersion]"
+                        break
+                    }
+                    0 {
+                        Write-Verbose "For [$Name], you already have the version [$ExistingVersion]"
+                        $ShouldInstall = $false
+                        break versionsremote
+                    }
                 }
             }
-        }
-        else
-        {
-            # A remote but no local version exist, so use the tags link
-            $URL = $GitHubTag.zipball_url
         }
     }
     else
