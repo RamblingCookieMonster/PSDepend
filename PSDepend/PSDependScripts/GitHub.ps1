@@ -139,13 +139,31 @@ if($Version -match "^\d+(?:\.\d+)+$")
     $Version = New-Object "System.Version" $Version
 }
 
+$CurrentUserPath = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+$AllUsersPath = "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\"
+
 # Set default target depending on admin permissions
 if(-not $Target)
 {
-    If (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        $Target = "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\"
-    } Else {
-        $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+    if(([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
+    {
+        $Target = $AllUsersPath
+    }
+    else
+    {
+        $Target = $CurrentUserPath
+    }
+}
+else
+{
+    # Resolve scope keywords
+    if($Target -Eq "CurrentUser")
+    {
+        $Target = $CurrentUserPath
+    }
+    elseif($Target -Eq "AllUsers")
+    {
+        $Target = $AllUsersPath
     }
 }
 
