@@ -139,10 +139,14 @@ if($Version -match "^\d+(?:\.\d+)+$")
     $Version = New-Object "System.Version" $Version
 }
 
-# Set default target
+# Set default target depending on admin permissions
 if(-not $Target)
 {
-    $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+    If (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+        $Target = "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\"
+    } Else {
+        $Target = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+    }
 }
 
 # Search for an already existing version of the dependency
