@@ -114,7 +114,7 @@ param(
     [string[]]$PSDependAction = @('Install'),
 
     [string[]]$ExtractPath,
-    
+
     [bool]$ExtractProject = $True
 )
 
@@ -134,7 +134,8 @@ if($Version -eq "")
 }
 
 # Check if the version that is should be used is a version number
-if($Version -match "^\d+(?:\.\d+)+$") {
+if($Version -match "^\d+(?:\.\d+)+$")
+{
     $Version = New-Object "System.Version" $Version
 }
 
@@ -167,7 +168,8 @@ if($ModuleExisting)
     $ExistingVersions = $Module | Select-Object -ExpandProperty "Version"
 
     # Check if the version that is should be used is a version number
-    if($Version -match "^\d+(?:\.\d+)+$") {
+    if($Version -match "^\d+(?:\.\d+)+$")
+    {
         :versionslocal foreach($ExistingVersion in $ExistingVersions)
         {
             switch($ExistingVersion.CompareTo($Version))
@@ -253,7 +255,7 @@ if($ShouldInstall)
         # Use the tag's link
         $URL = $GitHubTag.zipball_url
 
-        if ($ExistingVersions)
+        if($ExistingVersions)
         {
             :versionsremote foreach($ExistingVersion in $ExistingVersions)
             {
@@ -303,7 +305,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
         Write-Error "Could not download [$URL] to [$OutFile]. See error details and verbose output for more information"
         return
     }
-    
+
     # Extract the zip file
     $Zipfile = (New-Object -com shell.application).NameSpace($OutFile)
     $Destination = (New-Object -com shell.application).NameSpace($OutPath)
@@ -313,7 +315,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     Remove-Item $OutFile -Force -Confirm:$False
 
     $OutPath = (Get-ChildItem -Path $OutPath)[0].FullName
-    
+
     if($ExtractPath)
     {
         # Filter only the contents wanted
@@ -341,19 +343,21 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
         # Use the standard download path
         [string[]]$ToCopy = $OutPath
     }
-    
+
     Write-Verbose "Contents that will be copied: $ToCopy"
-    
+
     # Copy the contents to their target
     if(-not (Test-Path $Target))
     {
         mkdir $Target -Force
     }
+
     foreach($Item in $ToCopy)
     {
         $Destination = $null
 
-        if($Version -match "^\d+(?:\.\d+)+$") {
+        if($Version -match "^\d+(?:\.\d+)+$")
+        {
             # For versioned GitHub tags
             $Destination = "$Target$Name\$Version"
         }
@@ -375,7 +379,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
 
         Copy-Item -Path $Item -Destination $Destination -Force -Recurse
     }
-    
+
     # Delete the temporary folder
     Remove-Item (Get-Item $OutPath).parent.FullName -Force -Recurse
 
