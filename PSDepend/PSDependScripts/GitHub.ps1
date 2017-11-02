@@ -218,40 +218,48 @@ if($ShouldInstall)
             $Page++
             $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyName/tags?per_page=100&page=$Page"
 
-            foreach($GitHubTag in $GitHubTags)
+            if($GitHubTags)
             {
-                if($GitHubTag.name -match "^\d+(?:\.\d+)+$")
+                foreach($GitHubTag in $GitHubTags)
                 {
-                    $GitHubVersion = New-Object "System.Version" $GitHubTag.name
-
-                    if($Version -Eq "latest")
+                    if($GitHubTag.name -match "^\d+(?:\.\d+)+$")
                     {
-                        $Version = $GitHubVersion
-                    }
+                        $GitHubVersion = New-Object "System.Version" $GitHubTag.name
 
-                    switch($Version.CompareTo($GitHubVersion))
-                    {
-                        -1 {
-                            # Version is older compared to the GitHub version, continue searching
-                            break
+                        if($Version -Eq "latest")
+                        {
+                            $Version = $GitHubVersion
                         }
-                        0 {
-                            Write-Verbose "For [$Name], a matching version [$Version] has been found in the GitHub tags"
-                            $RemoteAvailable = $true
-                            break nullcheck
-                        }
-                        1 {
-                            # Version is newer compared to the GitHub version, which means we can stop searching (given version history is reasonable)
-                            break nullcheck
+
+                        switch($Version.CompareTo($GitHubVersion))
+                        {
+                            -1 {
+                                # Version is older compared to the GitHub version, continue searching
+                                break
+                            }
+                            0 {
+                                Write-Verbose "For [$Name], a matching version [$Version] has been found in the GitHub tags"
+                                $RemoteAvailable = $true
+                                break nullcheck
+                            }
+                            1 {
+                                # Version is newer compared to the GitHub version, which means we can stop searching (given version history is reasonable)
+                                break nullcheck
+                            }
                         }
                     }
                 }
+            }
+            else
+            {
+                break nullcheck
             }
         }
     }
     catch
     {
-        # Stupid, but needed error handler for Invoke-RestMethod
+        # Repository does not seem to exist
+        $ShouldInstall = $False
     }
 
     if($RemoteAvailable)
