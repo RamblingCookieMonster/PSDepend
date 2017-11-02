@@ -118,13 +118,13 @@ param(
     [bool]$ExtractProject = $True
 )
 
-Write-Verbose -Message "Examining GitHub dependency [$DependencyName]"
+Write-Verbose -Message "Examining GitHub dependency [$($Dependency.DependencyName)]"
 
 # Extract data from dependency
 $DependencyName = $Dependency.DependencyName
 $Version = $Dependency.Version
 $Target = $Dependency.Target
-$NameParts = $Dependency.Name.Split("/")
+$NameParts = $DependencyName.Split("/")
 $Name = $NameParts[1]
 
 # Translate "" to "latest"
