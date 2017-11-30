@@ -153,7 +153,7 @@ if($Existing)
     Write-Verbose "Found existing module [$Name]"
     # Thanks to Brandon Padgett!
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $GalleryVersion = Find-Module -Name $Name -Repository $Repository | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    $GetGalleryVersion = { Find-Module -Name $Name -Repository $Repository | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
@@ -172,7 +172,7 @@ if($Existing)
     # latest, and we have latest
     if( $Version -and
         ($Version -eq 'latest' -or $Version -like '') -and
-        $GalleryVersion -le $ExistingVersion
+        ($GalleryVersion = (& $GetGalleryVersion)) -le $ExistingVersion
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
@@ -187,7 +187,7 @@ if($Existing)
         return $null
     }
 
-    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
+    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion]"
 }
 
 #No dependency found, return false if we're testing alone...

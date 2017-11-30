@@ -118,7 +118,7 @@ if(Test-Path $ModulePath)
     # Thanks to Brandon Padgett!
     $ManifestData = Import-LocalizedData -BaseDirectory $ModulePath -FileName "$Name.psd1"
     $ExistingVersion = $ManifestData.ModuleVersion
-    $GalleryVersion = ( Find-NugetPackage -Name $Name -PackageSourceUrl $Source -IsLatest ).Version
+    $GetGalleryVersion = { ( Find-NugetPackage -Name $Name -PackageSourceUrl $Source -IsLatest ).Version }
     
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
@@ -136,7 +136,7 @@ if(Test-Path $ModulePath)
     # latest, and we have latest
     if( $Version -and
         ($Version -eq 'latest' -or $Version -like '') -and
-        $GalleryVersion -le $ExistingVersion
+        ($GalleryVersion = (& $GetGalleryVersion)) -le $ExistingVersion
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
@@ -149,17 +149,16 @@ if(Test-Path $ModulePath)
         return $null
     }
 
-    Write-Verbose "Removing existing [$ModulePath]`nContinuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
+    Write-Verbose "Removing existing [$ModulePath]`nContinuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion]"
     if($PSDependAction -contains 'Install')
     {
         if($Force)
         {
-            Write-Verbose "Removing existing [$ModulePath]`nContinuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
             Remove-Item $ModulePath -Force -Recurse
         }
         else
         {
-            Write-Verbose "Use -Force to remove existing [$ModulePath]`nSkipping install of [$Name]: Requested version [$version], existing version [$ExistingVersion], PSGallery version [$GalleryVersion]"
+            Write-Verbose "Use -Force to remove existing [$ModulePath]`nSkipping install of [$Name]: Requested version [$version], existing version [$ExistingVersion]"
             if( $PSDependAction -contains 'Test')
             {
                 return $false
