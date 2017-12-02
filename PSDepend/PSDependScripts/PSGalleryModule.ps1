@@ -16,6 +16,9 @@
     .PARAMETER Repository
         PSRepository to download from.  Defaults to PSGallery
 
+    .PARAMETER SkipPublisherCheck
+        Bypass the catalog signing check.  Defaults to $false
+
     .PARAMETER Import
         If specified, import the module in the global scope
 
@@ -54,11 +57,12 @@
             BuildHelpers = @{
                 Parameters @{
                     Repository = 'PSPrivateGallery'
+                    SkipPublisherCheck = $true
                 }
             }
         }
 
-        # Install the latest BuildHelpers module from a custom gallery* that you registered
+        # Install the latest BuildHelpers module from a custom gallery* that you registered, and bypass the catalog signing check
         # No version is specified - we assume latest in this case.
 
         # * Perhaps you use this https://github.com/PowerShell/PSPrivateGallery, or Artifactory, ProGet, etc.
@@ -69,6 +73,8 @@ param(
     [psobject[]]$Dependency,
 
     [string]$Repository = 'PSGallery', # From Parameters...
+
+    [bool]$SkipPublisherCheck, # From Parameters...
 
     [switch]$Import,
 
@@ -127,6 +133,7 @@ if (-not $validRepo) {
 $params = @{
     Name = $Name
     Repository = $Repository
+    SkipPublisherCheck = $SkipPublisherCheck
     Verbose = $VerbosePreference
     Force = $True
 }
@@ -140,6 +147,7 @@ if( $Version -and $Version -ne 'latest')
 if($command -eq 'Save')
 {
     $ModuleName =  Join-Path $Scope $Name
+    $Params.Remove('SkipPublisherCheck')
 }
 elseif ($Command -eq 'Install')
 {

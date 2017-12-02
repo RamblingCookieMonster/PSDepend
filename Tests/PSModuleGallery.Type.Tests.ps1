@@ -160,6 +160,17 @@ InModuleScope 'PSDepend' {
                 $ENV:PSModulePath = $ExistingPSModulePath
             }
         }
+
+        Context 'SkipPublisherCheck' {
+            It 'Supplies switch to Install-Module' {
+                Mock Get-PSRepository { Return $true }
+                Mock Install-Module {}
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.skippubcheck.depend.psd1" -Force -ErrorAction Stop
+                Assert-MockCalled -CommandName Install-Module -Times 1 -Exactly -ExclusiveFilter {
+                    $SkipPublisherCheck -eq $true
+                }
+            }
+        }
     }
 
     Describe "Git Type PS$PSVersion" {
