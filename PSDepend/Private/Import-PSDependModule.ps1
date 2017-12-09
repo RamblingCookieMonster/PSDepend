@@ -2,14 +2,23 @@
     [cmdletbinding()]
     param (
         [string[]]$Name = $ModulePath,
-        $Action = $PSDependAction
+        $Action = $PSDependAction,
+        [string] $Version
     )
     if($PSDependAction -contains 'Import')
     {
         foreach($Mod in $Name)
         {
             Write-Verbose "Importing [$Mod]"
-            Import-Module -Name $Mod -Scope Global -Force 
+            $importParams = @{
+                Name = $Mod
+                Scope = 'Global'
+                Force = $true
+            }
+            if ($Version -and $Version -ne 'latest') {
+                $importParams.add('RequiredVersion',$Version)
+            }
+            Import-Module @importParams
         }
     }
 }
