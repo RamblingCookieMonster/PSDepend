@@ -117,12 +117,6 @@ if(-not (Get-PackageProvider -Name Nuget))
 
 Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
 
-# Validate that $target has been setup as a valid PowerShell repository
-$validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
-if (-not $validRepo) {
-    Write-Error "[$Repository] has not been setup as a valid PowerShell repository."
-    return
-}
 
 $params = @{
     Name = $Name
