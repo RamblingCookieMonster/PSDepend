@@ -260,7 +260,7 @@ InModuleScope 'PSDepend' {
                 Assert-MockCalled -CommandName Get-WebFile -Times 0 -Exactly
             }
 
-            New-Item -ItemType File -Path (Join-Path $SavePath 'System.Data.SQLite.dll')
+            New-Item -ItemType File -Path (Join-Path $SavePath 'System.Data.SQLite.dll') -Force
             It 'Returns $true if file does exist' {
                 Mock Get-WebFile {}
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\filedownload.depend.psd1" | Test-Dependency @Verbose -Quiet)

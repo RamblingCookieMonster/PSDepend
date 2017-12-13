@@ -4,7 +4,7 @@
 Get-PackageProvider -Name NuGet -ForceBootstrap | Out-Null
 
 Install-Module Psake, PSDeploy, BuildHelpers -force -AllowClobber
-Install-Module Pester -RequiredVersion 4.0.2 -Force -AllowClobber
+Install-Module Pester -MinimumVersion 4.1 -Force -AllowClobber -SkipPublisherCheck
 Import-Module Psake, BuildHelpers
 
 Set-BuildEnvironment
