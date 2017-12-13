@@ -87,7 +87,7 @@ if($Name -match "^[a-zA-Z0-9]+/[a-zA-Z0-9_-]+$")
     $Name = "https://github.com/$Name.git"
 }
 $GitName = $Name.trimend('/').split('/')[-1] -replace "\.git$", ''
-$Target = $Dependency.Target
+$Target = (Get-Item $Dependency.Target -ErrorAction SilentlyContinue).FullName
 if(-not $Target)
 {
     $Target = $PWD.Path
