@@ -103,6 +103,7 @@ What else can we put in a dependency?  Here's an example using a more flexible s
         DependencyType = 'PSGalleryModule'
         Parameters = @{
             Repository = 'PSGallery'
+            SkipPublisherCheck = $true
         }
         Version = '0.0.20'
         Tags = 'prod', 'test'
@@ -140,7 +141,7 @@ DependencyName : buildhelpers_0_0_20
 DependencyType : PSGalleryModule
 Name           : buildhelpers
 Version        : 0.0.20
-Parameters     : {Repository}
+Parameters     : {Repository,SkipPublisherCheck}
 Source         :
 Target         :
 AddToPath      :
@@ -161,7 +162,7 @@ Note that we replace certain strings in Target and Source fields:
 
 ## Exploring and Getting Help
 
-Each DependencyType - PSGalleryModule, FileDownload, Task, etc. - might treat these standard properties differently, and may include their own Parameters.  For example, in the BuildHelpers node above, we specified a Repository parameter.
+Each DependencyType - PSGalleryModule, FileDownload, Task, etc. - might treat these standard properties differently, and may include their own Parameters.  For example, in the BuildHelpers node above, we specified a Repository and SkipPublisherCheck parameters.
 
 How do we find out what these mean?  First things first, let's look at what DependencyTypes we have available:
 
@@ -198,9 +199,11 @@ PARAMETERS
 ...
     -Repository <String>
         PSRepository to download from.  Defaults to PSGallery
+    -SkipPublisherCheck <Switch>
+        Bypass the catalog signing check.  Defaults to $false
 ```
 
-In this example, we see how PSGalleryModule treats the Name, Version, and Target in a depend.psd1, and we see a Parameter specific to this DependencyType, 'Repository'
+In this example, we see how PSGalleryModule treats the Name, Version, and Target in a depend.psd1, and we see Parameter's specific to this DependencyType, 'Repository' and 'SkipPublisherCheck'
 
 Finally, we have a few about topics, and individual commands have built in help:
 
