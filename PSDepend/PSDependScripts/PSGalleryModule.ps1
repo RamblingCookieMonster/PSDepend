@@ -75,6 +75,7 @@ param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]$Dependency,
 
+    [AllowNull()]
     [string]$Repository = 'PSGallery', # From Parameters...
 
     [bool]$SkipPublisherCheck, # From Parameters...
@@ -127,13 +128,25 @@ if(-not (Get-PackageProvider -Name Nuget))
 }
 
 Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
+
+# Validate that $target has been setup as a valid PowerShell repository,
+#   but allow to rely on all PS repos registered.
+if($Repository) {
+    $validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
+        if (-not $validRepo) {
+            Write-Error "[$Repository] has not been setup as a valid PowerShell repository."
+            return
+        }
+}
+
 $params = @{
     Name = $Name
-    Repository = $Repository
-    SkipPublisherCheck = $SkipPublisherCheck
-    AllowClobber = $AllowClobber
     Verbose = $VerbosePreference
     Force = $True
+}
+
+if($Repository) {
+    $params.Add('Repository',$Repository)
 }
 
 if( $Version -and $Version -ne 'latest')
