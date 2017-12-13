@@ -5,7 +5,7 @@
     .DESCRIPTION
         Clone a git repository
 
-        Note: We require git.exe in your path
+        Note: We require git in your path
 
         Relevant Dependency metadata:
             DependencyName (Key): Git URL
@@ -114,9 +114,9 @@ else # Target exists
     $GottaTest = $True
 }
 
-if(-not (Get-Command git.exe -ErrorAction SilentlyContinue))
+if(-not (Get-Command git -ErrorAction SilentlyContinue))
 {
-    Write-Error "Git dependency type requires git.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's GitPath.  Skipping [$DependencyName]"
+    Write-Error "Git dependency type requires git.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's GitPath.  Skipping [$DependencyName]"
 }
 
 $Version = $Dependency.Version

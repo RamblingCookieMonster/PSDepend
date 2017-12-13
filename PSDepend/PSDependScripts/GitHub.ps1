@@ -5,7 +5,7 @@
     .DESCRIPTION
         EXPERIMENTAL: Download a GitHub repository
 
-        The Git dependency type requires git.exe.  The FileDownload type would just pull an archive down.
+        The Git dependency type requires git.  The FileDownload type would just pull an archive down.
         This type will...
             download a repository via HTTP,
             extract it,
