@@ -189,7 +189,12 @@ if($Existing)
     Write-Verbose "Found existing module [$Name]"
     # Thanks to Brandon Padgett!
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $GetGalleryVersion = { Find-Module -Name $Name -Repository $Repository | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
+    $FindModuleParams = @{Name = $Name}
+    if($Repository) {
+        $FindModuleParams.Add('Repository',$Repository)
+    }
+
+    $GetGalleryVersion = { Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
