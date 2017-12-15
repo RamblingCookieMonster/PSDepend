@@ -71,14 +71,32 @@ InModuleScope 'PSDepend' {
                     Version = '1.2.5'
                 }
             }
+            Mock Find-Module
+
+            It 'Skips Install-Module' {
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-Module -Times 1 -Exactly
+                Assert-MockCalled Find-Module -Times 0 -Exactly
+                Assert-MockCalled Install-Module -Times 0 -Exactly
+            }
+        }
+
+        Context 'Latest module required, and already installed' {
+            Mock Install-Module {}
+            Mock Get-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5'
+                }
+            }
             Mock Find-Module {
                 [pscustomobject]@{
                     Version = '1.2.5'
                 }
             }
 
-            It 'Runs Get-Module and Find-Module, skips Install-Module' {
-                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" -Force -ErrorAction Stop
+            It 'Skips Install-Module' {
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.latestversion.depend.psd1" -Force -ErrorAction Stop
 
                 Assert-MockCalled Get-Module -Times 1 -Exactly
                 Assert-MockCalled Find-Module -Times 1 -Exactly
@@ -87,8 +105,25 @@ InModuleScope 'PSDepend' {
         }
 
         Context 'Test-Dependency' {
-            It 'Returns $true when it finds an existing module' {
+            
+            BeforeEach {
                 Mock Install-Module {}
+                Mock Find-Module {}
+            }
+
+            It 'Returns $true when it finds an existing module' {
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+            
+            It 'Returns $true when it finds an existing latest module' {
                 Mock Get-Module {
                     [pscustomobject]@{
                         Version = '1.2.5'
@@ -99,18 +134,23 @@ InModuleScope 'PSDepend' {
                         Version = '1.2.5'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.latestversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $True
             }
 
             It "Returns `$false when it doesn't find an existing module" {
-                Mock Install-Module {}
                 Mock Get-Module { $null }
-                Mock Find-Module {
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+            It "Returns `$false when it finds an existing module with a lower version" {
+                Mock Get-Module {
                     [pscustomobject]@{
-                        Version = '1.2.5'
+                        Version = '1.2.4'
                     }
                 }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
@@ -118,8 +158,8 @@ InModuleScope 'PSDepend' {
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
             }
-            It "Returns `$false when it finds an existing module with a lower version" {
-                Mock Install-Module {}
+
+            It "Returns `$false when it finds an existing module with a lower version than latest" {
                 Mock Get-Module {
                     [pscustomobject]@{
                         Version = '1.2.4'
@@ -130,7 +170,7 @@ InModuleScope 'PSDepend' {
                         Version = '1.2.5'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.latestversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
@@ -303,14 +343,33 @@ InModuleScope 'PSDepend' {
                     ModuleVersion = '1.2.5'
                 }
             } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
+            Mock Find-NugetPackage
+
+            It 'Skips Invoke-ExternalCommand' {
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Import-LocalizedData -Times 1 -Exactly
+                Assert-MockCalled Find-NugetPackage -Times 0 -Exactly
+                Assert-MockCalled Invoke-ExternalCommand -Times 0 -Exactly
+            }
+        }
+
+        Context 'Latest module required, and already installed' {
+            Mock Test-Path {return $True} -ParameterFilter {$Path -match 'jenkins'}
+            Mock Invoke-ExternalCommand {}
+            Mock Import-LocalizedData {
+                [pscustomobject]@{
+                    ModuleVersion = '1.2.5'
+                }
+            } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
             Mock Find-NugetPackage {
                 [pscustomobject]@{
                     Version = '1.2.5'
                 }
             }
 
-            It 'Runs Import-LocalizedData and Find-NugetPackage, skips Invoke-ExternalCommand' {
-                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" -Force -ErrorAction Stop
+            It 'Skips Invoke-ExternalCommand' {
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.latestversion.depend.psd1" -Force -ErrorAction Stop
 
                 Assert-MockCalled Import-LocalizedData -Times 1 -Exactly
                 Assert-MockCalled Find-NugetPackage -Times 1 -Exactly
@@ -319,9 +378,26 @@ InModuleScope 'PSDepend' {
         }
 
         Context 'Tests dependencies' {
-            It 'Returns $true when it finds an existing module' {
-                Mock Test-Path {return $True} -ParameterFilter {$Path -match 'jenkins'}
+
+            BeforeEach {
                 Mock Invoke-ExternalCommand {}
+                Mock Test-Path {return $True} -ParameterFilter {$Path -match 'jenkins'}
+                Mock Find-NugetPackage {}
+            }
+
+            It 'Returns $true when it finds an existing module' {
+                Mock Import-LocalizedData {
+                    [pscustomobject]@{
+                        ModuleVersion = '1.2.5'
+                    }
+                } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+            
+            It 'Returns $true when it finds an existing latest module' {
                 Mock Import-LocalizedData {
                     [pscustomobject]@{
                         ModuleVersion = '1.2.5'
@@ -332,7 +408,7 @@ InModuleScope 'PSDepend' {
                         Version = '1.2.5'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.latestversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $True
@@ -340,11 +416,6 @@ InModuleScope 'PSDepend' {
 
             It "Returns `$false when it doesn't find an existing module" {
                 Mock Import-LocalizedData -ParameterFilter {$FileName -eq 'jenkins.psd1'}
-                Mock Find-NugetPackage {
-                    [pscustomobject]@{
-                        Version = '1.2.5'
-                    }
-                }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
@@ -352,11 +423,6 @@ InModuleScope 'PSDepend' {
             }
 
             It "Returns `$false when it finds an existing module with a lower version" {
-                Mock Find-NugetPackage {
-                    [pscustomobject]@{
-                        Version = '1.2.5'
-                    }
-                }
                 Mock Import-LocalizedData {
                     [pscustomobject]@{
                         ModuleVersion = '1.2.4'
@@ -364,6 +430,24 @@ InModuleScope 'PSDepend' {
                 } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
 
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.sameversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+
+            It "Returns `$false when it finds an existing module with a lower version than latest" {
+                Mock Import-LocalizedData {
+                    [pscustomobject]@{
+                        ModuleVersion = '1.2.4'
+                    }
+                } -ParameterFilter {$FileName -eq 'jenkins.psd1'}
+                Mock Find-NugetPackage {
+                    [pscustomobject]@{
+                        Version = '1.2.5'
+                    }
+                }
+
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.latestversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
@@ -480,7 +564,46 @@ InModuleScope 'PSDepend' {
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
             function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
             
-            It 'Runs Get-Package and Find-Package, skips Install-Package' {
+            It 'Skips Install-Package' {
+
+                Mock Install-Package
+                Mock Get-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
+                Mock Find-Package
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-Package -Times 1 -Exactly
+                Assert-MockCalled Find-Package -Times 0 -Exactly
+                Assert-MockCalled Install-Package -Times 0 -Exactly
+            }
+        }
+
+        Context 'Latest package required, and already installed' {    
+
+            <#
+                This test works on my machine but not in AppVeyor (!)
+                The test DOES work in AppVeyor but only if the previous test above is skipped (!!)
+
+                I think this is a problem can be isolated to something to do with Pester Mocks.
+
+                AppVeyor failure:
+
+                "Parameter set cannot be resolved using the specified named parameters.
+                at line: 188 in C:\projects\psdepend\psdepend\Public\Invoke-DependencyScript.ps1"
+
+                See build logs: https://ci.appveyor.com/project/RamblingCookieMonster/psdepend/build/1.0.124
+
+            #>
+
+
+            function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
+            function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
+            
+            It 'Runs Get-Package and Find-Package, skips Install-Package' -Skip {
 
                 Mock Install-Package
                 Mock Get-Package {
@@ -494,7 +617,7 @@ InModuleScope 'PSDepend' {
                     }
                 }
 
-                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" -Force -ErrorAction Stop
+                Invoke-PSDepend @Verbose -Path "$TestDepends\package.latestversion.depend.psd1" -Force -ErrorAction Stop
 
                 Assert-MockCalled Get-Package -Times 1 -Exactly
                 Assert-MockCalled Find-Package -Times 1 -Exactly
@@ -506,16 +629,15 @@ InModuleScope 'PSDepend' {
             
             function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion) write-verbose "WTF NOW"}
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
+            function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
+
+            BeforeEach {
+                Mock Install-Package {}
+                Mock Find-Package {}
+            }
             
             It 'Returns $true when it finds an existing module' {
-                function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
-                Mock Install-Package {}
                 Mock Get-Package {
-                    [pscustomobject]@{
-                        Version = '1.1'
-                    }
-                }
-                Mock Find-Package {
                     [pscustomobject]@{
                         Version = '1.1'
                     }
@@ -526,13 +648,35 @@ InModuleScope 'PSDepend' {
                 $Results[0] | Should be $True
             }
 
-            It "Returns `$false when it doesn't find an existing module" {
-                function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
-                Mock Install-Package {}
-                Mock Get-Package { $null }
+            It 'Returns $true when it finds an existing latest module' {
+                Mock Get-Package {
+                    [pscustomobject]@{
+                        Version = '1.1'
+                    }
+                }
                 Mock Find-Package {
                     [pscustomobject]@{
                         Version = '1.1'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.latestversion.depend.psd1" |
+                        Test-Dependency @Verbose -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+
+            It "Returns `$false when it doesn't find an existing module" {
+                Mock Get-Package { $null }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" |
+                        Test-Dependency @Verbose -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+            
+            It "Returns `$false when it finds an existing module with a lower version" {
+                Mock Get-Package {
+                    [pscustomobject]@{
+                        Version = '1.0'
                     }
                 }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.sameversion.depend.psd1" |
@@ -540,9 +684,8 @@ InModuleScope 'PSDepend' {
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
             }
-            It "Returns `$false when it finds an existing module with a lower version" {
-                Mock Install-Package {}
-                Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
+
+            It "Returns `$false when it finds an existing module with a lower version than latest" {
                 Mock Get-Package {
                     [pscustomobject]@{
                         Version = '1.0'
@@ -553,7 +696,7 @@ InModuleScope 'PSDepend' {
                         Version = '1.1'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\package.latestversion.depend.psd1" |
                         Test-Dependency @Verbose -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False

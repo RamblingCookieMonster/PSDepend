@@ -169,7 +169,7 @@ if($Existing)
     Write-Verbose "Found existing package [$Name]"
     # Thanks to Brandon Padgett!
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $SourceVersion = Find-Package -Name $Name -Source $Source | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    $GetSourceVersion = { Find-Package -Name $Name -Source $Source | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
     
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
@@ -185,7 +185,7 @@ if($Existing)
     # latest, and we have latest
     if( $Version -and
         ($Version -eq 'latest' -or $Version -like '') -and
-        $SourceVersion -le $ExistingVersion
+        ($SourceVersion = (& $GetSourceVersion)) -le $ExistingVersion
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and package source version [$SourceVersion]"
@@ -196,7 +196,7 @@ if($Existing)
         return $null
     }
 
-    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion], package source version [$SourceVersion]"
+    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion]"
 }
 
 #No dependency found, return false if we're testing alone...
