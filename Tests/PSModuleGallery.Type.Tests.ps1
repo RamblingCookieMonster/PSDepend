@@ -29,7 +29,6 @@ InModuleScope 'PSDepend' {
 
         Context 'Installs Modules' {
             Mock Install-Module { Return $true }
-            Mock Get-PSRepository { Return $true }
             
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.depend.psd1" -Force
 
@@ -44,7 +43,6 @@ InModuleScope 'PSDepend' {
 
         Context 'Saves Modules' {
             Mock Save-Module { Return $true }
-            Mock Get-PSRepository { Return $true }
             
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\savemodule.depend.psd1" -Force
 
@@ -58,11 +56,10 @@ InModuleScope 'PSDepend' {
         }
 
         Context 'Repository does not Exist' {
-            Mock Install-Module {}
-            Mock Get-PSRepository { Return $false }
+            Mock Install-Module { throw "Unable to find repository 'Blah'" } -ParameterFilter { $Repository -eq 'Blah'}
 
             It 'Throws because Repository could not be found' {
-                $Results = { Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.depend.psd1" -Force -ErrorAction Stop }
+                $Results = { Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.missingrepo.depend.psd1" -Force -ErrorAction Stop }
                 $Results | Should Throw
             }
         }
@@ -142,7 +139,6 @@ InModuleScope 'PSDepend' {
 
         Context 'Imports dependencies' {
             It 'Runs Import-Module when import is specified' {
-                Mock Get-PSRepository { Return $true }
                 Mock Install-Module {}
                 Mock Import-Module
                 $Results = Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.depend.psd1" | Import-Dependency @Verbose
@@ -153,7 +149,6 @@ InModuleScope 'PSDepend' {
 
         Context 'Misc' {
             It 'Adds folder to path when specified' {
-                Mock Get-PSRepository { Return $true }
                 Mock Save-Module {$True}
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.addtopath.depend.psd1" -Force -ErrorAction Stop
                 $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
