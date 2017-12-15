@@ -87,10 +87,14 @@ if($Name -match "^[a-zA-Z0-9]+/[a-zA-Z0-9_-]+$")
     $Name = "https://github.com/$Name.git"
 }
 $GitName = $Name.trimend('/').split('/')[-1] -replace "\.git$", ''
-$Target = $Dependency.Target
-if(-not $Target)
+if($Dependency.Target -and ($Target = (Get-Item $Dependency.Target -ErrorAction SilentlyContinue).FullName))
+{
+    Write-Debug "Target resolved to $Target"
+}
+else
 {
     $Target = $PWD.Path
+    Write-Debug "Target defaulted to current dir: $Target"
 }
 $RepoPath = Join-Path $Target $GitName
 $GottaInstall = $True
