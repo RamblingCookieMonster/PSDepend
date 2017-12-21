@@ -103,6 +103,8 @@ Write-Verbose -Message "Getting dependency [$name] from Nuget source [$Source]"
 # This code works for both install and save scenarios.
 $ModulePath =  Join-Path $Target $Name
 
+Add-ToPsModulePathIfRequired -Dependency $Dependency -Action $PSDependAction
+
 if(Test-Path $ModulePath)
 {
     $Manifest = Join-Path $ModulePath "$Name.psd1"
@@ -191,12 +193,6 @@ if($PSDependAction -contains 'Install')
     }
     $NugetParams = 'install', $Name + $NugetParams
     Invoke-ExternalCommand nuget.exe -Arguments $NugetParams
-
-    if($Dependency.AddToPath)
-    {
-        Write-Verbose "Setting PSModulePath to`n$($Target, $env:PSModulePath -join ';' | Out-String)"
-        Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $Target).FullName
-    }
 }
 
 # Conditional import

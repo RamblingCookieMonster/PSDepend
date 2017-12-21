@@ -147,6 +147,9 @@ elseif ($Command -eq 'Install')
 {
     $ModuleName = $Name
 }
+
+Add-ToPsModulePathIfRequired -Dependency $Dependency -Action $PSDependAction
+
 $Existing = $null
 $Existing = Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue
 
@@ -216,12 +219,6 @@ if($PSDependAction -contains 'Install')
         }
 
         Save-Module @params -Path $Scope
-
-        if($Dependency.AddToPath)
-        {
-            Write-Verbose "Setting PSModulePath to`n$($Scope, $env:PSModulePath -join ';' | Out-String)"
-            Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $Scope).FullName
-        }
     }
 }
 

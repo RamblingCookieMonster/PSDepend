@@ -187,12 +187,57 @@ InModuleScope 'PSDepend' {
             }            
         }
 
-        Context 'Misc' {
-            It 'Adds folder to path when specified' {
+        Context 'AddToPath on install of module to target folder' {
+            It 'Adds folder to path' {
                 Mock Save-Module {$True}
-                $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.addtopath.depend.psd1" -Force -ErrorAction Stop
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.addtopath.depend.psd1" -Force -ErrorAction Stop
                 $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath
+            }
+        }
+
+        Context 'AddToPath on import of module in target folder' {
+
+            $addToPathTestCases = @(
+                @{
+                    Version = 'specific version'
+                    DependPsd1File = "psgallerymodule.addtopath.depend.psd1"
+                },
+                @{
+                    Version = 'latest version'
+                    DependPsd1File = "psgallerymodule.latestaddtopath.depend.psd1"
+                }
+            )
+
+            Mock Install-Module
+            Mock Import-Module
+            Mock Get-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5'
+                }
+            }
+            Mock Find-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5'
+                }
+            }
+
+            AfterEach {
+                $ENV:PSModulePath = $ExistingPSModulePath
+            }
+
+            It 'adds folder to path for <Version>' -TestCases $addToPathTestCases {
+                param($DependPsd1File)
+
+                # when
+                Invoke-PSDepend @Verbose -Path "$TestDepends\$DependPsd1File" -Import -Force -ErrorAction Stop
+
+                # check assumption that expected code path was followed...
+                Assert-MockCalled Install-Module -Times 0 -Exactly -Scope It
+                Assert-MockCalled Import-Module -Times 1 -Exactly -Scope It
+
+                # then
+                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
             }
         }
 
@@ -464,13 +509,60 @@ InModuleScope 'PSDepend' {
             }            
         }
 
-        Context 'Misc' {
-            It 'Adds folder to path when specified' {
+        Context 'AddToPath on install of module to target folder' {
+            It 'Adds folder to path' {
                 Mock Invoke-ExternalCommand {$True}
                 Mock Import-Module 
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.addtopath.depend.psd1" -Force -ErrorAction Stop
                 $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath
+            }
+        }
+
+
+        Context 'AddToPath on import of module in target folder' {
+
+            $addToPathTestCases = @(
+                @{
+                    Version = 'specific version'
+                    DependPsd1File = "psgallerynuget.addtopath.depend.psd1"
+                },
+                @{
+                    Version = 'latest version'
+                    DependPsd1File = "psgallerynuget.latestaddtopath.depend.psd1"
+                }
+            )
+
+            Mock Test-Path {return $True} -ParameterFilter {$Path -match 'imaginary'}
+            Mock Invoke-ExternalCommand {}
+            Mock Import-Module 
+            Mock Import-LocalizedData {
+                [pscustomobject]@{
+                    ModuleVersion = '1.2.5'
+                }
+            } -ParameterFilter {$FileName -eq 'imaginary.psd1'}
+            Mock Find-NugetPackage {
+                [pscustomobject]@{
+                    Version = '1.2.5'
+                }
+            }
+
+            AfterEach {
+                $ENV:PSModulePath = $ExistingPSModulePath
+            }
+
+            It 'adds folder to path for <Version>' -TestCases $addToPathTestCases {
+                param($DependPsd1File)
+
+                # when
+                Invoke-PSDepend @Verbose -Path "$TestDepends\$DependPsd1File" -Import -Force -ErrorAction Stop
+
+                # check assumption that expected code path was followed...
+                Assert-MockCalled Invoke-ExternalCommand -Times 0 -Exactly -Scope It
+                Assert-MockCalled Import-Module  -Times 1 -Exactly -Scope It
+
+                # then
+                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
             }
         }
     }
