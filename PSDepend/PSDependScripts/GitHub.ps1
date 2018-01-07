@@ -133,7 +133,7 @@ if($Version -eq "")
     $Version = "latest"
 }
 
-# Check if the version that is should be used is a version number
+# Check if the version that should be used is a version number
 if($Version -match "^\d+(?:\.\d+)+$")
 {
     $Version = New-Object "System.Version" $Version
@@ -276,7 +276,7 @@ if($ShouldInstall)
     }
     catch
     {
-        # Repository does not seem to exist
+        # Repository does not seem to exist or a branch is the target
         $ShouldInstall = $False
     }
 
@@ -308,7 +308,7 @@ if($ShouldInstall)
     }
     else
     {
-        Write-Verbose "[$DependencyName] has no tags on GitHub"
+        Write-Verbose "[$DependencyName] has no tags on GitHub or [$Version] is a branchname"
 
         # Translate version "latest" to "master"
         if($Version -Eq "latest")
@@ -318,6 +318,7 @@ if($ShouldInstall)
 
         # Link for a .zip archive of the repository's branch
         $URL = "https://api.github.com/repos/$DependencyName/zipball/$Version"
+        $ShouldInstall = $True
     }
 }
 
