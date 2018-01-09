@@ -9,8 +9,12 @@
             DependencyName (Key): The key for this dependency is used as Name, if none is specified
             Name: Used to specify the GitHub repository name to download
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
-            Target: The folder to download repo to.  Defaults to "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules".  Created if it doesn't exist.
-
+            Target: The folder to download repo to.  Created if it doesn't exist.
+                    "CurrentUser" resolves to "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+                    "AllUsers" resolves to "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\" 
+                    Defaults to:
+                        Non-admin session: "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
+                        Admin session:     "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\"
     .NOTES
         A huge thanks to Doug Finke for the idea and some code and to Jonas Thelemann for a rewrite for tags!
             https://github.com/dfinke/InstallModuleFromGitHub
@@ -43,6 +47,16 @@
 
                   In this case, we would extract the whole root vamp folder
 
+    .PARAMETER TargetType
+        How we interpret your target:
+            Standard: DEFAULT: Extract to target\name
+            Exact:    Extract target\
+            Parallel: Extract to target\name\version or target\name\branch\name depending on the version specified
+
+    .PARAMETER Force
+        If specified, delete target folder (as defined by TargetType) if it exists already
+        Default: We copy to the target folder without removing
+
     .EXAMPLE
         Image a GitHub repository containing a PowerShell module with git tags named "1.0.0" and "0.1.0".
 
@@ -65,7 +79,7 @@
         @{
             'Dargmuesli/powershell-lib' = 'master'
         }
-        This downloads branch "master" (most recent commit version) to "powershell-lib\master\powershell-lib"
+        This downloads branch "master" (most recent commit version) to "powershell-lib"
 
     .EXAMPLE
         Image a GitHub repository containing a PowerShell module with no git tags.
@@ -74,18 +88,45 @@
             'Dargmuesli/powershell-lib' = 'latest'
         }
         @{
-            'Dargmuesli/powershell-lib' = 'master'
-        }
-        @{
             'Dargmuesli/powershell-lib' = ''
         }
         @{
             'Dargmuesli/powershell-lib' = 'master'
         }
+        These download branch "master" (most recent commit version) to "powershell-lib"
+
+        @{
+            'Dargmuesli/powershell-lib' = @{
+                Version = 'latest'
+                Parameters @{
+                    TargetType = 'Parallel'
+                }
+            }
+        }
+        @{
+            'Dargmuesli/powershell-lib' = @{
+                Parameters @{
+                    TargetType = 'Parallel'
+                }
+            }
+        }
+        @{
+            'Dargmuesli/powershell-lib' = @{
+                Version = 'master'
+                Parameters @{
+                    TargetType = 'Parallel'
+                }
+            }
+        }
         These download branch "master" (most recent commit version) to "powershell-lib\master\powershell-lib"
 
         @{
-            'Dargmuesli/powershell-lib' = 'feature'
+            'Dargmuesli/powershell-lib' = @{
+                Version = 'feature'
+                Parameters @{
+                    TargetType = 'Parallel'
+                }
+            }
         }
         This downloads branch "feature" (most recent commit version) to "powershell-lib\feature\powershell-lib"
 
@@ -94,9 +135,11 @@
             'powershell/demo_ci' = @{
                 Version = 'latest'
                 DependencyType = 'GitHub'
+                Target = 'C:\T'
                 Parameters = @{
                     ExtractPath = 'Assets/DscPipelineTools',
                                   'InfraDNS/Configs/DNSServer.ps1'
+                    TargetType = 'Exact'
                 }
             }
         }
@@ -115,7 +158,12 @@ param(
 
     [string[]]$ExtractPath,
 
-    [bool]$ExtractProject = $True
+    [bool]$ExtractProject = $True,
+
+    [ValidateSet('Parallel', 'Standard', 'Exact')]
+    [string]$TargetType = 'Standard',
+
+    [switch]$Force
 )
 
 Write-Verbose -Message "Examining GitHub dependency [$($Dependency.DependencyName)]"
@@ -170,6 +218,7 @@ else
 # Search for an already existing version of the dependency
 $Module = Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue
 $ModuleExisting = $null
+$ModuleExistingMatches = $false
 $ExistingVersions = $null
 $ShouldInstall = $false
 $RemoteAvailable = $false
@@ -204,6 +253,7 @@ if($ModuleExisting)
                 0 {
                     Write-Verbose "For [$Name], the version you specified [$Version] matches the already existing version [$ExistingVersion]"
                     $ShouldInstall = $false
+                    $ModuleExistingMatches = $True
                     break versionslocal
                 }
             }
@@ -240,7 +290,7 @@ if($ShouldInstall)
             {
                 foreach($GitHubTag in $GitHubTags)
                 {
-                    if($GitHubTag.name -match "^\d+(?:\.\d+)+$")
+                    if($GitHubTag.name -match "^\d+(?:\.\d+)+$" -and ($Version -match "^\d+(?:\.\d+)+$" -or $Version -eq "latest"))
                     {
                         $GitHubVersion = New-Object "System.Version" $GitHubTag.name
 
@@ -278,13 +328,13 @@ if($ShouldInstall)
     {
         # Repository does not seem to exist or a branch is the target
         $ShouldInstall = $False
+        Write-Warning "Could not find module on GitHub: $_"
     }
 
     if($RemoteAvailable)
     {
         # Use the tag's link
         $URL = $GitHubTag.zipball_url
-
         if($ExistingVersions)
         {
             :versionsremote foreach($ExistingVersion in $ExistingVersions)
@@ -299,6 +349,7 @@ if($ShouldInstall)
                     }
                     0 {
                         Write-Verbose "For [$Name], you already have the version [$ExistingVersion]"
+                        $ModuleExistingMatches = $true
                         $ShouldInstall = $false
                         break versionsremote
                     }
@@ -309,9 +360,8 @@ if($ShouldInstall)
     else
     {
         Write-Verbose "[$DependencyName] has no tags on GitHub or [$Version] is a branchname"
-
         # Translate version "latest" to "master"
-        if($Version -Eq "latest")
+        if($Version -eq "latest")
         {
             $Version = "master"
         }
@@ -323,6 +373,7 @@ if($ShouldInstall)
 }
 
 # Install action needs to be wanted and logical
+$ImportName = $Name
 if(($PSDependAction -contains 'Install') -and $ShouldInstall)
 {
     # Create a temporary directory and download the repository to it
@@ -346,7 +397,8 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     Remove-Item $OutFile -Force -Confirm:$False
 
     $OutPath = (Get-ChildItem -Path $OutPath)[0].FullName
-
+    $OutPath = (Rename-Item -Path $OutPath -NewName $Name -PassThru).FullName
+    
     if($ExtractPath)
     {
         # Filter only the contents wanted
@@ -383,54 +435,66 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
         mkdir $Target -Force
     }
 
-    foreach($Item in $ToCopy)
+    $Destination = $null
+    if ($TargetType -ne 'Exact')
     {
-        $Destination = $null
-
-        if($Version -match "^\d+(?:\.\d+)+$")
-        {
-            # For versioned GitHub tags
-            $Destination = "$Target$Name\$Version"
-        }
-        elseif(($Version -eq "latest") -and ($RemoteAvailable))
-        {
-            # For latest GitHub tags
-            $Destination = "$Target$Name\$GitHubVersion"
-        }
-        else
-        {
-            # For GitHub branches
-            $Destination = "$Target$Name\$Version\$Name"
-        }
-
-        if(Test-Path -Path $Destination)
-        {
-            Remove-Item -Path $Destination -Force -Recurse
-        }
-
-        Copy-Item -Path $Item -Destination $Destination -Force -Recurse
+        $Target = Join-Path $Target $Name
     }
 
+    if($TargetType -eq 'Exact')
+    {
+        $Destination = $Target
+    }
+    elseif($Version -match "^\d+(?:\.\d+)+$" -and $PSVersionTable.PSVersion -ge '5.0'  )
+    {
+        # For versioned GitHub tags
+        $Destination = Join-Path $Target $Version
+    }
+    elseif(($Version -eq "latest") -and ($RemoteAvailable) -and $PSVersionTable.PSVersion -ge '5.0' )
+    {
+        # For latest GitHub tags
+        $Destination = Join-Path $Target $GitHubVersion
+    }
+    elseif($PSVersionTable.PSVersion -ge '5.0' -and $TargetType -eq 'Parallel')
+    {
+        # For GitHub branches
+        $Destination = Join-Path $Target $Version 
+        $Destination = Join-Path $Destination $Name
+    }
+    else
+    {
+        $Destination = $Target
+    }
+    if($Force -and (Test-Path -Path $Destination))
+    {
+        Remove-Item -Path $Destination -Force -Recurse
+    }
+
+    Write-Verbose "Copying [$($ToCopy.Count)] items to destination [$Destination] with`nTarget [$Target]`nName [$Name]`nVersion [$Version]`nGitHubVersion [$GitHubVersion]"
+    foreach($Item in $ToCopy)
+    {
+        Copy-Item -Path $Item -Destination $Destination -Force -Recurse
+        $ImportName = $Destination
+    }
     # Delete the temporary folder
     Remove-Item (Get-Item $OutPath).parent.FullName -Force -Recurse
-
     $ModuleExisting = $true
 }
 
 # Conditional import
-if($ModuleExisting -and ($PSDependAction -contains 'Import'))
+if($ModuleExisting)
 {
-    Import-PSDependModule -Name $Name -Action $PSDependAction
+    Import-PSDependModule -Name $ImportName -Action $PSDependAction
 }
 elseif($PSDependAction -contains 'Import')
 {
-    Write-Warning "[$Name] should be imported, but does not exist"
+    Write-Warning "[$Name] at [$Destination] should be imported, but does not exist"
 }
 
 # Return true or false if Test action is wanted
 if($PSDependAction -contains 'Test')
 {
-    return $ModuleExisting
+    return $ModuleExistingMatches
 }
 
 # Otherwise return null
