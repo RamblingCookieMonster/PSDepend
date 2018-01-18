@@ -4,7 +4,7 @@
 RootModule = 'PSDepend.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.1.56'
+ModuleVersion = '0.1.63'
 
 # ID used to uniquely identify this module
 GUID = '63ea9e2a-320d-43ff-a11a-4930ca03cce6'
@@ -52,7 +52,7 @@ PowerShellVersion = '3.0'
 # TypesToProcess = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
-  FormatsToProcess = 'PSDepend.Format.ps1xml'
+FormatsToProcess = 'PSDepend.Format.ps1xml'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()
@@ -84,7 +84,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-         Tags = @('requirements', 'dependencies', 'dependency', 'bundle')
+         Tags = @('requirements', 'dependencies', 'dependency', 'manager', 'bundle', 'package')
 
         # A URL to the license for this module.
          LicenseUri = 'https://github.com/RamblingCookieMonster/PSDepend/blob/master/LICENSE'

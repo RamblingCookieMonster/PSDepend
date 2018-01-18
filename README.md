@@ -63,7 +63,7 @@ Here's the simplest syntax.  If this meets your needs, you can stop here:
     BuildHelpers = '0.0.20'  # I don't trust this Warren guy...
     PSDeploy     = '0.1.21'  # Maybe pin the version in case he breaks this...
 
-    RamblingCookieMonster/PowerShell = 'master'
+    'RamblingCookieMonster/PowerShell' = 'master'
 }
 ```
 
@@ -79,7 +79,9 @@ RamblingCookieMonster/PowerShell GitHub          master
 PSDeploy                         PSGalleryModule 0.1.21
 ```
 
-We can indicate the dependency type more explicitly if desired:
+There's a bit more behind the scenes - we assume you want PSGalleryModules or GitHub repos unless you specify otherwise, and we hide a few dependency properties.
+
+We can also indicate the dependency type more explicitly if desired:
 
 ```powershell
 @{
@@ -87,8 +89,6 @@ We can indicate the dependency type more explicitly if desired:
     'GitHub::RamblingCookieMonster/PSNeo4j' = 'master'
 }
 ```
-
-There's a bit more behind the scenes - we assume you want PSGalleryModules or GitHub repos unless you specify otherwise, and we hide a few dependency properties.
 
 ### Flexible syntax
 
