@@ -19,6 +19,13 @@
     .PARAMETER SkipPublisherCheck
         Bypass the catalog signing check.  Defaults to $false
 
+    .PARAMETER AllowPrerelease
+        If specified, allow for prerelease.  Defaults to $false
+
+        If specified along with version 'latest', a prerelease will be selected if it is the latest version
+
+        Sorting assumes you name prereleases appropriately (i.e. alpha < beta < gamma)
+
     .PARAMETER Import
         If specified, import the module in the global scope
 
@@ -55,7 +62,7 @@
     .EXAMPLE
         @{
             BuildHelpers = @{
-                Parameters @{
+                Parameters = @{
                     Repository = 'PSPrivateGallery'
                     SkipPublisherCheck = $true
                 }
@@ -66,6 +73,15 @@
         # No version is specified - we assume latest in this case.
 
         # * Perhaps you use this https://github.com/PowerShell/PSPrivateGallery, or Artifactory, ProGet, etc.
+    .EXAMPLE
+        @{
+            'vmware.powercli' = @{
+                Parameters = @{
+                    AllowPrerelease = $True
+                }
+            }
+        }
+        # Install the latest version of PowerCLI, allowing for prerelease
 #>
 [cmdletbinding()]
 param(
@@ -75,6 +91,8 @@ param(
     [string]$Repository = 'PSGallery', # From Parameters...
 
     [bool]$SkipPublisherCheck, # From Parameters...
+
+    [bool]$AllowPrerelease, # From parameters...
 
     [switch]$Import,
 
@@ -123,9 +141,7 @@ if(-not (Get-PackageProvider -Name Nuget))
 
 Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
 
-
 $params = @{
-    Name = $Name
     Repository = $Repository
     SkipPublisherCheck = $SkipPublisherCheck
     Verbose = $VerbosePreference
@@ -159,12 +175,17 @@ Add-ToPsModulePathIfRequired -Dependency $Dependency -Action $PSDependAction
 $Existing = $null
 $Existing = Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue
 
+$moduleparams = @{ Name = $Name }
+if($AllowPrerelease) {
+    $moduleparams.add('AllowPrerelease', $True)
+}
+
 if($Existing)
 {
     Write-Verbose "Found existing module [$Name]"
     # Thanks to Brandon Padgett!
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $GetGalleryVersion = { Find-Module -Name $Name -Repository $Repository | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
+    $GetGalleryVersion = { Find-Module @moduleparams -Repository $Repository | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
@@ -212,7 +233,7 @@ if($PSDependAction -contains 'Install')
     if('AllUsers', 'CurrentUser' -contains $Scope)
     {
         Write-Verbose "Installing [$Name] with scope [$Scope]"
-        Install-Module @params -Scope $Scope
+        Install-Module @moduleparams @params -Scope $Scope
     }
     else
     {
@@ -224,7 +245,7 @@ if($PSDependAction -contains 'Install')
             $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
         }
 
-        Save-Module @params -Path $Scope
+        Save-Module @moduleparams @params -Path $Scope
     }
 }
 
