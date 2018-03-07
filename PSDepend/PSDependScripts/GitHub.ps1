@@ -177,22 +177,21 @@ $script:IsCoreCLR = $PSVersionTable.ContainsKey("PSEdition") -and $PSVersionTabl
 Write-Verbose -Message "Examining GitHub dependency [$($Dependency.DependencyName)]"
 
 # Extract data from dependency
-$DependencyName = $Dependency.DependencyName
-$Version = $Dependency.Version
-$Target = $Dependency.Target
-$NameParts = $DependencyName.Split("/")
-$Name = $NameParts[1]
+$DependencyID = $Dependency.DependencyName
+$DependencyVersion = $Dependency.Version
+$DependencyTarget = $Dependency.Target
+$DependencyName = $DependencyID.Split("/")[1]
 
 # Translate "" to "latest"
-if($Version -eq "")
+if($DependencyVersion -eq "")
 {
-    $Version = "latest"
+    $DependencyVersion = "latest"
 }
 
 # Check if the version that should be used is a version number
-if($Version -match "^\d+(?:\.\d+)+$")
+if($DependencyVersion -match "^\d+(?:\.\d+)+$")
 {
-    $Version = New-Object "System.Version" $Version
+    $DependencyVersion = New-Object "System.Version" $DependencyVersion
 }
 
 if ($script:IsCoreCLR) {
@@ -241,14 +240,14 @@ else
 }
 
 # Set target path
-if($Target)
+if($DependencyTarget)
 {
     # Resolve scope keywords
-    if($Target -Eq "CurrentUser")
+    if($DependencyTarget -Eq "CurrentUser")
     {
         $TargetPath = $CurrentUserPath
     }
-    elseif($Target -Eq "AllUsers")
+    elseif($DependencyTarget -Eq "AllUsers")
     {
         $TargetPath = $AllUsersPath
     }
@@ -267,7 +266,7 @@ else
 }
 
 # Search for an already existing version of the dependency
-$Module = Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue
+$Module = Get-Module -ListAvailable -Name $DependencyName -ErrorAction SilentlyContinue
 $ModuleExisting = $null
 $ModuleExistingMatches = $false
 $ExistingVersions = $null
@@ -286,23 +285,23 @@ else
 
 if($ModuleExisting)
 {
-    Write-Verbose "Found existing module [$Name]"
+    Write-Verbose "Found existing module [$DependencyName]"
     $ExistingVersions = $Module | Select-Object -ExpandProperty "Version"
 
     # Check if the version that is should be used is a version number
-    if($Version -match "^\d+(?:\.\d+)+$")
+    if($DependencyVersion -match "^\d+(?:\.\d+)+$")
     {
         :versionslocal foreach($ExistingVersion in $ExistingVersions)
         {
-            switch($ExistingVersion.CompareTo($Version))
+            switch($ExistingVersion.CompareTo($DependencyVersion))
             {
                 {@(-1, 1) -contains $_} {
-                    Write-Verbose "For [$Name], the version you specified [$Version] does not match the already existing version [$ExistingVersion]"
+                    Write-Verbose "For [$DependencyName], the version you specified [$DependencyVersion] does not match the already existing version [$ExistingVersion]"
                     $ShouldInstall = $true
                     break
                 }
                 0 {
-                    Write-Verbose "For [$Name], the version you specified [$Version] matches the already existing version [$ExistingVersion]"
+                    Write-Verbose "For [$DependencyName], the version you specified [$DependencyVersion] matches the already existing version [$ExistingVersion]"
                     $ShouldInstall = $false
                     $ModuleExistingMatches = $True
                     break versionslocal
@@ -318,7 +317,7 @@ if($ModuleExisting)
 }
 else
 {
-    Write-Verbose "Did not find existing module [$Name]"
+    Write-Verbose "Did not find existing module [$DependencyName]"
     $ShouldInstall = $true
 }
 
@@ -335,29 +334,29 @@ if($ShouldInstall)
         :nullcheck while($GitHubVersion -Eq $null)
         {
             $Page++
-            $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyName/tags?per_page=100&page=$Page"
+            $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyID/tags?per_page=100&page=$Page"
 
             if($GitHubTags)
             {
                 foreach($GitHubTag in $GitHubTags)
                 {
-                    if($GitHubTag.name -match "^\d+(?:\.\d+)+$" -and ($Version -match "^\d+(?:\.\d+)+$" -or $Version -eq "latest"))
+                    if($GitHubTag.name -match "^\d+(?:\.\d+)+$" -and ($DependencyVersion -match "^\d+(?:\.\d+)+$" -or $DependencyVersion -eq "latest"))
                     {
                         $GitHubVersion = New-Object "System.Version" $GitHubTag.name
 
-                        if($Version -Eq "latest")
+                        if($DependencyVersion -Eq "latest")
                         {
-                            $Version = $GitHubVersion
+                            $DependencyVersion = $GitHubVersion
                         }
 
-                        switch($Version.CompareTo($GitHubVersion))
+                        switch($DependencyVersion.CompareTo($GitHubVersion))
                         {
                             -1 {
                                 # Version is older compared to the GitHub version, continue searching
                                 break
                             }
                             0 {
-                                Write-Verbose "For [$Name], a matching version [$Version] has been found in the GitHub tags"
+                                Write-Verbose "For [$DependencyName], a matching version [$DependencyVersion] has been found in the GitHub tags"
                                 $RemoteAvailable = $true
                                 break nullcheck
                             }
@@ -395,11 +394,11 @@ if($ShouldInstall)
                 switch($ExistingVersion.CompareTo($GitHubVersion))
                 {
                     {@(-1, 1) -contains $_} {
-                        Write-Verbose "For [$Name], you have a different version [$ExistingVersion] compared to the version available on GitHub [$GitHubVersion]"
+                        Write-Verbose "For [$DependencyName], you have a different version [$ExistingVersion] compared to the version available on GitHub [$GitHubVersion]"
                         break
                     }
                     0 {
-                        Write-Verbose "For [$Name], you already have the version [$ExistingVersion]"
+                        Write-Verbose "For [$DependencyName], you already have the version [$ExistingVersion]"
                         $ModuleExistingMatches = $true
                         $ShouldInstall = $false
                         break versionsremote
@@ -410,27 +409,27 @@ if($ShouldInstall)
     }
     else
     {
-        Write-Verbose "[$DependencyName] has no tags on GitHub or [$Version] is a branchname"
+        Write-Verbose "[$DependencyID] has no tags on GitHub or [$DependencyVersion] is a branchname"
         # Translate version "latest" to "master"
-        if($Version -eq "latest")
+        if($DependencyVersion -eq "latest")
         {
-            $Version = "master"
+            $DependencyVersion = "master"
         }
 
         # Link for a .zip archive of the repository's branch
-        $URL = "https://api.github.com/repos/$DependencyName/zipball/$Version"
+        $URL = "https://api.github.com/repos/$DependencyID/zipball/$DependencyVersion"
         $ShouldInstall = $True
     }
 }
 
 # Install action needs to be wanted and logical
-$ImportName = $Name
+$ImportName = $DependencyName
 if(($PSDependAction -contains 'Install') -and $ShouldInstall)
 {
     # Create a temporary directory and download the repository to it
     $OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
     New-Item -ItemType Directory -Path $OutPath -Force | Out-Null
-    $OutFile = Join-Path $OutPath "$Version.zip"
+    $OutFile = Join-Path $OutPath "$DependencyVersion.zip"
     Invoke-RestMethod -Uri $URL -OutFile $OutFile
 
     if(-not (Test-Path $OutFile))
@@ -456,7 +455,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     Remove-Item $OutFile -Force -Confirm:$False
 
     $OutPath = (Get-ChildItem -Path $OutPath)[0].FullName
-    $OutPath = (Rename-Item -Path $OutPath -NewName $Name -PassThru).FullName
+    $OutPath = (Rename-Item -Path $OutPath -NewName $DependencyName -PassThru).FullName
 
     if($ExtractPath)
     {
@@ -497,19 +496,19 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     $Destination = $null
     if ($TargetType -ne 'Exact')
     {
-        $TargetPath = Join-Path $TargetPath $Name
+        $TargetPath = Join-Path $TargetPath $DependencyName
     }
 
     if($TargetType -eq 'Exact')
     {
         $Destination = $TargetPath
     }
-    elseif($Version -match "^\d+(?:\.\d+)+$" -and $PSVersionTable.PSVersion -ge '5.0'  )
+    elseif($DependencyVersion -match "^\d+(?:\.\d+)+$" -and $PSVersionTable.PSVersion -ge '5.0'  )
     {
         # For versioned GitHub tags
-        $Destination = Join-Path $TargetPath $Version
+        $Destination = Join-Path $TargetPath $DependencyVersion
     }
-    elseif(($Version -eq "latest") -and ($RemoteAvailable) -and $PSVersionTable.PSVersion -ge '5.0' )
+    elseif(($DependencyVersion -eq "latest") -and ($RemoteAvailable) -and $PSVersionTable.PSVersion -ge '5.0' )
     {
         # For latest GitHub tags
         $Destination = Join-Path $TargetPath $GitHubVersion
@@ -517,8 +516,8 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     elseif($PSVersionTable.PSVersion -ge '5.0' -and $TargetType -eq 'Parallel')
     {
         # For GitHub branches
-        $Destination = Join-Path $TargetPath $Version
-        $Destination = Join-Path $Destination $Name
+        $Destination = Join-Path $TargetPath $DependencyVersion
+        $Destination = Join-Path $Destination $DependencyName
     }
     else
     {
@@ -529,7 +528,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
         Remove-Item -Path $Destination -Force -Recurse
     }
 
-    Write-Verbose "Copying [$($ToCopy.Count)] items to destination [$Destination] with`nTarget [$TargetPath]`nName [$Name]`nVersion [$Version]`nGitHubVersion [$GitHubVersion]"
+    Write-Verbose "Copying [$($ToCopy.Count)] items to destination [$Destination] with`nTarget [$TargetPath]`nName [$DependencyName]`nVersion [$DependencyVersion]`nGitHubVersion [$GitHubVersion]"
     foreach($Item in $ToCopy)
     {
         Copy-Item -Path $Item -Destination $Destination -Force -Recurse
@@ -547,7 +546,7 @@ if($ModuleExisting)
 }
 elseif($PSDependAction -contains 'Import')
 {
-    Write-Warning "[$Name] at [$Destination] should be imported, but does not exist"
+    Write-Warning "[$DependencyName] at [$Destination] should be imported, but does not exist"
 }
 
 # Return true or false if Test action is wanted
