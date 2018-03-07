@@ -11,14 +11,15 @@
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
             Target: The folder to download repo to. Created if it doesn't exist.
                 "AllUsers" resolves to:
-                    Windows: the "PowerShell\Modules" folder inside the system's ProgramFiles folder.
+                    Windows: the system's program files folder.
                     Other: the platform's SHARED_MODULES folder.
                 "CurrentUser" resolves to:
-                    Windows: the "PowerShell\Modules" folder inside the user's (My)Documents folder.
+                    Windows: the user's (My)Documents folder.
                     Other: the platform's USER_MODULES folder.
                 It defaults to "AllUsers" on Windows in an elevated session and to "CurrentUser" otherwise.
+                PowerShell uses the "WindowsPowerShell\Modules" folder hierarchy while PowerShell Core uses "PowerShell\Modules".
 
-                    
+
     .NOTES
         A huge thanks to Doug Finke for the idea and some code and to Jonas Thelemann for a rewrite for tags!
             https://github.com/dfinke/InstallModuleFromGitHub
@@ -171,6 +172,7 @@ param(
 )
 
 $script:IsWindows = (-not (Get-Variable -Name "IsWindows" -ErrorAction "Ignore")) -or $IsWindows
+$script:IsCoreCLR = $PSVersionTable.ContainsKey("PSEdition") -and $PSVersionTable.PSEdition -eq "Core"
 
 Write-Verbose -Message "Examining GitHub dependency [$($Dependency.DependencyName)]"
 
@@ -193,10 +195,18 @@ if($Version -match "^\d+(?:\.\d+)+$")
     $Version = New-Object "System.Version" $Version
 }
 
+if ($script:IsCoreCLR) {
+    $ModuleChildPath = "PowerShell\Modules"
+}
+else
+{
+    $ModuleChildPath = "WindowsPowerShell\Modules"
+}
+
 # Get system installation path
 if($script:IsWindows)
 {
-    $AllUsersPath = Join-Path -Path $env:ProgramFiles -ChildPath "PowerShell\Modules"
+    $AllUsersPath = Join-Path -Path $env:ProgramFiles -ChildPath $ModuleChildPath
 }
 else
 {
@@ -218,11 +228,11 @@ if($script:IsWindows)
 {
     if($MyDocumentsFolderPath)
     {
-        $CurrentUserPath = Join-Path -Path $MyDocumentsFolderPath -ChildPath "PowerShell\Modules"
+        $CurrentUserPath = Join-Path -Path $MyDocumentsFolderPath -ChildPath $ModuleChildPath
     }
     else
     {
-        $CurrentUserPath = Join-Path -Path $HOME -ChildPath "Documents\PowerShell\Modules"
+        $CurrentUserPath = Join-Path -Path $HOME -ChildPath "Documents\$ModuleChildPath"
     }
 }
 else
@@ -230,28 +240,29 @@ else
     $CurrentUserPath = [System.Management.Automation.Platform]::SelectProductNameForDirectory('USER_MODULES')
 }
 
-# Set default target depending on admin permissions
-if(-not $Target)
-{
-    if(($script:IsWindows) -And (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")))
-    {
-        $Target = $AllUsersPath
-    }
-    else
-    {
-        $Target = $CurrentUserPath
-    }
-}
-else
+# Set target path
+if($Target)
 {
     # Resolve scope keywords
     if($Target -Eq "CurrentUser")
     {
-        $Target = $CurrentUserPath
+        $TargetPath = $CurrentUserPath
     }
     elseif($Target -Eq "AllUsers")
     {
-        $Target = $AllUsersPath
+        $TargetPath = $AllUsersPath
+    }
+}
+else
+{
+    # Set default target depending on admin permissions
+    if(($script:IsWindows) -And (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")))
+    {
+        $TargetPath = $AllUsersPath
+    }
+    else
+    {
+        $TargetPath = $CurrentUserPath
     }
 }
 
@@ -446,7 +457,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
 
     $OutPath = (Get-ChildItem -Path $OutPath)[0].FullName
     $OutPath = (Rename-Item -Path $OutPath -NewName $Name -PassThru).FullName
-    
+
     if($ExtractPath)
     {
         # Filter only the contents wanted
@@ -478,47 +489,47 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     Write-Verbose "Contents that will be copied: $ToCopy"
 
     # Copy the contents to their target
-    if(-not (Test-Path $Target))
+    if(-not (Test-Path $TargetPath))
     {
-        New-Item $Target -Force
+        New-Item $TargetPath -Force
     }
 
     $Destination = $null
     if ($TargetType -ne 'Exact')
     {
-        $Target = Join-Path $Target $Name
+        $TargetPath = Join-Path $TargetPath $Name
     }
 
     if($TargetType -eq 'Exact')
     {
-        $Destination = $Target
+        $Destination = $TargetPath
     }
     elseif($Version -match "^\d+(?:\.\d+)+$" -and $PSVersionTable.PSVersion -ge '5.0'  )
     {
         # For versioned GitHub tags
-        $Destination = Join-Path $Target $Version
+        $Destination = Join-Path $TargetPath $Version
     }
     elseif(($Version -eq "latest") -and ($RemoteAvailable) -and $PSVersionTable.PSVersion -ge '5.0' )
     {
         # For latest GitHub tags
-        $Destination = Join-Path $Target $GitHubVersion
+        $Destination = Join-Path $TargetPath $GitHubVersion
     }
     elseif($PSVersionTable.PSVersion -ge '5.0' -and $TargetType -eq 'Parallel')
     {
         # For GitHub branches
-        $Destination = Join-Path $Target $Version 
+        $Destination = Join-Path $TargetPath $Version
         $Destination = Join-Path $Destination $Name
     }
     else
     {
-        $Destination = $Target
+        $Destination = $TargetPath
     }
     if($Force -and (Test-Path -Path $Destination))
     {
         Remove-Item -Path $Destination -Force -Recurse
     }
 
-    Write-Verbose "Copying [$($ToCopy.Count)] items to destination [$Destination] with`nTarget [$Target]`nName [$Name]`nVersion [$Version]`nGitHubVersion [$GitHubVersion]"
+    Write-Verbose "Copying [$($ToCopy.Count)] items to destination [$Destination] with`nTarget [$TargetPath]`nName [$Name]`nVersion [$Version]`nGitHubVersion [$GitHubVersion]"
     foreach($Item in $ToCopy)
     {
         Copy-Item -Path $Item -Destination $Destination -Force -Recurse
