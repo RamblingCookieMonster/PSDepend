@@ -9,12 +9,16 @@
             DependencyName (Key): The key for this dependency is used as Name, if none is specified
             Name: Used to specify the GitHub repository name to download
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
-            Target: The folder to download repo to.  Created if it doesn't exist.
-                    "CurrentUser" resolves to "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
-                    "AllUsers" resolves to "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\" 
-                    Defaults to:
-                        Non-admin session: "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
-                        Admin session:     "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\"
+            Target: The folder to download repo to. Created if it doesn't exist.
+                "AllUsers" resolves to:
+                    Windows: the "PowerShell\Modules" folder inside the system's ProgramFiles folder.
+                    Other: the platform's SHARED_MODULES folder.
+                "CurrentUser" resolves to:
+                    Windows: the "PowerShell\Modules" folder inside the user's (My)Documents folder.
+                    Other: the platform's USER_MODULES folder.
+                It defaults to "AllUsers" on Windows in an elevated session and to "CurrentUser" otherwise.
+
+                    
     .NOTES
         A huge thanks to Doug Finke for the idea and some code and to Jonas Thelemann for a rewrite for tags!
             https://github.com/dfinke/InstallModuleFromGitHub
@@ -166,6 +170,8 @@ param(
     [switch]$Force
 )
 
+$script:IsWindows = (-not (Get-Variable -Name "IsWindows" -ErrorAction "Ignore")) -or $IsWindows
+
 Write-Verbose -Message "Examining GitHub dependency [$($Dependency.DependencyName)]"
 
 # Extract data from dependency
@@ -187,13 +193,47 @@ if($Version -match "^\d+(?:\.\d+)+$")
     $Version = New-Object "System.Version" $Version
 }
 
-$CurrentUserPath = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules\"
-$AllUsersPath = "$ENV:PROGRAMFILES\WindowsPowerShell\Modules\"
+# Get system installation path
+if($script:IsWindows)
+{
+    $AllUsersPath = Join-Path -Path $env:ProgramFiles -ChildPath "PowerShell\Modules"
+}
+else
+{
+    $AllUsersPath = [System.Management.Automation.Platform]::SelectProductNameForDirectory('SHARED_MODULES')
+}
+
+# Check if the MyDocuments folder path is accessible
+try
+{
+    $MyDocumentsFolderPath = [Environment]::GetFolderPath("MyDocuments")
+}
+catch
+{
+    $MyDocumentsFolderPath = $null
+}
+
+# Get user installation path
+if($script:IsWindows)
+{
+    if($MyDocumentsFolderPath)
+    {
+        $CurrentUserPath = Join-Path -Path $MyDocumentsFolderPath -ChildPath "PowerShell\Modules"
+    }
+    else
+    {
+        $CurrentUserPath = Join-Path -Path $HOME -ChildPath "Documents\PowerShell\Modules"
+    }
+}
+else
+{
+    $CurrentUserPath = [System.Management.Automation.Platform]::SelectProductNameForDirectory('USER_MODULES')
+}
 
 # Set default target depending on admin permissions
 if(-not $Target)
 {
-    if(([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
+    if(($script:IsWindows) -And (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")))
     {
         $Target = $AllUsersPath
     }
@@ -389,9 +429,17 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     }
 
     # Extract the zip file
-    $Zipfile = (New-Object -com shell.application).NameSpace($OutFile)
-    $Destination = (New-Object -com shell.application).NameSpace($OutPath)
-    $Destination.CopyHere($Zipfile.Items())
+    if($script:IsWindows)
+    {
+        $Zipfile = (New-Object -com shell.application).NameSpace($OutFile)
+        $Destination = (New-Object -com shell.application).NameSpace($OutPath)
+        $Destination.CopyHere($Zipfile.Items())
+    }
+    else
+    {
+        # If not on Windows "Expand-Archive" should be available as PS version 6 is considered minimum.
+        Expand-Archive $OutFile -DestinationPath $OutPath
+    }
 
     # Remove the zip file
     Remove-Item $OutFile -Force -Confirm:$False
@@ -432,7 +480,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     # Copy the contents to their target
     if(-not (Test-Path $Target))
     {
-        mkdir $Target -Force
+        New-Item $Target -Force
     }
 
     $Destination = $null
