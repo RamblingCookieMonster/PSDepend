@@ -21,49 +21,50 @@
 
 
     .NOTES
-        A huge thanks to Doug Finke for the idea and some code and to Jonas Thelemann for a rewrite for tags!
+        Initial idea and some code by Doug Finke. Rewrite by Jonas Thelemann for tag support and PowerShell Core compatibility.
+        A huge thanks to both!
             https://github.com/dfinke/InstallModuleFromGitHub
             https://github.com/dargmuesli
 
     .PARAMETER PSDependAction
-        Test, Install, or Import the module.  Defaults to Install
+        Test, install or import the module. Defaults to "Install".
 
-        Test: Return true or false on whether the dependency is in place
-        Install: Install the dependency
-        Import: Import the dependency
+        Test: Return true or false on whether the dependency is in place.
+        Install: Install the dependency.
+        Import: Import the dependency.
 
     .PARAMETER ExtractPath
-        Extract only these specified file(s) or folder(s) to the target.
+        Limit extraction of file(s) and folder(s).
 
     .PARAMETER ExtractProject
-        Parse the GitHub repository for a common PowerShell project hierarchy and extract only the project folder
+        Parse the GitHub repository for a common PowerShell project hierarchy and extract only the project folder.
 
         Example:  ramblingcookiemonster/psslack looks like this:
-                  PSSlack/         Repo root
-                    PSSlack/       Module root
-                      PSSlack.psd1 Module manifest
+                  PSSlack/            Repo root
+                    PSSlack/          Module root
+                      PSSlack.psd1    Module manifest
                   Tests/
 
-                  In this case, we would extract PSSlack/PSSlack only
+                  In this case, we would extract PSSlack/PSSlack only.
 
         Example:  bundyfx/vamp looks like this:
-                  vamp/            Repo root (also, module root)
-                    vamp.psd1      Module manifest
+                  vamp/          Repo root (also, module root)
+                    vamp.psd1    Module manifest
 
-                  In this case, we would extract the whole root vamp folder
+                  In this case, we would extract the whole root vamp folder.
 
     .PARAMETER TargetType
-        How we interpret your target:
-            Standard: DEFAULT: Extract to target\name
-            Exact:    Extract target\
-            Parallel: Extract to target\name\version or target\name\branch\name depending on the version specified
+        How the target is interpreted:
+            Standard: Extract to "target\name" [Default].
+            Exact:    Extract to "target\".
+            Parallel: Extract to "target\name\version" or "target\name\branch\name" depending on the version specified.
 
     .PARAMETER Force
-        If specified, delete target folder (as defined by TargetType) if it exists already
-        Default: We copy to the target folder without removing
+        If specified, delete an already existing target folder (as defined by TargetType).
+        Default: False / not specified. Files are copied to the target folder without any file or folder removal.
 
     .EXAMPLE
-        Image a GitHub repository containing a PowerShell module with git tags named "1.0.0" and "0.1.0".
+        Imagine a GitHub repository containing a PowerShell module with git tags named "1.0.0" and "0.1.0".
 
         @{
             'Dargmuesli/powershell-lib' = '1.0.0'
@@ -87,7 +88,7 @@
         This downloads branch "master" (most recent commit version) to "powershell-lib"
 
     .EXAMPLE
-        Image a GitHub repository containing a PowerShell module with no git tags.
+        Imagine a GitHub repository containing a PowerShell module with no git tags.
 
         @{
             'Dargmuesli/powershell-lib' = 'latest'
@@ -149,9 +150,8 @@
             }
         }
 
-        # Download the latest version of demo_ci by powershell on GitHub
-        # Extract repo-root/Assets/DscPipelineTools to the target
-        # Extract repo-root/InfraDNS/Configs/DNSServer.ps1 to the target
+        # This downloads the latest version of demo_ci by powershell from GitHub.
+        # Then it extracts "repo-root/Assets/DscPipelineTools" and "repo-root/InfraDNS/Configs/DNSServer.ps1" to the target.
 #>
 [cmdletbinding()]
 param(
