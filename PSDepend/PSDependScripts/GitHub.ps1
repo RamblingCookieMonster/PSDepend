@@ -174,7 +174,7 @@ param(
 $script:IsWindows = (-not (Get-Variable -Name "IsWindows" -ErrorAction "Ignore")) -or $IsWindows
 $script:IsCoreCLR = $PSVersionTable.ContainsKey("PSEdition") -and $PSVersionTable.PSEdition -eq "Core"
 
-Write-Verbose -Message "Examining GitHub dependency [$($Dependency.DependencyName)]"
+Write-Verbose -Message "Am I on Windows? [$script:IsWindows]! Am I PS Core? [$script:IsCoreCLR]!"
 
 # Extract data from dependency
 $DependencyID = $Dependency.DependencyName
@@ -264,6 +264,12 @@ else
         $TargetPath = $CurrentUserPath
     }
 }
+
+Write-Verbose -Message "Dependency id: [$DependencyID]"
+Write-Verbose -Message "Dependency version: [$DependencyVersion]"
+Write-Verbose -Message "Dependency target: [$DependencyTarget]"
+Write-Verbose -Message "Dependency name: [$DependencyName]"
+Write-Verbose -Message "Target Path: [$TargetPath]"
 
 # Search for an already existing version of the dependency
 $Module = Get-Module -ListAvailable -Name $DependencyName -ErrorAction SilentlyContinue
