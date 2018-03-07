@@ -340,6 +340,7 @@ if($ShouldInstall)
         :nullcheck while($GitHubVersion -Eq $null)
         {
             $Page++
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
             $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyID/tags?per_page=100&page=$Page"
 
             if($GitHubTags)
