@@ -3,12 +3,10 @@
 function Resolve-DependScripts
 {
     param ([object[]] $Path, [bool]$Recurse = $True)
-
     $resolvedScriptInfo = @(
         foreach ($object in $Path)
         {
             $unresolvedPath = [string] $object
-
             if ($unresolvedPath -notmatch '[\*\?\[\]]' -and
                 (Test-Path -LiteralPath $unresolvedPath -PathType Leaf) -and
                 (Get-Item -LiteralPath $unresolvedPath) -is [System.IO.FileInfo])
@@ -30,17 +28,14 @@ function Resolve-DependScripts
                 {
                     $RecurseParam.Recurse = $True
                 }
-                # World's longest pipeline?
-
                 Resolve-Path -Path $unresolvedPath |
                     Where-Object { $_.Provider.Name -eq 'FileSystem' } |
                     Select-Object -ExpandProperty ProviderPath |
-                    Get-ChildItem -Filter *.psd1 @RecurseParam |
-                    Where-Object { -not $_.PSIsContainer -and $_.Name -match '\.depend\.psd1$|^requirements.psd1$' } |
+                    Get-ChildItem -Force -Filter *.psd1 @RecurseParam |
+                    Where-Object { -not $_.PSIsContainer -and $_.Name -match '\.depend\.psd1$|.*requirements.psd1$' } |
                     Select-Object -ExpandProperty FullName -Unique
             }
         }
     )
-
-    $resolvedScriptInfo | Select -Unique
+    $resolvedScriptInfo | Select-Object -Unique
 }
