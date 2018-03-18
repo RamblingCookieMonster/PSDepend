@@ -37,7 +37,7 @@
     }
 
     Noop = @{
-        Script = 'noop.ps1'
+        Script = 'Noop.ps1'
         Description = 'Display parameters that a depends script would receive. Use for testing and validation.'
     }
 
