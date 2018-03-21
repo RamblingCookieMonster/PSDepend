@@ -106,8 +106,11 @@ Function Get-PSDependType {
         }
         else
         {
+            $Support = @($DependencyDefinitions.$Type.Supports)
             [pscustomobject]@{
                 DependencyType = $Type
+                Supports = $Support
+                Supported = Test-PlatformSupport $Support
                 Description = $DependencyDefinitions.$Type.Description
                 DependencyScript = $ScriptPath
                 HelpContent = $ScriptHelp
@@ -115,6 +118,3 @@ Function Get-PSDependType {
         }
     }
 }
-
-
-

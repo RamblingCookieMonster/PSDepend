@@ -71,6 +71,7 @@ Function Invoke-DependencyScript {
     {
         # This script reads a depend.psd1, installs dependencies as defined
         Write-Verbose "Running Invoke-DependencyScript with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
+        $PSDependTypes = Get-PSDependType
     }
     Process
     {
@@ -83,6 +84,12 @@ Function Invoke-DependencyScript {
         #Build up hash, we call each dependencytype script for applicable dependencies
         foreach($DependencyType in $TheseDependencyTypes)
         {
+            $PSDependType = ($PSDependTypes | Where-Object {$_.DependencyType -eq $DependencyType})
+            if(-not $PSDependType.Supported)
+            {
+                Write-Error "Skipping dependency type [$DependencyType]`nThis dependency does not support your platform`nSupported platforms: [$($PSDependType.Supports)]"
+                continue
+            }
             $DependencyScript = $DependencyDefs.$DependencyType
             if(-not $DependencyScript)
             {

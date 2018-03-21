@@ -16,7 +16,6 @@
         }
     }
 
-
 #Get nuget dependecy file if we don't have it
     Get-Content $ModuleRoot\PSDepend.Config |
         Where-Object {$_ -and $_ -notmatch "^\s*#"} |
