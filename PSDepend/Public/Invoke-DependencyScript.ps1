@@ -75,7 +75,7 @@ Function Invoke-DependencyScript {
     }
     Process
     {
-        Write-Verbose "Dependencies:`n$($Dependency | Select -Property * | Out-String)"
+        Write-Verbose "Dependencies:`n$($Dependency | Select-Object -Property * | Out-String)"
 
         #Get definitions, and dependencies in this particular psd1
         $DependencyDefs = Get-PSDependScript

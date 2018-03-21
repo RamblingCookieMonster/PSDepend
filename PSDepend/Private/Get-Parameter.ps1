@@ -82,7 +82,7 @@ Function Get-Parameter {
 
          foreach ($p in $MoreParameters | Where-Object { !$Parameters.ContainsKey($_.Name) } ) {
             Write-Debug ("INITIALLY: " + $p.Name)
-            $Parameters.($p.Name) = $p | Select *
+            $Parameters.($p.Name) = $p | Select-Object *
          }
 
          [Array]$Dynamic = $MoreParameters | Where-Object { $_.IsDynamic }
@@ -93,7 +93,7 @@ Function Get-Parameter {
                   $Parameters.($d.Name).DynamicProvider += $provider.Name
                } else {
                   Write-Debug ("CREATE:" + $d.Name + " " + $provider.Name)
-                  $Parameters.($d.Name) = $Parameters.($d.Name) | Select *, @{ n="DynamicProvider";e={ @($provider.Name) } }
+                  $Parameters.($d.Name) = $Parameters.($d.Name) | Select-Object *, @{ n="DynamicProvider";e={ @($provider.Name) } }
                }
             } 
          }
@@ -124,7 +124,7 @@ Function Get-Parameter {
             if(!$SkipProviderParameters -and $Command.Source -eq "Microsoft.PowerShell.Management") {
                ## The best I can do is to validate that the command has a parameter which could accept a string path
                foreach($param in $Command.Parameters.Values) {
-                  if(([String[]],[String] -contains $param.ParameterType) -and ($param.ParameterSets.Values | Where { $_.Position -ge 0 })) {
+                  if(([String[]],[String] -contains $param.ParameterType) -and ($param.ParameterSets.Values | Where-Object { $_.Position -ge 0 })) {
                      $NoProviderParameters = $false
                      break
                   }
@@ -165,7 +165,7 @@ Function Get-Parameter {
             $ParameterNames = $Parameters.Keys + $Aliases
             foreach ($p in $($Parameters.Keys)) {
                $short = "^"
-               $aliases = @($p) + @($Parameters.$p.Aliases) | sort-object { $_.Length }
+               $aliases = @($p) + @($Parameters.$p.Aliases) | Sort-Object { $_.Length }
                $shortest = "^" + @($aliases)[0]
 
                foreach($name in $aliases) {
@@ -187,7 +187,7 @@ Function Get-Parameter {
                }
 
                # ValidateSet...
-               $Parameters.$p = $Parameters.$p | Add-Member NoteProperty ValidateSetValues ($Parameters.$p.Attributes | Where{$_.TypeId.name -like 'ValidateSetAttribute'}).ValidValues -Force -Passthru
+               $Parameters.$p = $Parameters.$p | Add-Member NoteProperty ValidateSetValues ($Parameters.$p.Attributes | Where-Object {$_.TypeId.name -like 'ValidateSetAttribute'}).ValidValues -Force -Passthru
 
             }
 

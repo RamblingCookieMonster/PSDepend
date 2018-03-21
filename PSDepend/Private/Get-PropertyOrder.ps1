@@ -48,7 +48,7 @@ Function Get-PropertyOrder {
         #Get properties that meet specified parameters
         $firstObject.psobject.properties |
             Where-Object { $memberType -contains $_.memberType } |
-            Select -ExpandProperty Name |
+            Select-Object -ExpandProperty Name |
             Where-Object{ -not $excludeProperty -or $excludeProperty -notcontains $_ }
     }
 } #Get-PropertyOrder

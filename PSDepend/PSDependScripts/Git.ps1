@@ -133,8 +133,8 @@ if($GottaTest)
 {
     Push-Location
     Set-Location $RepoPath
-    $Branch = Invoke-ExternalCommand git -Arguments (echo rev-parse --abbrev-ref HEAD) -Passthru
-    $Commit = Invoke-ExternalCommand git -Arguments (echo rev-parse HEAD) -Passthru
+    $Branch = Invoke-ExternalCommand git -Arguments (Write-Output rev-parse --abbrev-ref HEAD) -Passthru
+    $Commit = Invoke-ExternalCommand git -Arguments (Write-Output rev-parse HEAD) -Passthru
     Pop-Location
     if($Version -eq $Branch -or $Version -eq $Commit)
     {

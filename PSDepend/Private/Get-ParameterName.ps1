@@ -19,11 +19,11 @@ Function Get-ParameterName {
     )
     if($parameterset)
     {
-        ((Get-Command -name $command).ParameterSets | ?{$_.name -eq $parameterset} ).Parameters.Name | ?{($exclude + $excludeDefault) -notcontains $_}
+        ((Get-Command -name $command).ParameterSets | Where-Object {$_.name -eq $parameterset} ).Parameters.Name | Where-Object {($exclude + $excludeDefault) -notcontains $_}
     }
 
     else
     {
-        ((Get-Command -name $command).ParameterSets | ?{$_.name -eq "__AllParameterSets"} ).Parameters.Name | ?{($exclude + $excludeDefault) -notcontains $_}
+        ((Get-Command -name $command).ParameterSets | Where-Object {$_.name -eq "__AllParameterSets"} ).Parameters.Name | Where-Object {($exclude + $excludeDefault) -notcontains $_}
     }
 }

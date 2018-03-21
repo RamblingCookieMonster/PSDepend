@@ -13,13 +13,12 @@ Function Sort-ObjectWithCustomList {
         [Object[]]
         $CustomList
     )
-
     Begin
     {
         # convert customList (array) to hash
         $hash = @{}
         $rank = 0
-        $customList | Select -Unique | ForEach-Object {
+        $customList | Select-Object -Unique | ForEach-Object {
             $key = $_
             $hash.Add($key, $rank)
             $rank++
