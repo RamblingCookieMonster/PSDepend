@@ -27,6 +27,8 @@
             $Value = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Value)
             Set-Variable -Name $Name -Value $Value
         }
-    BootStrap-Nuget -NugetPath $NuGetPath
+    if(Test-PlatformSupport -Support 'windows') {
+        BootStrap-Nuget -NugetPath $NuGetPath
+    }
 
 Export-ModuleMember -Function $Public.Basename

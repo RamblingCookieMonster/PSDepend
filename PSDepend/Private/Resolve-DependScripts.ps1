@@ -9,7 +9,7 @@ function Resolve-DependScripts
             $unresolvedPath = [string] $object
             if ($unresolvedPath -notmatch '[\*\?\[\]]' -and
                 (Test-Path -LiteralPath $unresolvedPath -PathType Leaf) -and
-                (Get-Item -LiteralPath $unresolvedPath) -is [System.IO.FileInfo])
+                (Get-Item -LiteralPath $unresolvedPath -Force) -is [System.IO.FileInfo])
             {
                 $extension = [System.IO.Path]::GetExtension($unresolvedPath)
                 if ($extension -ne '.psd1')

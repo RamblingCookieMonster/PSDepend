@@ -25,6 +25,6 @@ function Add-ToPsModulePathIfRequired {
         }
         
         Write-Verbose "Setting PSModulePath to`n$($path, $env:PSModulePath -join ';' | Out-String)"
-        Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path).FullName
+        Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path -Force).FullName
     }
 }
