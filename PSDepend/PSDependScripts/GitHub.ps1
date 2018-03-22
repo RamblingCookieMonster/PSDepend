@@ -430,7 +430,6 @@ if($ShouldInstall)
 }
 
 # Install action needs to be wanted and logical
-$ImportName = $DependencyName
 if(($PSDependAction -contains 'Install') -and $ShouldInstall)
 {
     # Create a temporary directory and download the repository to it
@@ -501,6 +500,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     }
 
     $Destination = $null
+
     if ($TargetType -ne 'Exact')
     {
         $TargetPath = Join-Path $TargetPath $DependencyName
@@ -530,17 +530,19 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     {
         $Destination = $TargetPath
     }
+
     if($Force -and (Test-Path -Path $Destination))
     {
         Remove-Item -Path $Destination -Force -Recurse
     }
 
     Write-Verbose "Copying [$($ToCopy.Count)] items to destination [$Destination] with`nTarget [$TargetPath]`nName [$DependencyName]`nVersion [$DependencyVersion]`nGitHubVersion [$GitHubVersion]"
+
     foreach($Item in $ToCopy)
     {
         Copy-Item -Path $Item -Destination $Destination -Force -Recurse
-        $ImportName = $Destination
     }
+
     # Delete the temporary folder
     Remove-Item (Get-Item $OutPath).parent.FullName -Force -Recurse
     $ModuleExisting = $true
@@ -549,7 +551,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
 # Conditional import
 if($ModuleExisting)
 {
-    Import-PSDependModule -Name $ImportName -Action $PSDependAction
+    Import-PSDependModule -Name $TargetPath -Action $PSDependAction
 }
 elseif($PSDependAction -contains 'Import')
 {
