@@ -87,7 +87,7 @@ Function Invoke-DependencyScript {
             $PSDependType = ($PSDependTypes | Where-Object {$_.DependencyType -eq $DependencyType})
             if(-not $PSDependType.Supported)
             {
-                Write-Error "Skipping dependency type [$DependencyType]`nThis dependency does not support your platform`nSupported platforms: [$($PSDependType.Supports)]"
+                Write-Warning "Skipping dependency type [$DependencyType]`nThis dependency does not support your platform`nSupported platforms: [$($PSDependType.Supports)]"
                 continue
             }
             $DependencyScript = $DependencyDefs.$DependencyType
