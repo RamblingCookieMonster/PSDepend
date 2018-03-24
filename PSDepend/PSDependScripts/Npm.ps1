@@ -77,7 +77,7 @@ param (
         }
         If (-not (Test-Path $Target) -and $PSDependAction -contains 'Install') {
             Write-Verbose "Creating folder [$Target] for node module dependency [$Name]"
-            $null = mkdir $Target -Force
+            $null = New-Item -ItemType directory -Path  $Target -Force
         }
     }
 #endregion Extract Dependency Data

@@ -122,8 +122,6 @@ if(-not (Get-PackageProvider -Name Nuget))
 }
 
 Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
-
-
 $params = @{
     Name = $Name
     Repository = $Repository
