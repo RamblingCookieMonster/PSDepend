@@ -251,6 +251,10 @@ if($DependencyTarget)
     {
         $TargetPath = $AllUsersPath
     }
+    else
+    {
+        $TargetPath = $DependencyTarget
+    }
 }
 else
 {
