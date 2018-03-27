@@ -32,7 +32,7 @@
 
     GitHub = @{
         Script = 'GitHub.ps1'
-        Description = 'EXPERIMENTAL: Download and extract a GitHub repo'
+        Description = 'Download and extract a GitHub repo'
         Supports = 'windows', 'core', 'macos', 'linux'
     }
 
