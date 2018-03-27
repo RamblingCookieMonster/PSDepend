@@ -139,18 +139,13 @@ DETAILED DESCRIPTION
       - You want to extend PSDepend to add more DependencyTypes
       - You want to move the PSDependMap.psd1 to a central location that multiple systems could point to
 
-    There are three attributes to each DependencyType in this file:
+    There are four attributes to each DependencyType in this file:
 
         DependencyType Name:  The name of this DependencyType
         Script:               The name of the script to process these DependencyTypes
                               This looks in the PSDepend module path, under PSDependScripts
                               You can theoretically specify an absolute path
         Description:          Description for this DependencyType. Provided to a user when they run Get-PSDependType.
-
-    The PSDependMap.psd1 file will have one or more DependencyType blocks like this:
-
-        PSGalleryModule:
-          Script: PSGalleryModule.ps1
-          Description: Install a PowerShell module from the PowerShell Gallery.
+        Supports:             Platforms this script supports:  windows, core, macos, linux
 
     See about_PSDepend for more information

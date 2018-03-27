@@ -166,6 +166,7 @@ Function Invoke-PSDepend {
         Write-Verbose "Running Invoke-PSDepend with ParameterSetName '$($PSCmdlet.ParameterSetName)', PSDependAction $($InvokeParams.PSDependAction), and params: $($PSBoundParameters | Out-String)"
 
         $DependencyFiles = New-Object System.Collections.ArrayList
+        $PSDependTypes = Get-PSDependType -Path $PSDependTypePath
     }
     Process
     {
@@ -201,6 +202,19 @@ Function Invoke-PSDepend {
 
         # Handle Dependencies
         $Dependencies = Get-Dependency @GetPSDependParams
+        $Unsupported = ( $PSDependTypes | Where-Object {-not $_.Supported} ).DependencyType
+        $Dependencies = foreach($Dependency in $Dependencies)
+        {
+            if($Unsupported -contains $Dependency.DependencyType)
+            {
+                $Supports = $PSDependTypes | Where-Object {$_.DependencyType -eq $Dependency.DependencyType} | Select -ExpandProperty Supports
+                Write-Warning "Skipping unsupported dependency:`n$( $Dependency | Out-String)`nSupported platforms:`n$($Supports | Out-String)"
+            }
+            else
+            {
+                $Dependency
+            }
+        }
 
         if($DoTest -and $Quiet)
         {

@@ -98,7 +98,7 @@ if($PSBoundParameters.ContainsKey('ProviderName'))
 }
 else # Pick providername from this packagesource
 {
-    $ThisProvider = $PackageSources | Where {$_.Name -eq $Source} | Select -ExpandProperty ProviderName
+    $ThisProvider = $PackageSources | Where-Object {$_.Name -eq $Source} | Select-Object -ExpandProperty ProviderName
 }
 
 $GetParam = @{

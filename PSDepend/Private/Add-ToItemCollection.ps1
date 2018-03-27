@@ -6,14 +6,14 @@
         [switch]$Append
     )
 
-    $Existing = ( Get-Item -Path $Reference | Select -ExpandProperty Value ) -split $Delimiter | Where {$_ -ne $Item}
+    $Existing = ( Get-Item -Path $Reference ).Value -split $Delimiter | Where-Object {$_ -ne $Item}
     if($Append)
     {
-        $ToAdd = ( @($Existing) + $Item | Select -Unique ) -join $Delimiter
+        $ToAdd = ( @($Existing) + $Item | Select-Object -Unique ) -join $Delimiter
     }
     else
     {
-        $ToAdd = ( @($Item) + @($Existing) | Select -Unique ) -join $Delimiter
+        $ToAdd = ( @($Item) + @($Existing) | Select-Object -Unique ) -join $Delimiter
     }
     Set-Item -Path $Reference -Value $ToAdd
 }

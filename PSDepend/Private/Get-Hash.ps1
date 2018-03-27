@@ -125,7 +125,7 @@
                 foreach($Type in $Algorithm) {                
                 
                     [string]$hash = -join ([Security.Cryptography.HashAlgorithm]::Create( $Type ).ComputeHash( $stream ) | 
-                        ForEach { "{0:x2}" -f $_ })
+                        ForEach-Object { "{0:x2}" -f $_ })
                 
                     $null = $stream.Seek(0,0)
                 
@@ -142,7 +142,7 @@
 
                 foreach($Type in $Algorithm) {                
                     [string]$hash = -join ([Security.Cryptography.HashAlgorithm]::Create( $Type ).ComputeHash( [System.Text.Encoding]::UTF8.GetBytes($item) ) | 
-                        ForEach { "{0:x2}" -f $_ })
+                        ForEach-Object { "{0:x2}" -f $_ })
                     
                     #If multiple algorithms are used, then they will be added to existing object                
                     $object = Add-Member -InputObject $Object -MemberType NoteProperty -Name $Type -Value $Hash -PassThru
