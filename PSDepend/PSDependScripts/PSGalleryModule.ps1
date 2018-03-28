@@ -19,6 +19,9 @@
     .PARAMETER SkipPublisherCheck
         Bypass the catalog signing check.  Defaults to $false
 
+    .PARAMETER AllowClobber
+        Allow installation of modules that clobber existing commands.  Defaults to $True
+
     .PARAMETER Import
         If specified, import the module in the global scope
 
@@ -75,6 +78,8 @@ param(
     [string]$Repository = 'PSGallery', # From Parameters...
 
     [bool]$SkipPublisherCheck, # From Parameters...
+
+    [bool]$AllowClobber = $True,
 
     [switch]$Import,
 
@@ -185,7 +190,6 @@ if($Existing)
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
-
         # Conditional import
         Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $ExistingVersion
 
@@ -195,7 +199,6 @@ if($Existing)
         }
         return $null
     }
-
     Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion]"
 }
 
@@ -210,18 +213,20 @@ if($PSDependAction -contains 'Install')
     if('AllUsers', 'CurrentUser' -contains $Scope)
     {
         Write-Verbose "Installing [$Name] with scope [$Scope]"
+        if($AllowClobber)
+        {
+            $params.add('AllowClobber', $AllowClobber)
+        }
         Install-Module @params -Scope $Scope
     }
     else
     {
         Write-Verbose "Saving [$Name] with path [$Scope]"
-
         Write-Verbose "Creating directory path to [$Scope]"
         if(-not (Test-Path $Scope -ErrorAction SilentlyContinue))
         {
             $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
         }
-
         Save-Module @params -Path $Scope
     }
 }
