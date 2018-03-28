@@ -96,7 +96,15 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = @'
+## [0.2.0] 2018-03-27
+### Added
+- Indication of supported platforms per dependency type via PSDependMap.psd1
+- Validation of current platform vs. supported platforms during PSDepend invocation
+- Minimally viable, unsupported code for cross platform functionality _in extremely limited subset of scenarios_, with no Pester testing
+### Fixed
+- Various PSScriptAnalyzer issues that broke cross-platform functionality
+'@
 
     } # End of PSData hashtable
 
