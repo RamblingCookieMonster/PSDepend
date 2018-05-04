@@ -1,0 +1,7 @@
+{
+    "powershell.codeFormatting.openBraceOnSameLine": false,
+    "powershell.codeFormatting.ignoreOneLineBlock": false,
+    "powershell.codeFormatting.whitespaceAfterSeparator": false,
+    "powershell.codeFormatting.whitespaceAroundOperator": false,
+    "powershell.codeFormatting.whitespaceBeforeOpenParen": false
+}
