@@ -102,7 +102,7 @@ $GottaInstall = $True
 if(-not (Test-Path $Target) -and $PSDependAction -contains 'Install')
 {
     Write-Verbose "Creating folder [$Target] for git dependency [$Name]"
-    $null = mkdir $Target -Force
+    $null = New-Item $Target -ItemType Directory -Force
 }
 
 if(-not (Test-Path $RepoPath))
