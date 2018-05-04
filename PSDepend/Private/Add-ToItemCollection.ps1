@@ -1,6 +1,6 @@
 ﻿function Add-ToItemCollection {
     param(
-        $Delimiter = ';',
+        $Delimiter = [IO.Path]::PathSeparator,
         $Reference, # e.g. ENV:Path
         $Item, # e.g. 'C:\Project',
         [switch]$Append
