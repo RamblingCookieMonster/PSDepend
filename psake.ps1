@@ -2,11 +2,19 @@
 # Init some things
 Properties {
     # Find the build folder based on build system
-        $ProjectRoot = Convert-Path $ENV:BHProjectPath
+        $ProjectRoot = $ENV:BHProjectPath
         if(-not $ProjectRoot)
         {
             $ProjectRoot = $PSScriptRoot
         }
+
+    try {
+        $script:IsWindows = (-not (Get-Variable -Name IsWindows -ErrorAction Ignore)) -or $IsWindows
+        $script:IsLinux = (Get-Variable -Name IsLinux -ErrorAction Ignore) -and $IsLinux
+        $script:IsMacOS = (Get-Variable -Name IsMacOS -ErrorAction Ignore) -and $IsMacOS
+        $script:IsCoreCLR = $PSVersionTable.ContainsKey('PSEdition') -and $PSVersionTable.PSEdition -eq 'Core'
+    }
+    catch { }
 
     $Timestamp = Get-date -uformat "%Y%m%d-%H%M%S"
     $PSVersion = $PSVersionTable.PSVersion.Major
@@ -35,7 +43,15 @@ Task Test -Depends Init  {
     "`n`tSTATUS: Testing with PowerShell $PSVersion"
 
     # Gather test results. Store them in a variable and file
-    $TestResults = Invoke-Pester -Path $ProjectRoot\Tests -PassThru -OutputFormat NUnitXml -OutputFile "$ProjectRoot\$TestFile"
+    $pesterParameters = @{
+        # tag = "Debug" 
+        Path         = "$ProjectRoot\Tests"
+        PassThru     = $true
+        OutputFormat = "NUnitXml" 
+        OutputFile   = "$(Convert-Path $ProjectRoot)\$TestFile"
+    }
+    if (-Not $IsWindows) { $pesterParameters["ExcludeTag"] = "WindowsOnly" }
+    $TestResults = Invoke-Pester @pesterParameters
 
     # In Appveyor?  Upload our tests! #Abstract this into a function?
     If($ENV:BHBuildSystem -eq 'AppVeyor')
