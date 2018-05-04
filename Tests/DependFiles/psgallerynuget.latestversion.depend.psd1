@@ -2,7 +2,7 @@
     'jenkins' = @{
         DependencyType = 'PSGalleryNuget'
         Version = 'latest'
-        Target = 'C:\PSDependPesterTest'
+        Target = 'TestDrive:/PSDependPesterTest'
         Parameters = @{
             Force = $true
         }
