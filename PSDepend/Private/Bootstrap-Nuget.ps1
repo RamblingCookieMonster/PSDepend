@@ -18,7 +18,7 @@ function BootStrap-Nuget {
         if(-not (Test-Path $Parent))
         {
             Write-Verbose "Creating parent paths to [$NugetPath]'s parent: [$Parent]"
-            mkdir $Parent -Force   
+            $null = New-Item $Parent -ItemType Directory -Force
         }
         Write-Verbose "Downloading nuget to [$NugetPath]"
         Invoke-WebRequest -uri 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe' -OutFile $NugetPath

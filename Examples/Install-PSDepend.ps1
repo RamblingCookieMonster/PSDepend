@@ -16,7 +16,7 @@ if(-not ($NugetPath = (Get-Command 'nuget.exe' -ErrorAction SilentlyContinue).Pa
 }
 
 # Bootstrap PSDepend, re-use nuget.exe for the module
-if($path) { $null = mkdir $path -Force }
+if($path) { $null = New-Item $path -ItemType Directory -Force }
 $NugetParams = 'install', 'PSDepend', '-Source', 'https://www.powershellgallery.com/api/v2/',
                '-ExcludeVersion', '-NonInteractive', '-OutputDirectory', $Path
 & $NugetPath @NugetParams

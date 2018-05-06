@@ -1,23 +1,20 @@
 if(-not $ENV:BHProjectPath)
 {
-    Set-BuildEnvironment -Path $PSScriptRoot\..
+    Set-BuildEnvironment -Path "$PSScriptRoot/.."
 }
 Remove-Module $ENV:BHProjectName -ErrorAction SilentlyContinue
 Import-Module (Join-Path $ENV:BHProjectPath $ENV:BHProjectName) -Force
-
-$null = mkdir 'C:\PSDependPesterTest' -force
 
 # Maybe use a convention for describe/context/it... these are all over the place...
 # Pull requests welcome!
 
 InModuleScope 'PSDepend' {
 
-    $TestDepends = Join-Path $ENV:BHProjectPath Tests\DependFiles
+    $TestDepends = Join-Path $ENV:BHProjectPath "Tests/DependFiles"
     $PSVersion = $PSVersionTable.PSVersion.Major
     $ProjectRoot = $ENV:BHProjectPath
-    $SavePath = 'C:\PSDependPesterTest'
     $ExistingPSModulePath = $env:PSModulePath.PSObject.Copy()
-    $ExistingPath = $env:Path.PSObject.Copy()
+    $ExistingPath = $env:PATH.PSObject.Copy()
 
     $Verbose = @{}
     if($ENV:BHBranchName -notlike "master" -or $env:BHCommitMessage -match "!verbose")
@@ -27,10 +24,12 @@ InModuleScope 'PSDepend' {
 
     Describe "PSGalleryModule Type PS$PSVersion" {
 
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
+
         Context 'Installs Modules' {
             Mock Install-Module { Return $true }
             
-            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.depend.psd1" -Force
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.depend.psd1" -Force
 
             It 'Should execute Install-Module' {
                 Assert-MockCalled Install-Module -Times 1 -Exactly
@@ -44,7 +43,7 @@ InModuleScope 'PSDepend' {
         Context 'Saves Modules' {
             Mock Save-Module { Return $true }
             
-            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\savemodule.depend.psd1" -Force
+            $Results = Invoke-PSDepend @Verbose -Path "$TestDepends/savemodule.depend.psd1" -Force
 
             It 'Should execute Save-Module' {
                 Assert-MockCalled Save-Module -Times 1 -Exactly
@@ -59,7 +58,7 @@ InModuleScope 'PSDepend' {
             Mock Install-Module { throw "Unable to find repository 'Blah'" } -ParameterFilter { $Repository -eq 'Blah'}
 
             It 'Throws because Repository could not be found' {
-                $Results = { Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.missingrepo.depend.psd1" -Force -ErrorAction Stop }
+                $Results = { Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.missingrepo.depend.psd1" -Force -ErrorAction Stop }
                 $Results | Should Throw
             }
         }
@@ -74,7 +73,7 @@ InModuleScope 'PSDepend' {
             Mock Find-Module
 
             It 'Skips Install-Module' {
-                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" -Force -ErrorAction Stop
+                Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.sameversion.depend.psd1" -Force -ErrorAction Stop
 
                 Assert-MockCalled Get-Module -Times 1 -Exactly
                 Assert-MockCalled Find-Module -Times 0 -Exactly
@@ -96,7 +95,7 @@ InModuleScope 'PSDepend' {
             }
 
             It 'Skips Install-Module' {
-                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.latestversion.depend.psd1" -Force -ErrorAction Stop
+                Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.latestversion.depend.psd1" -Force -ErrorAction Stop
 
                 Assert-MockCalled Get-Module -Times 1 -Exactly
                 Assert-MockCalled Find-Module -Times 1 -Exactly
@@ -117,7 +116,7 @@ InModuleScope 'PSDepend' {
                         Version = '1.2.5'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.sameversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $True
@@ -134,7 +133,7 @@ InModuleScope 'PSDepend' {
                         Version = '1.2.5'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.latestversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.latestversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $True
@@ -142,7 +141,7 @@ InModuleScope 'PSDepend' {
 
             It "Returns `$false when it doesn't find an existing module" {
                 Mock Get-Module { $null }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.sameversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
@@ -153,7 +152,7 @@ InModuleScope 'PSDepend' {
                         Version = '1.2.4'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.sameversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.sameversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
@@ -170,7 +169,7 @@ InModuleScope 'PSDepend' {
                         Version = '1.2.5'
                     }
                 }
-                $Results = @( Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.latestversion.depend.psd1" |
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.latestversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
@@ -181,7 +180,7 @@ InModuleScope 'PSDepend' {
             It 'Runs Import-Module when import is specified' {
                 Mock Install-Module {}
                 Mock Import-Module
-                $Results = Get-Dependency @Verbose -Path "$TestDepends\psgallerymodule.depend.psd1" | Import-Dependency @Verbose
+                $Results = Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.depend.psd1" | Import-Dependency @Verbose
                 Assert-MockCalled -CommandName Import-Module -Times 1 -Exactly
                 Assert-MockCalled -CommandName Install-Module -Times 0 -Exactly
             }            
@@ -191,7 +190,7 @@ InModuleScope 'PSDepend' {
             It 'Adds folder to path' {
                 Mock Save-Module {$True}
                 Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.addtopath.depend.psd1" -Force -ErrorAction Stop
-                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
+                ($env:PSModulePath -split ([IO.Path]::PathSeparator)) -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath
             }
         }
@@ -237,7 +236,7 @@ InModuleScope 'PSDepend' {
                 Assert-MockCalled Import-Module -Times 1 -Exactly -Scope It
 
                 # then
-                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
+                ($env:PSModulePath -split ([IO.Path]::PathSeparator)) -contains $SavePath | Should Be $True
             }
         }
 
@@ -253,7 +252,10 @@ InModuleScope 'PSDepend' {
         }
     }
 
-    Describe "Git Type PS$PSVersion" {
+    Describe "Git Type PS$PSVersion"  -Tag "WindowsOnly" {
+
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
+
         Context 'Installs Module' {
             Mock Invoke-ExternalCommand {
                 [pscustomobject]@{
@@ -261,10 +263,10 @@ InModuleScope 'PSDepend' {
                     Arg = $Args
                 }
             } -ParameterFilter {$Arguments -contains 'checkout' -or $Arguments -contains 'clone'}
-            Mock mkdir { return $true }
-            Mock Push-Location
-            Mock Pop-Location
-            Mock Set-Location
+            Mock New-Item { return $true }
+            Mock Push-Location {}
+            Mock Pop-Location {}
+            Mock Set-Location {}
             Mock Test-Path { return $False } -ParameterFilter {$Path -match "Invoke-Build$|PSDeploy$"}
 
             $Dependencies = Get-Dependency @Verbose -Path "$TestDepends\git.depend.psd1"
@@ -284,10 +286,10 @@ InModuleScope 'PSDepend' {
 
         }
         Context 'Tests dependency' {
-            Mock mkdir { return $true }
-            Mock Push-Location
-            Mock Pop-Location
-            Mock Set-Location
+            Mock New-Item { return $true }
+            Mock Push-Location {}
+            Mock Pop-Location {}
+            Mock Set-Location {}
             Mock Invoke-ExternalCommand -ParameterFilter {$Arguments -contains 'checkout' -or $Arguments -contains 'clone'}
             
 
@@ -308,7 +310,9 @@ InModuleScope 'PSDepend' {
         }
     }
 
-    Describe "FileDownload Type PS$PSVersion" {
+    Describe "FileDownload Type PS$PSVersion" -Tag "WindowsOnly" {
+
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
 
         Context 'Installs dependency' {
             Mock Get-WebFile {
@@ -340,7 +344,7 @@ InModuleScope 'PSDepend' {
         }
 
         Remove-Item $SavePath -Force -Recurse
-        mkdir $SavePath -Force
+        $null = New-Item $SavePath -ItemType Directory -Force
 
         Context 'Tests dependency' {
             It 'Returns $false if file does not exist' {
@@ -362,7 +366,9 @@ InModuleScope 'PSDepend' {
         }
     }
     
-    Describe "PSGalleryNuget Type PS$PSVersion" {
+    Describe "PSGalleryNuget Type PS$PSVersion" -Tag "WindowsOnly" {
+
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
 
         Context 'Installs Modules' {
             Mock Test-Path { Return $true } -ParameterFilter { $PathType -eq 'Container' }
@@ -514,7 +520,7 @@ InModuleScope 'PSDepend' {
                 Mock Invoke-ExternalCommand {$True}
                 Mock Import-Module 
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.addtopath.depend.psd1" -Force -ErrorAction Stop
-                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
+                $env:PSModulePath -split ([IO.Path]::PathSeparator) -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath
             }
         }
@@ -562,12 +568,14 @@ InModuleScope 'PSDepend' {
                 Assert-MockCalled Import-Module  -Times 1 -Exactly -Scope It
 
                 # then
-                $env:PSModulePath -split ";" -contains $SavePath | Should Be $True
+                (($env:PSModulePath -split ([IO.Path]::PathSeparator))) -contains $SavePath | Should Be $True
             }
         }
     }
 
-    Describe "FileSystem Type PS$PSVersion" {
+    Describe "FileSystem Type PS$PSVersion" -Tag "WindowsOnly" {
+
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
 
         Context 'Installs dependency' {
             Mock Copy-Item
@@ -594,7 +602,7 @@ InModuleScope 'PSDepend' {
         }
 
         Remove-Item $SavePath -Force -Recurse
-        mkdir $SavePath -Force
+        $null = New-Item $SavePath -ItemType Directory -Force
 
         Context 'Tests dependency' {
             It 'Returns $false if file does not exist' {
@@ -618,6 +626,9 @@ InModuleScope 'PSDepend' {
     }
 
     Describe "Package Type PS$PSVersion" -tag pkg {
+
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
+
         # So... these didn't work with mocking.  Create function, define alias to override any function call, mock that.
         function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion)}
         function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion)}
@@ -719,8 +730,12 @@ InModuleScope 'PSDepend' {
 
         Context 'Test-Dependency' {
             
+            if (-not (Get-Command Get-Package -Module PackageManagement)) {
             function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion) write-verbose "WTF NOW"}
+            }
+            if (-not (Get-Command Install-Package -Module PackageManagement)) {
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
+            }
             function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
 
             BeforeEach {
@@ -798,6 +813,8 @@ InModuleScope 'PSDepend' {
 
     Describe "Command Type PS$PSVersion" {
 
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
+
         Context 'Invokes a command' {
 
             $Dependencies = @(Get-Dependency @Verbose -Path "$TestDepends\command.depend.psd1")
@@ -816,10 +833,12 @@ InModuleScope 'PSDepend' {
 
     Describe "Npm Type PS$PSVersion" {
 
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
+
         Context 'Installs Dependency' {
             Mock Get-NodeModule {return $null}
             Mock Install-NodeModule {}
-            Mock mkdir {return true}
+            Mock New-Item {return true}
             Mock Push-Location
             Mock Pop-Location
 
@@ -841,7 +860,7 @@ InModuleScope 'PSDepend' {
 
         Context 'Tests Dependency' {
             Mock Install-NodeModule {}
-            Mock mkdir {return true}
+            Mock New-Item {return true}
             Mock Push-Location
             Mock Pop-Location
 
@@ -868,5 +887,3 @@ InModuleScope 'PSDepend' {
         }
     }
 }
-
-Remove-Item C:\PSDependPesterTest -Force -Recurse

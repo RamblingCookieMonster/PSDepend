@@ -1,7 +1,7 @@
 ﻿@{
     'imaginary' = @{
         Version = 'latest'
-        Target = 'C:\PSDependPesterTest'
+        Target = 'TestDrive:/PSDependPesterTest'
         AddToPath = $True
     }
 }

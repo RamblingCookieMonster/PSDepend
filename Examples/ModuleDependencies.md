@@ -58,7 +58,7 @@ Set-Content C:\MyModule\Requirements.psd1 -Value @'
         DependencyType = 'Command'
         Source = '$DepFolder = "$DependencyFolder\Dependencies"',
                  'if(-not (Test-Path $DepFolder\AzCopy\AzCopy.exe)){
-                      $null = mkdir $DepFolder\AzCopy -Force;
+                      $null = New-Item $DepFolder\AzCopy -ItemType Directory -Force;
                       Start-Process msiexec -ArgumentList "/a $DepFolder\azcopy.msi /qb TARGETDIR=$DepFolder\AzTemp /quiet" -Wait;
                       Copy-Item "$DepFolder\AzTemp\Microsoft SDKs\Azure\AzCopy\*" $DepFolder\AzCopy -Force;
                       Remove-Item $DepFolder\AZTemp -Recurse -Force;
