@@ -151,11 +151,18 @@ elseif ($Command -eq 'Install')
     $ModuleName = $Name
 }
 
-# Only use "SkipPublisherCheck" parameter if "Install-Module" supports it
-if(-Not (Get-Command "Install-Module").Parameters.ContainsKey("SkipPublisherCheck"))
+# Only use "SkipPublisherCheck" (and other) parameter if "Install-Module" supports it
+$availableParameters = (Get-Command "Install-Module").Parameters
+$tempParams = $Params.Clone()
+foreach($thisParameter in $Params.Keys)
 {
-    $Params.Remove('SkipPublisherCheck')
+    if(-Not ($availableParameters.ContainsKey($thisParameter)))
+    {
+        Write-Verbose -Message "Removing parameter [$thisParameter] from [Install-Module] as it is not available"
+        $tempParams.Remove($thisParameter)
+    }
 }
+$Params = $tempParams.Clone()
 
 Add-ToPsModulePathIfRequired -Dependency $Dependency -Action $PSDependAction
 
