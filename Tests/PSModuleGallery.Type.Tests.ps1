@@ -730,8 +730,12 @@ InModuleScope 'PSDepend' {
 
         Context 'Test-Dependency' {
             
+            if (-not (Get-Command Get-Package -Module PackageManagement)) {
             function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion) write-verbose "WTF NOW"}
+            }
+            if (-not (Get-Command Install-Package -Module PackageManagement)) {
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
+            }
             function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
 
             BeforeEach {
@@ -881,9 +885,5 @@ InModuleScope 'PSDepend' {
                 Invoke-PSDepend @Verbose -Path "$TestDepends\npm.depend.psd1" -Test -Quiet | Should Be $true
             }
         }
-    }
-
-    It "fails until PR is complete" {
-        $false | Should Be $true
     }
 }

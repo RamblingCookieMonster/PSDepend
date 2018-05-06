@@ -7,6 +7,7 @@ Properties {
         {
             $ProjectRoot = $PSScriptRoot
         }
+        $ProjectRoot  = Convert-Path $ProjectRoot
 
     try {
         $script:IsWindows = (-not (Get-Variable -Name IsWindows -ErrorAction Ignore)) -or $IsWindows
@@ -44,11 +45,10 @@ Task Test -Depends Init  {
 
     # Gather test results. Store them in a variable and file
     $pesterParameters = @{
-        # tag = "Debug" 
         Path         = "$ProjectRoot\Tests"
         PassThru     = $true
         OutputFormat = "NUnitXml" 
-        OutputFile   = "$(Convert-Path $ProjectRoot)\$TestFile"
+        OutputFile   = "$ProjectRoot\$TestFile"
     }
     if (-Not $IsWindows) { $pesterParameters["ExcludeTag"] = "WindowsOnly" }
     $TestResults = Invoke-Pester @pesterParameters
