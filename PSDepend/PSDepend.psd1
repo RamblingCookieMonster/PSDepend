@@ -4,7 +4,7 @@
 RootModule = 'PSDepend.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.0'
+ModuleVersion = '0.2.1'
 
 # ID used to uniquely identify this module
 GUID = '63ea9e2a-320d-43ff-a11a-4930ca03cce6'
@@ -96,15 +96,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = @'
-## [0.2.0] 2018-03-27
-### Added
-- Indication of supported platforms per dependency type via PSDependMap.psd1
-- Validation of current platform vs. supported platforms during PSDepend invocation
-- Minimally viable, unsupported code for cross platform functionality _in extremely limited subset of scenarios_, with no Pester testing
-### Fixed
-- Various PSScriptAnalyzer issues that broke cross-platform functionality
-'@
+        ReleaseNotes = 'Added various PowerShell Core fixes thanks to @lipkau!'
 
     } # End of PSData hashtable
 
