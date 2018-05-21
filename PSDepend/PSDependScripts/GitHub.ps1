@@ -163,7 +163,7 @@ param(
 
     [string[]]$ExtractPath,
 
-    [bool]$ExtractProject = $True,
+    [bool]$ExtractProject = $true,
 
     [ValidateSet('Parallel', 'Standard', 'Exact')]
     [string]$TargetType = 'Standard',
@@ -313,7 +313,7 @@ if($ModuleExisting)
                 0 {
                     Write-Verbose "For [$DependencyName], the version you specified [$DependencyVersion] matches the already existing version [$ExistingVersion]"
                     $ShouldInstall = $false
-                    $ModuleExistingMatches = $True
+                    $ModuleExistingMatches = $true
                     break versionslocal
                 }
             }
@@ -388,7 +388,7 @@ if($ShouldInstall)
     catch
     {
         # Repository does not seem to exist or a branch is the target
-        $ShouldInstall = $False
+        $ShouldInstall = $false
         Write-Warning "Could not find module on GitHub: $_"
     }
 
@@ -429,8 +429,13 @@ if($ShouldInstall)
 
         # Link for a .zip archive of the repository's branch
         $URL = "https://api.github.com/repos/$DependencyID/zipball/$DependencyVersion"
-        $ShouldInstall = $True
+        $ShouldInstall = $true
     }
+}
+
+if ($TargetType -ne 'Exact')
+{
+    $TargetPath = Join-Path $TargetPath $DependencyName
 }
 
 # Install action needs to be wanted and logical
@@ -451,9 +456,9 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     # Extract the zip file
     if($script:IsWindows)
     {
-        $Zipfile = (New-Object -com shell.application).NameSpace($OutFile)
-        $Destination = (New-Object -com shell.application).NameSpace($OutPath)
-        $Destination.CopyHere($Zipfile.Items())
+        $ZipFile = (New-Object -com shell.application).NameSpace($OutFile)
+        $ZipDestination = (New-Object -com shell.application).NameSpace($OutPath)
+        $ZipDestination.CopyHere($ZipFile.Items())
     }
     else
     {
@@ -462,7 +467,7 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     }
 
     # Remove the zip file
-    Remove-Item $OutFile -Force -Confirm:$False
+    Remove-Item $OutFile -Force -Confirm:$false
 
     $OutPath = (Get-ChildItem -Path $OutPath)[0].FullName
     $OutPath = (Rename-Item -Path $OutPath -NewName $DependencyName -PassThru).FullName
@@ -500,15 +505,10 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     # Copy the contents to their target
     if(-not (Test-Path $TargetPath))
     {
-        New-Item $TargetPath -Force
+        New-Item $TargetPath -ItemType "directory" -Force
     }
 
     $Destination = $null
-
-    if ($TargetType -ne 'Exact')
-    {
-        $TargetPath = Join-Path $TargetPath $DependencyName
-    }
 
     if($TargetType -eq 'Exact')
     {
@@ -559,7 +559,7 @@ if($ModuleExisting)
 }
 elseif($PSDependAction -contains 'Import')
 {
-    Write-Warning "[$DependencyName] at [$Destination] should be imported, but does not exist"
+    Write-Warning "[$DependencyName] at [$TargetPath] should be imported, but does not exist"
 }
 
 # Return true or false if Test action is wanted
