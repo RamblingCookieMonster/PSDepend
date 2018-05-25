@@ -166,7 +166,7 @@ Function Invoke-PSDepend {
         Write-Verbose "Running Invoke-PSDepend with ParameterSetName '$($PSCmdlet.ParameterSetName)', PSDependAction $($InvokeParams.PSDependAction), and params: $($PSBoundParameters | Out-String)"
 
         $DependencyFiles = New-Object System.Collections.ArrayList
-        $PSDependTypes = Get-PSDependType -Path $PSDependTypePath
+        $PSDependTypes = Get-PSDependType -Path $PSDependTypePath -SkipHelp
     }
     Process
     {

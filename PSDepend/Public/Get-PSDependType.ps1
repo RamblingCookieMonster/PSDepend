@@ -24,6 +24,9 @@ Function Get-PSDependType {
     .PARAMETER ShowHelp
         Show help content for specified dependency types
 
+    .PARAMETER SkipHelp
+        Skip retreieving help. Mainly for internl use when it is not required
+
     .EXAMPLE
         Get-PSDependType -DependencyType PSGalleryModule -ShowHelp
 
@@ -65,7 +68,8 @@ Function Get-PSDependType {
         [string]$DependencyType = '*',
         [validatescript({Test-Path $_ -PathType Leaf -ErrorAction Stop})]
         [string]$Path = $(Join-Path $ModuleRoot PSDependMap.psd1),
-        [switch]$ShowHelp
+        [switch]$ShowHelp,
+        [switch]$SkipHelp
     )
 
     # Read the file
@@ -91,13 +95,15 @@ Function Get-PSDependType {
                 $ScriptPath = Join-Path $ModuleRoot "PSDependScripts\$($Script -replace ".ps1$").ps1"
             }
 
-            Try
-            {
-                $ScriptHelp = Get-Help $ScriptPath -Full -ErrorAction Stop
-            }
-            Catch
-            {
-                $ScriptHelp = "Error retrieving help: $_"
+            If (-not $SkipHelp) {
+                Try
+                {
+                    $ScriptHelp = Get-Help $ScriptPath -Full -ErrorAction Stop
+                }
+                Catch
+                {
+                    $ScriptHelp = "Error retrieving help: $_"
+                }
             }
         }
         if($ShowHelp)
