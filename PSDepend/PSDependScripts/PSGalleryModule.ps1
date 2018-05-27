@@ -131,6 +131,7 @@ $params = @{
     Name = $Name
     Repository = $Repository
     SkipPublisherCheck = $SkipPublisherCheck
+    AllowClobber = $AllowClobber
     Verbose = $VerbosePreference
     Force = $True
 }
@@ -144,6 +145,7 @@ if( $Version -and $Version -ne 'latest')
 if($command -eq 'Save')
 {
     $ModuleName =  Join-Path $Scope $Name
+    $Params.Remove('AllowClobber')
     $Params.Remove('SkipPublisherCheck')
 }
 elseif ($Command -eq 'Install')
@@ -220,10 +222,6 @@ if($PSDependAction -contains 'Install')
     if('AllUsers', 'CurrentUser' -contains $Scope)
     {
         Write-Verbose "Installing [$Name] with scope [$Scope]"
-        if($AllowClobber)
-        {
-            $params.add('AllowClobber', $AllowClobber)
-        }
         Install-Module @params -Scope $Scope
     }
     else
