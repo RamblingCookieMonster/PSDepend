@@ -71,7 +71,7 @@ Function Invoke-DependencyScript {
     {
         # This script reads a depend.psd1, installs dependencies as defined
         Write-Verbose "Running Invoke-DependencyScript with ParameterSetName '$($PSCmdlet.ParameterSetName)' and params: $($PSBoundParameters | Out-String)"
-        $PSDependTypes = Get-PSDependType
+        $PSDependTypes = Get-PSDependType -SkipHelp
     }
     Process
     {
