@@ -23,6 +23,9 @@
                                 <Label>Tags</Label>
                                 <ScriptBlock>Try { ($_.Tags | Out-String ).trimend("`n")} Catch {$_.Tags} </ScriptBlock>
                             </ListItem>
+                            <ListItem>
+                                <PropertyName>DependencyExists</PropertyName>
+                            </ListItem>
                         </ListItems>
                     </ListEntry>
                 </ListEntries>
