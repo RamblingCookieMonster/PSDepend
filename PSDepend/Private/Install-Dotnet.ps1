@@ -1,3 +1,6 @@
+# This installs the .NET SDK that satisfies the Channel, Version, and InstallDir that is passed in
+# If on Windows, it will download the .NET SDK PowerShell install script (dotnet-install.ps1)
+# On all other platforms, it will download the .NET SDK shell script (dotnet-install.sh)
 using namespace System.Runtime.InteropServices
 
 function Install-Dotnet {
@@ -21,6 +24,7 @@ function Install-Dotnet {
     $obtainUrl = "https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain"
 
     try {
+        # remove the old folder, download, and run the dotnet-install script for the correct platform
         Remove-Item $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
         $installScript = if ($IsWindowsEnv) { "dotnet-install.ps1" } else { "dotnet-install.sh" }
         Invoke-WebRequest -Uri $obtainUrl/$installScript -OutFile $installScript
@@ -32,6 +36,7 @@ function Install-Dotnet {
         }
     }
     finally {
+        # delete the downloaded install script
         Remove-Item $installScript -Force -ErrorAction SilentlyContinue
     }
 }

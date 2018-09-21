@@ -1,3 +1,8 @@
+using namespace System.Runtime.InteropServices
+
+# This tests if if the .NET SDK of the specified version exists
+# If you specify the InstallDir, it will check if the .NET SDK exists there
+# Otherwise it will use the global .NET SDK location.
 function Test-Dotnet {
     [CmdletBinding()]
     param(
@@ -28,13 +33,35 @@ function Test-Dotnet {
     }
     
     if (Test-Path $dotnetExePath) {
-        $installedVersion = & $dotnetExePath --version
+        $installedVersion = Get-DotnetVersion $dotnetExePath
         if ($Version -eq 'latest') {
             # TODO: This could query the version if you have the latest
             return $false
         } else {
-            return $installedVersion -ge $Version
+            # We need to separate the prerelease from the version
+            $installedVer, $installedPre = ($installedVersion -split '-')
+            $ver, $pre = ($Version -split '-')
+
+            if ([version] $installedVer -gt [version] $ver) { return $true }
+            if ([version] $installedVer -lt [version] $ver) { return $false }
+
+            # Handle the case if they have the same version but no prerelease
+            if ($installedPre -eq "") { return $true }
+            if ($pre -eq "") { return $false }
+
+            # Compare prerelease if they both have them
+            return $installedPre -ge $pre
         }
     }
     return $false
+}
+
+# Pulled out for mocking purpose
+function Get-DotnetVersion {
+    param(
+        [string]
+        $dotnetExePath
+    )
+
+    & $dotnetExePath --version
 }

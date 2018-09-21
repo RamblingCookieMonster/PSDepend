@@ -1,3 +1,5 @@
+using namespace System.Runtime.InteropServices
+
 if(-not $ENV:BHProjectPath)
 {
     Set-BuildEnvironment -Path "$PSScriptRoot/.."
@@ -883,6 +885,87 @@ InModuleScope 'PSDepend' {
                     }
                 }}
                 Invoke-PSDepend @Verbose -Path "$TestDepends\npm.depend.psd1" -Test -Quiet | Should Be $true
+            }
+        }
+    }
+
+    Describe "DotnetSdk Type PS$PSVersion" {
+        $IsWindowsEnv = [RuntimeInformation]::IsOSPlatform([OSPlatform]::Windows)
+        $GlobalDotnetSdkLocation = if ($IsWindowsEnv) { "$env:LocalAppData\Microsoft\dotnet" } else { "$env:HOME/.dotnet" }
+        $SavePath = '.dotnet'
+
+        Context 'Installs Dependency' {
+            $Dependency = Get-Dependency @Verbose -Path "$TestDepends\dotnetsdk.complex.depend.psd1"
+            It 'Parses the DotnetSdk dependency type' {
+                $Dependency | Should -Not -BeNullOrEmpty
+                $Dependency.DependencyType | Should -Be 'DotnetSdk'
+                $Dependency.Version | Should -Be '2.1.300'
+                $Dependency.DependencyName | Should -Be 'release'
+                $Dependency.Target | Should -Be $SavePath
+            }
+
+            It 'Installs the .NET Core SDK to the specified directory' {
+                Mock Test-Dotnet { return $false }
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.complex.depend.psd1" -Force
+                Test-Path $SavePath | Should -BeTrue
+            }
+
+            It 'Does nothing if the .NET Core SDK is found' {
+                Mock Test-Dotnet { return $true }
+                Mock Install-Dotnet 
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.complex.depend.psd1" -Force
+                Assert-MockCalled -CommandName Install-Dotnet -Times 0 -Exactly
+            }
+
+            AfterAll {
+                Remove-Item -Force -Recurse $SavePath -ErrorAction SilentlyContinue
+            }
+        }
+
+        Context 'Tests Dependency' {
+            # used to see if 'dotnet' is already on the PATH - we need this to return false
+            Mock Get-Command { return $false } -ParameterFilter { $Name -eq 'dotnet' }
+
+            It 'Can propertly compare semantic versions' {
+                Mock Test-Path { return $true } -ParameterFilter  { $Path -eq $GlobalDotnetSdkLocation }
+                Mock Get-DotnetVersion { return '2.1.330-rc1' }
+
+                # '2.1.330-rc1' >= '2.1.330-preview1'
+                # '2.1.330-rc1' >= '2.1.330-rc1'
+                # '2.1.330-rc1' >= '1.0'
+                Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.semanticversion.depend.psd1" -Test -Quiet | Should -BeTrue
+            }
+        }
+
+        Context 'Imports Dependency' {
+            # used to see if 'dotnet' is already on the PATH - we need this to return false
+            Mock Get-Command { return $false } -ParameterFilter { $Name -eq 'dotnet' }
+
+            BeforeAll {
+                $originalPath = "$env:PATH"
+            }
+
+            It 'Can add the Target of the .NET Core SDK to the PATH' {
+                Mock Test-Dotnet { return $true }
+                Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.complex.depend.psd1" -Force -Import -ErrorAction Stop
+                
+                $env:PATH | Should -Match "$SavePath*"
+            }
+            It 'Can add the global path of the .NET Core SDK to the PATH' {
+                Mock Test-Dotnet { return $true }
+                Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop
+
+                $env:PATH | Should -Match "$globalDotnetSdkLocation*"
+            }
+            It 'Throws if the path cannot be found' {
+                Mock Test-Dotnet { return $false }
+                { Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop } | Should -Throw `
+                    -ExpectedMessage ".NET SDK cannot be located. Try installing using PSDepend."
+            }
+            AfterEach {
+                $env:PATH = $originalPath
             }
         }
     }
