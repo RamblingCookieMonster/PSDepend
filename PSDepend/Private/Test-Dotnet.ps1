@@ -1,5 +1,3 @@
-using namespace System.Runtime.InteropServices
-
 # This tests if if the .NET SDK of the specified version exists
 # If you specify the InstallDir, it will check if the .NET SDK exists there
 # Otherwise it will use the global .NET SDK location.
@@ -15,6 +13,7 @@ function Test-Dotnet {
         $InstallDir
     )
 
+    $IsWindowsEnv = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
     $dotnetFile = if ($IsWindowsEnv) { "dotnet.exe" } else { "dotnet" }
 
     if ($InstallDir) {
@@ -26,7 +25,6 @@ function Test-Dotnet {
         if ($dotnetInPath) {
             $dotnetExePath = $dotnetInPath.Source
         } else {
-            $IsWindowsEnv = [RuntimeInformation]::IsOSPlatform([OSPlatform]::Windows)
             $LocalDotnetDirPath = if ($IsWindowsEnv) { "$env:LocalAppData\Microsoft\dotnet" } else { "$env:HOME/.dotnet" }
             $dotnetExePath = Join-Path -Path $LocalDotnetDirPath -ChildPath $dotnetFile
         }

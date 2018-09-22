@@ -944,25 +944,25 @@ InModuleScope 'PSDepend' {
             Mock Get-Command { return $false } -ParameterFilter { $Name -eq 'dotnet' }
 
             BeforeAll {
-                $originalPath = "$env:PATH"
+                $originalPath = $env:PATH
             }
 
             It 'Can add the Target of the .NET Core SDK to the PATH' {
                 Mock Test-Dotnet { return $true }
                 Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.complex.depend.psd1" -Force -Import -ErrorAction Stop
                 
-                $env:PATH | Should -Match "$SavePath*"
+                ($env:PATH -split [IO.Path]::PathSeparator)[0] | Should -Be $SavePath
             }
             It 'Can add the global path of the .NET Core SDK to the PATH' {
                 Mock Test-Dotnet { return $true }
                 Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop
 
-                $env:PATH | Should -Match "$globalDotnetSdkLocation*"
+                ($env:PATH -split [IO.Path]::PathSeparator)[0] | Should -Be $globalDotnetSdkLocation
             }
             It 'Throws if the path cannot be found' {
                 Mock Test-Dotnet { return $false }
-                { Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop } | Should -Throw `
-                    -ExpectedMessage ".NET SDK cannot be located. Try installing using PSDepend."
+                { Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop } | 
+                    Should -Throw -ExpectedMessage ".NET SDK cannot be located. Try installing using PSDepend."
             }
             AfterEach {
                 $env:PATH = $originalPath

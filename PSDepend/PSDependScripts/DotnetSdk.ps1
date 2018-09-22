@@ -34,7 +34,7 @@
         }
 
         # Full syntax
-            # DependencyName (key) uses (unique) name 'gitbook-cli'
+            # DependencyName (key) uses (unique) channel name 'release'
             # Specify a version to install
             # Ensure the package is installed locally in a .dotnet folder.
 
@@ -44,11 +44,10 @@
         }
 
         # Simple syntax
-            # The example package, 'gitbook-cli' will be installed
-            at the latest verion from the LTS channel globally.
+        # The .NET SDK will be installed with the latest verion from the LTS channel, globally.
 
 #>
-[cmdletbinding()]
+[CmdletBinding()]
 param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]
@@ -62,12 +61,12 @@ param(
 # Users can specify 'Global which will use the default global path of
 # "$env:LocalAppData\Microsoft\dotnet" on Windows or "$env:HOME/.dotnet" elsewhere
 # Since Global is the default behavior, we ingore the fact that the Target was set.
-$InstallDir = if($Dependency.Target -and $Dependency.Target -ne 'Global') { $Dependency.Target }
+$InstallDir = if ($Dependency.Target -and $Dependency.Target -ne 'Global') { $Dependency.Target }
 $Version = $Dependency.Version
-$Channel = if($Dependency.DependencyName) { $Dependency.DependencyName } else { "release" }
+$Channel = if ($Dependency.DependencyName) { $Dependency.DependencyName } else { "release" }
 
 # The 'global' install location is different per platform
-$IsWindowsEnv = [RuntimeInformation]::IsOSPlatform([OSPlatform]::Windows)
+$IsWindowsEnv = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
 $globalDotnetSdkLocation = if ($IsWindowsEnv) { "$env:LocalAppData\Microsoft\dotnet" } else { "$env:HOME/.dotnet" }
 
 # Handle 'Test'
@@ -97,8 +96,8 @@ if ($PSDependAction -contains 'Import') {
     } else {
         # Test if it's in the path already and if it's not check if it's in the 'global' location
         $dotnetInPath = Get-Command 'dotnet' -ErrorAction SilentlyContinue
-        if(!$dotnetInPath) {
-            if(!(Test-Dotnet -Version $Version -InstallDir $globalDotnetSdkLocation)) {
+        if (!$dotnetInPath) {
+            if (!(Test-Dotnet -Version $Version -InstallDir $globalDotnetSdkLocation)) {
                 throw ".NET SDK cannot be located. Try installing using PSDepend."
             } else {
                 $env:PATH = "$globalDotnetSdkLocation$([IO.Path]::PathSeparator)$env:PATH"

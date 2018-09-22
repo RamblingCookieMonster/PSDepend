@@ -14,7 +14,7 @@
 
     DotnetSdk = @{
         Script = 'DotnetSdk.ps1'
-        Description = "Install's the .NET Core SDK"
+        Description = "Installs the .NET Core SDK"
         Supports = 'windows', 'core', 'macos', 'linux'
     }
 
