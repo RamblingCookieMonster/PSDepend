@@ -890,6 +890,7 @@ InModuleScope 'PSDepend' {
     Describe "DotnetSdk Type PS$PSVersion" {
         $IsWindowsEnv = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
         $GlobalDotnetSdkLocation = if ($IsWindowsEnv) { "$env:LocalAppData\Microsoft\dotnet" } else { "$env:HOME/.dotnet" }
+        $DotnetFile = if ($IsWindowsEnv) { "dotnet.exe" } else { "dotnet" }
         $SavePath = '.dotnet'
 
         Context 'Installs Dependency' {
@@ -925,11 +926,10 @@ InModuleScope 'PSDepend' {
         Context 'Tests Dependency' {
             # used to see if 'dotnet' is already on the PATH - we need this to return false
             Mock Get-Command { return $false } -ParameterFilter { $Name -eq 'dotnet' }
+            Mock Test-Path { return $true } -ParameterFilter  { $Path -eq (Join-Path $GlobalDotnetSdkLocation $DotnetFile) }
+            Mock Get-DotnetVersion { return '2.1.330-rc1' }
 
             It 'Can propertly compare semantic versions' {
-                Mock Test-Path { return $true } -ParameterFilter  { $Path -eq $GlobalDotnetSdkLocation }
-                Mock Get-DotnetVersion { return '2.1.330-rc1' }
-
                 # '2.1.330-rc1' >= '2.1.330-preview1'
                 # '2.1.330-rc1' >= '2.1.330-rc1'
                 # '2.1.330-rc1' >= '1.0'
