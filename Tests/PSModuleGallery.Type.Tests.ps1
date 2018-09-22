@@ -955,7 +955,7 @@ InModuleScope 'PSDepend' {
                 Mock Test-Dotnet { return $true }
                 Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop
 
-                ($env:PATH -split [IO.Path]::PathSeparator)[0] | Should -Be $globalDotnetSdkLocation
+                ($env:PATH -split [IO.Path]::PathSeparator)[0] | Should -Be $GlobalDotnetSdkLocation
             }
             It 'Throws if the path cannot be found' {
                 Mock Test-Dotnet { return $false }
