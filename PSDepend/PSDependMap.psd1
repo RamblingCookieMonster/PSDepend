@@ -12,6 +12,12 @@
         Supports = 'windows', 'core', 'macos', 'linux'
     }
 
+    DotnetSdk = @{
+        Script = 'DotnetSdk.ps1'
+        Description = "Installs the .NET Core SDK"
+        Supports = 'windows', 'core', 'macos', 'linux'
+    }
+
     FileDownload = @{
         Script = 'FileDownload.ps1'
         Description = 'Download a file'
