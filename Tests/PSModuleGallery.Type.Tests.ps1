@@ -1,5 +1,3 @@
-using namespace System.Runtime.InteropServices
-
 if(-not $ENV:BHProjectPath)
 {
     Set-BuildEnvironment -Path "$PSScriptRoot/.."
@@ -890,7 +888,7 @@ InModuleScope 'PSDepend' {
     }
 
     Describe "DotnetSdk Type PS$PSVersion" {
-        $IsWindowsEnv = [RuntimeInformation]::IsOSPlatform([OSPlatform]::Windows)
+        $IsWindowsEnv = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
         $GlobalDotnetSdkLocation = if ($IsWindowsEnv) { "$env:LocalAppData\Microsoft\dotnet" } else { "$env:HOME/.dotnet" }
         $SavePath = '.dotnet'
 
