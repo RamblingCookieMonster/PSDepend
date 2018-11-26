@@ -140,9 +140,11 @@ if($Repository) {
 }
 
 $params = @{
-    Name = $Name
-    Verbose = $VerbosePreference
-    Force = $True
+    Name               = $Name
+    SkipPublisherCheck = $SkipPublisherCheck
+    AllowClobber       = $AllowClobber
+    Verbose            = $VerbosePreference
+    Force              = $True
 }
 
 if($Repository) {
