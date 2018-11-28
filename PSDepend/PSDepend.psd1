@@ -1,10 +1,10 @@
-@{
+﻿@{
 
 # Script module or binary module file associated with this manifest.
 RootModule = 'PSDepend.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.0'
+ModuleVersion = '0.3.1'
 
 # ID used to uniquely identify this module
 GUID = '63ea9e2a-320d-43ff-a11a-4930ca03cce6'
@@ -109,3 +109,7 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
+
+
+
+

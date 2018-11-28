@@ -39,11 +39,13 @@
             BuildHelpers = 'latest'
             PSDeploy = ''
             InvokeBuild = '3.2.1'
+            Configuration = '-gt 1.1.1 -and -lt 2.0'
         }
 
         # From the PSGallery repository (PowerShellGallery.com)...
             # Install the latest BuildHelpers and PSDeploy ('latest' and '' both evaluate to latest)
             # Install version 3.2.1
+            # Install the Configuration module (or use one available locally) matching a version between 1.1.1. and less than 2.0
 
     .EXAMPLE
         @{
@@ -76,11 +78,25 @@ param(
     [psobject[]]$Dependency,
 
     [AllowNull()]
+    [ValidateScript( {
+            # Validate the Repository is setup for this user/machine
+            $Repository = $_
+            if($Repository)
+            {
+                $validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
+                if (-not $validRepo)
+                {
+                    Throw "[$Repository] has not been setup as a valid PowerShell repository."
+                }
+            }
+        })]
     [string]$Repository = 'PSGallery', # From Parameters...
 
     [bool]$SkipPublisherCheck, # From Parameters...
 
     [bool]$AllowClobber = $True,
+
+    [bool]$AllowPrerelease = $false,
 
     [switch]$Import,
 
@@ -88,174 +104,184 @@ param(
     [string[]]$PSDependAction = @('Install')
 )
 
-# Extract data from Dependency
+Begin
+{
+    # Extract and set defaults
     $DependencyName = $Dependency.DependencyName
     $Name = $Dependency.Name
-    if(-not $Name)
+    if(!$Name)
     {
         $Name = $DependencyName
     }
 
-    $Version = $Dependency.Version
-    if(-not $Version)
-    {
-        $Version = 'latest'
-    }
-
-    # We use target as a proxy for Scope
-    if(-not $Dependency.Target)
+    if(!($Scope = $Dependency.Target))
     {
         $Scope = 'AllUsers'
     }
+
+    # if the version -eq latest:
+    #  Find the latest available on Repository
+    if($null -eq $Dependency.Version -or $Dependency.Version -eq 'Latest')
+    {
+        $FindLatestModuleParams = @{Name = $Name}
+        $FindModuleCmd = Get-Command Find-Module
+        foreach($key in $PSBoundParameters.Keys)
+        {
+            if($FindModuleCmd.Parameters.ContainsKey($_) -and
+                $null -ne (Get-Variable $_ -ValueOnly)
+            )
+            {
+                $FindLatestModuleParams.Add($_,$PSBoundParameters[$_])
+            }
+        }
+        Write-Debug "Finding latest version of module $Name"
+        $LatestModule = Find-Module @FindLatestModuleParams -ErrorAction Stop
+        $VersionFilter = Get-SemVerFilterFromString -Filter "-eq $($LatestModule.Version)"
+    }
     else
     {
-        $Scope = $Dependency.Target
+        try
+        {
+            # Try to validate whether it's a valid SemVer (if it's a Filter it'll throw)
+            if(Get-SemVerFromString -VersionString $Dependency.Version)
+            {
+                # Create a Version Filter for Required Version
+                $VersionFilter = Get-SemVerFilterFromString -Filter "-eq $($Dependency.Version)"
+            }
+        }
+        catch
+        {
+            # Convert the String Filter to a Working Filter
+            $VersionFilter = Get-SemVerFilterFromString -Filter $Dependency.Version
+        }
     }
 
     if('AllUsers', 'CurrentUser' -notcontains $Scope)
     {
-        $command = 'save'
+        $command = Get-Command Save-Module
+        # The Scope is a Path (coming from Target), append the name to it
+        # we'll search existing module (matching version) based on that path
+        $ModuleName = Join-Path -Path $Scope -ChildPath $Name
+        $Path = $Scope
     }
     else
     {
-        $command = 'install'
+        $command = Get-Command Install-Module
+        $ModuleName = $Name
     }
+}
 
-if(-not (Get-PackageProvider -Name Nuget))
+Process
 {
-    # Grab nuget bits.
-    $null = Get-PackageProvider -Name NuGet -ForceBootstrap | Out-Null
-}
-
-Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
-
-# Validate that $target has been setup as a valid PowerShell repository,
-#   but allow to rely on all PS repos registered.
-if($Repository) {
-    $validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
-        if (-not $validRepo) {
-            Write-Error "[$Repository] has not been setup as a valid PowerShell repository."
-            return
-        }
-}
-
-$params = @{
-    Name               = $Name
-    SkipPublisherCheck = $SkipPublisherCheck
-    AllowClobber       = $AllowClobber
-    Verbose            = $VerbosePreference
-    Force              = $True
-}
-
-if($Repository) {
-    $params.Add('Repository',$Repository)
-}
-
-if( $Version -and $Version -ne 'latest')
-{
-    $Params.add('RequiredVersion',$Version)
-}
-
-# This code works for both install and save scenarios.
-if($command -eq 'Save')
-{
-    $ModuleName =  Join-Path $Scope $Name
-    $Params.Remove('AllowClobber')
-    $Params.Remove('SkipPublisherCheck')
-}
-elseif ($Command -eq 'Install')
-{
-    $ModuleName = $Name
-}
-
-# Only use "SkipPublisherCheck" (and other) parameter if "Install-Module" supports it
-$availableParameters = (Get-Command "Install-Module").Parameters
-$tempParams = $Params.Clone()
-foreach($thisParameter in $Params.Keys)
-{
-    if(-Not ($availableParameters.ContainsKey($thisParameter)))
+    Write-Debug "Finding the latest module matching the version filter installed locally"
+    try
     {
-        Write-Verbose -Message "Removing parameter [$thisParameter] from [Install-Module] as it is not available"
-        $tempParams.Remove($thisParameter)
+        $Exists = Get-Module -ListAvailable -All -Name $ModuleName -ErrorAction Stop |
+            Sort-Object Version -Descending | Where-Object $VersionFilter | Select-Object -First 1
     }
-}
-$Params = $tempParams.Clone()
-
-Add-ToPsModulePathIfRequired -Dependency $Dependency -Action $PSDependAction
-
-$Existing = $null
-$Existing = Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue
-
-if($Existing)
-{
-    Write-Verbose "Found existing module [$Name]"
-    # Thanks to Brandon Padgett!
-    $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $FindModuleParams = @{Name = $Name}
-    if($Repository) {
-        $FindModuleParams.Add('Repository',$Repository)
-    }
-
-    $GetGalleryVersion = { Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
-
-    # Version string, and equal to current
-    if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
+    catch
     {
-        Write-Verbose "You have the requested version [$Version] of [$Name]"
-        # Conditional import
-        Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $ExistingVersion
+        Write-Debug "No Module found"
+    }
 
-        if($PSDependAction -contains 'Test')
+    if($Exists)
+    {
+        Write-Debug "... a module $ModuleName matching '$Filter' has been found locally"
+        $ModuleToActOn = $Exists
+    }
+    elseif($Dependency.Version -eq 'latest' -or $null -eq $Dependency.Version)
+    {
+        if ($PSDependAction -contains 'test' -and $PSDependAction.count -eq 1)
         {
-            return $True
+            Write-Debug "The Test action could not find a matching module. Skipping Import/Install/Save."
+            return $false
         }
-        return $null
-    }
-
-    # latest, and we have latest
-    if( $Version -and
-        ($Version -eq 'latest' -or $Version -like '') -and
-        ($GalleryVersion = (& $GetGalleryVersion)) -le $ExistingVersion
-    )
-    {
-        Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
-        # Conditional import
-        Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $ExistingVersion
-
-        if($PSDependAction -contains 'Test')
-        {
-            return $True
-        }
-        return $null
-    }
-    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion]"
-}
-
-#No dependency found, return false if we're testing alone...
-if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
-{
-    return $False
-}
-
-if($PSDependAction -contains 'Install')
-{
-    if('AllUsers', 'CurrentUser' -contains $Scope)
-    {
-        Write-Verbose "Installing [$Name] with scope [$Scope]"
-        Install-Module @params -Scope $Scope
+        Write-Debug "Latest module $ModuleName Not found locally. Will $($PSDependAction -join '/') the latest from feed"
+        $ModuleToActOn = $LatestModule
     }
     else
     {
-        Write-Verbose "Saving [$Name] with path [$Scope]"
-        Write-Verbose "Creating directory path to [$Scope]"
-        if(-not (Test-Path $Scope -ErrorAction SilentlyContinue))
+        #  Find All versions from the Gallery that match the Version filter | selecting the 1st
+        Write-Debug "Finding remote version of '$ModuleName' matching criteria '$Filter'"
+        $FindModuleAllVersionsParams = @{Name = $Name; AllVersions = $true}
+        $FindModuleCmd = Get-Command Find-Module
+        foreach($key in $PSBoundParameters.Keys)
         {
-            $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
+            if($FindModuleCmd.Parameters.ContainsKey($_) -and
+                $null -ne (Get-Variable $_ -ValueOnly)
+            )
+            {
+                $FindModuleAllVersionsParams.Add($_,$PSBoundParameters[$_])
+            }
         }
-        Save-Module @params -Path $Scope
+
+        $ModuleToActOn = Find-Module @FindModuleAllVersionsParams -ErrorAction Stop |
+            Where-Object $VersionFilter | Select-Object -First 1
+    }
+
+    Switch($PSDependAction)
+    {
+        'test'
+        {
+            if($Exists)
+            {
+                Write-Debug "Test module returned FOUND LOCALLY"
+                Write-Output $True
+            }
+            else
+            {
+                Write-Debug "Test module returned NOT FOUND"
+                Write-Output $false
+            }
+        }
+        'Install'
+        {
+            if($Exists)
+            {
+                Write-Debug "Module already present on the System"
+                if($Dependency.AddToPath)
+                {
+                    $ParentPath = [io.DirectoryInfo](Split-path $Exists.ModuleBase -Parent)
+                    if($ParentPath.BaseName -eq $Module.Name)
+                    {
+                        $ModulePath = $ParentPath.FullName
+                    }
+                    else
+                    {
+                        $ModulePath = (Split-Path $ParentPath -Parent).ToString()
+                    }
+
+                    Add-ToItemCollection -Reference Env:\PSModulePath -Item $ModulePath
+                }
+            }
+            else
+            {
+                Write-Debug "The module is not locally installed. Calling $($Command.DisplayName)"
+                $CmdParam = @{} #add Target if Save
+                if($Command.Verb -eq 'Save')
+                {
+                    If(!(Test-Path $Path))
+                    {
+                        $null = New-Item -Path $Path -Force -ItemType Directory
+                    }
+                    $CmdParam.add('Path',$Path)
+                }
+                $ModuleToActOn | &$command @CmdParam
+            }
+
+            if($Dependency.AddToPath -and $Path -notin @('CurrentUser','AllUsers'))
+            {
+                Write-Debug "Ensuring '$Path' is in `$ENV:PSmodulePath"
+                Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path -Force).FullName
+            }
+        }
+        'import'
+        {
+            $ModuleToActOn | Import-Module -Force -Scope Global
+            if($Dependency.AddToPath -and $Path -notin @('CurrentUser','AllUsers'))
+            {
+                #Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path -Force).FullName
+            }
+        }
     }
 }
-
-# Conditional import
-$importVs = $params['RequiredVersion']
-Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $importVs
