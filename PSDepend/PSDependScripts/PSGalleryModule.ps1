@@ -75,6 +75,7 @@ param(
     [PSTypeName('PSDepend.Dependency')]
     [psobject[]]$Dependency,
 
+    [AllowNull()]
     [string]$Repository = 'PSGallery', # From Parameters...
 
     [bool]$SkipPublisherCheck, # From Parameters...
@@ -127,13 +128,27 @@ if(-not (Get-PackageProvider -Name Nuget))
 }
 
 Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$Repository]"
+
+# Validate that $target has been setup as a valid PowerShell repository,
+#   but allow to rely on all PS repos registered.
+if($Repository) {
+    $validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
+        if (-not $validRepo) {
+            Write-Error "[$Repository] has not been setup as a valid PowerShell repository."
+            return
+        }
+}
+
 $params = @{
-    Name = $Name
-    Repository = $Repository
+    Name               = $Name
     SkipPublisherCheck = $SkipPublisherCheck
-    AllowClobber = $AllowClobber
-    Verbose = $VerbosePreference
-    Force = $True
+    AllowClobber       = $AllowClobber
+    Verbose            = $VerbosePreference
+    Force              = $True
+}
+
+if($Repository) {
+    $params.Add('Repository',$Repository)
 }
 
 if( $Version -and $Version -ne 'latest')
@@ -176,7 +191,12 @@ if($Existing)
     Write-Verbose "Found existing module [$Name]"
     # Thanks to Brandon Padgett!
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $GetGalleryVersion = { Find-Module -Name $Name -Repository $Repository | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
+    $FindModuleParams = @{Name = $Name}
+    if($Repository) {
+        $FindModuleParams.Add('Repository',$Repository)
+    }
+
+    $GetGalleryVersion = { Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)

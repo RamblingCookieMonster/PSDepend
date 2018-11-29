@@ -127,7 +127,7 @@ DETAILED DESCRIPTION
     This file includes a few configurations for PSDepend:
         
         NugetPath: Path to a nuget.exe, if it's not in your path.  If it's not found in either spot, we download to this
-        GitPath: Path to a git.exe, if it's not in your path.  We do not resolve this dependency for you (yet).
+        GitPath: Path to a git, if it's not in your path.  We do not resolve this dependency for you (yet).
 
     Dependency type map: PSDependMap.psd1
     =====================================
