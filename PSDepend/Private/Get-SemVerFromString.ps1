@@ -27,7 +27,7 @@ function Get-SemVerFromString
     Param (
         [String]
         [ValidatePattern(
-            "^\d+[\.\d]+(-.*)*$"
+            "^\d+[\.\d]+(-.*)*(\+.*)*$"
         )]
         $VersionString
     )
@@ -48,6 +48,7 @@ function Get-SemVerFromString
     [psobject]@{
         PSTypeName      = 'Package.Version'
         Version         = $version
+        VersionString   = $VersionString
         Prerelease      = $PreRelease
         Metadata        = $BuildMetadata
         PrereleaseArray = $PreReleaseArray

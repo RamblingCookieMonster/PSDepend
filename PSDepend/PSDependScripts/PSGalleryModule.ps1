@@ -104,184 +104,199 @@ param(
     [string[]]$PSDependAction = @('Install')
 )
 
-Begin
+# Extract and set defaults
+$DependencyName = $Dependency.DependencyName
+$Name = $Dependency.Name
+if(!$Name)
 {
-    # Extract and set defaults
-    $DependencyName = $Dependency.DependencyName
-    $Name = $Dependency.Name
-    if(!$Name)
-    {
-        $Name = $DependencyName
-    }
-
-    if(!($Scope = $Dependency.Target))
-    {
-        $Scope = 'AllUsers'
-    }
-
-    # if the version -eq latest:
-    #  Find the latest available on Repository
-    if($null -eq $Dependency.Version -or $Dependency.Version -eq 'Latest')
-    {
-        $FindLatestModuleParams = @{Name = $Name}
-        $FindModuleCmd = Get-Command Find-Module
-        foreach($key in $PSBoundParameters.Keys)
-        {
-            if($FindModuleCmd.Parameters.ContainsKey($_) -and
-                $null -ne (Get-Variable $_ -ValueOnly)
-            )
-            {
-                $FindLatestModuleParams.Add($_,$PSBoundParameters[$_])
-            }
-        }
-        Write-Debug "Finding latest version of module $Name"
-        $LatestModule = Find-Module @FindLatestModuleParams -ErrorAction Stop
-        $VersionFilter = Get-SemVerFilterFromString -Filter "-eq $($LatestModule.Version)"
-    }
-    else
-    {
-        try
-        {
-            # Try to validate whether it's a valid SemVer (if it's a Filter it'll throw)
-            if(Get-SemVerFromString -VersionString $Dependency.Version)
-            {
-                # Create a Version Filter for Required Version
-                $VersionFilter = Get-SemVerFilterFromString -Filter "-eq $($Dependency.Version)"
-            }
-        }
-        catch
-        {
-            # Convert the String Filter to a Working Filter
-            $VersionFilter = Get-SemVerFilterFromString -Filter $Dependency.Version
-        }
-    }
-
-    if('AllUsers', 'CurrentUser' -notcontains $Scope)
-    {
-        $command = Get-Command Save-Module
-        # The Scope is a Path (coming from Target), append the name to it
-        # we'll search existing module (matching version) based on that path
-        $ModuleName = Join-Path -Path $Scope -ChildPath $Name
-        $Path = $Scope
-    }
-    else
-    {
-        $command = Get-Command Install-Module
-        $ModuleName = $Name
-    }
+    $Name = $DependencyName
 }
 
-Process
+if(!($Scope = $Dependency.Target))
 {
-    Write-Debug "Finding the latest module matching the version filter installed locally"
+    $Scope = 'AllUsers'
+}
+
+# if the version -eq latest:
+#  Find the latest available on Repository
+if($null -eq $Dependency.Version -or $Dependency.Version -eq 'Latest')
+{
+    $FindLatestModuleParams = @{Name = $Name}
+    $FindModuleCmd = Get-Command Find-Module
+    foreach($key in $PSBoundParameters.Keys)
+    {
+        if($FindModuleCmd.Parameters.ContainsKey($key) -and
+            $null -ne (Get-Variable $key -ValueOnly)
+        )
+        {
+            $FindLatestModuleParams.Add($key,$PSBoundParameters[$key])
+        }
+    }
+    Write-Debug "Finding latest version of module $Name"
+    $LatestModule = Find-Module @FindLatestModuleParams -ErrorAction Stop
+    $VersionFilter = Get-SemVerFilterFromString -Filter "-eq $($LatestModule.Version)"
+}
+else
+{
     try
     {
-        $Exists = Get-Module -ListAvailable -All -Name $ModuleName -ErrorAction Stop |
-            Sort-Object Version -Descending | Where-Object $VersionFilter | Select-Object -First 1
+        # Try to validate whether it's a valid SemVer (if it's a Filter it'll throw)
+        if($RequiredVersion = (Get-SemVerFromString -VersionString $Dependency.Version).VersionString)
+        {
+            # Create a Version Filter for Required Version
+            $VersionFilter = Get-SemVerFilterFromString -Filter "-eq $($Dependency.Version)"
+        }
     }
     catch
     {
-        Write-Debug "No Module found"
+        # Convert the String Filter to a Working Filter
+        $VersionFilter = Get-SemVerFilterFromString -Filter $Dependency.Version
+    }
+}
+
+if($Scope -in @('AllUsers','CurrentUser'))
+{
+    $cmd = Get-Command Install-Module
+    $ModuleName = $Name
+}
+else
+{
+    $cmd = Get-Command Save-Module
+    # The Scope is a Path (coming from Target), append the name to it
+    # we'll search existing module (matching version) based on that path
+    $ModuleName = Join-Path -Path $Scope -ChildPath $Name
+    $Path = $Scope
+}
+
+Write-Debug "Finding the latest module matching the version filter installed locally"
+try
+{
+    $Exists = Get-Module -ListAvailable -All -Name $ModuleName -ErrorAction Stop |
+        Sort-Object Version -Descending | Where-Object $VersionFilter | Select-Object -First 1
+}
+catch
+{
+    Write-Debug "No Module found"
+}
+
+if($Exists)
+{
+    Write-Debug "... a module $ModuleName matching '$Filter' has been found locally"
+    $ModuleToActOn = $Exists
+}
+elseif($Dependency.Version -eq 'latest' -or $null -eq $Dependency.Version)
+{
+    if ($PSDependAction -contains 'test' -and $PSDependAction.count -eq 1)
+    {
+        Write-Debug "The Test action could not find a matching module. Skipping Import/Install/Save."
+        return $false
+    }
+    Write-Debug "Latest module $ModuleName Not found locally. Will $($PSDependAction -join '/') the latest from feed"
+    $ModuleToActOn = $LatestModule
+}
+else
+{
+    #  Find All versions from the Gallery that match the Version filter | selecting the 1st
+    Write-Verbose "Finding remote version of '$ModuleName' matching criteria '$Filter'"
+    $FindModuleAllVersionsParams = @{Name = $Name; }
+    if($RequiredVersion) {
+        $FindModuleAllVersionsParams.Add('RequiredVersion',$RequiredVersion)
+    }
+    else {
+        $FindModuleAllVersionsParams.Add('AllVersions',$true)
     }
 
-    if($Exists)
+    $FindModuleCmd = Get-Command Find-Module
+    foreach($key in $PSBoundParameters.Keys)
     {
-        Write-Debug "... a module $ModuleName matching '$Filter' has been found locally"
-        $ModuleToActOn = $Exists
-    }
-    elseif($Dependency.Version -eq 'latest' -or $null -eq $Dependency.Version)
-    {
-        if ($PSDependAction -contains 'test' -and $PSDependAction.count -eq 1)
+        if($FindModuleCmd.Parameters.ContainsKey($key) -and
+            $null -ne (Get-Variable $key -ValueOnly)
+        )
         {
-            Write-Debug "The Test action could not find a matching module. Skipping Import/Install/Save."
-            return $false
+            $FindModuleAllVersionsParams.Add($key,$PSBoundParameters[$key])
         }
-        Write-Debug "Latest module $ModuleName Not found locally. Will $($PSDependAction -join '/') the latest from feed"
-        $ModuleToActOn = $LatestModule
     }
-    else
+
+    $ModuleToActOn = Find-Module @FindModuleAllVersionsParams -ErrorAction Stop |
+        Where-Object $VersionFilter | Select-Object -First 1
+}
+
+Switch($PSDependAction)
+{
+    'test'
     {
-        #  Find All versions from the Gallery that match the Version filter | selecting the 1st
-        Write-Debug "Finding remote version of '$ModuleName' matching criteria '$Filter'"
-        $FindModuleAllVersionsParams = @{Name = $Name; AllVersions = $true}
-        $FindModuleCmd = Get-Command Find-Module
-        foreach($key in $PSBoundParameters.Keys)
+        if($Exists)
         {
-            if($FindModuleCmd.Parameters.ContainsKey($_) -and
-                $null -ne (Get-Variable $_ -ValueOnly)
-            )
+            Write-Debug "Test module returned FOUND LOCALLY"
+            Write-Output $True
+        }
+        else
+        {
+            Write-Debug "Test module returned NOT FOUND"
+            Write-Output $false
+        }
+    }
+    'Install'
+    {
+        if($Exists)
+        {
+            Write-Verbose "Module already present on the System"
+            if($Dependency.AddToPath)
             {
-                $FindModuleAllVersionsParams.Add($_,$PSBoundParameters[$_])
+                $ParentPath = [io.DirectoryInfo](Split-path $Exists.ModuleBase -Parent)
+                if($ParentPath.BaseName -eq $Module.Name)
+                {
+                    $ModulePath = $ParentPath.FullName
+                }
+                else
+                {
+                    $ModulePath = (Split-Path $ParentPath -Parent).ToString()
+                }
+
+                Add-ToItemCollection -Reference Env:\PSModulePath -Item $ModulePath
             }
         }
-
-        $ModuleToActOn = Find-Module @FindModuleAllVersionsParams -ErrorAction Stop |
-            Where-Object $VersionFilter | Select-Object -First 1
-    }
-
-    Switch($PSDependAction)
-    {
-        'test'
+        else
         {
-            if($Exists)
+            Write-Debug "The module is not locally installed. Calling $($cmd.Name)"
+            $CmdParam = @{} #add Target if Save
+            foreach($key in $PSBoundParameters.Keys)
             {
-                Write-Debug "Test module returned FOUND LOCALLY"
-                Write-Output $True
+                if($Cmd.Parameters.ContainsKey($key) -and
+                    $null -ne (Get-Variable $key -ValueOnly)
+                )
+                {
+                    $CmdParam.Add($key,$PSBoundParameters[$key])
+                }
+            }
+
+            if($cmd.Name -eq 'Save-Module')
+            {
+                If(!(Test-Path $Path))
+                {
+                    $null = New-Item -Path $Path -Force -ItemType Directory
+                }
+                $CmdParam.add('Path',$Path)
+                $ModuleToActOn | Save-Module @CmdParam
             }
             else
             {
-                Write-Debug "Test module returned NOT FOUND"
-                Write-Output $false
+                $ModuleToActOn | Install-Module @CmdParam
             }
         }
-        'Install'
+
+        if($Dependency.AddToPath -and $Path -notin @('CurrentUser','AllUsers'))
         {
-            if($Exists)
-            {
-                Write-Debug "Module already present on the System"
-                if($Dependency.AddToPath)
-                {
-                    $ParentPath = [io.DirectoryInfo](Split-path $Exists.ModuleBase -Parent)
-                    if($ParentPath.BaseName -eq $Module.Name)
-                    {
-                        $ModulePath = $ParentPath.FullName
-                    }
-                    else
-                    {
-                        $ModulePath = (Split-Path $ParentPath -Parent).ToString()
-                    }
-
-                    Add-ToItemCollection -Reference Env:\PSModulePath -Item $ModulePath
-                }
-            }
-            else
-            {
-                Write-Debug "The module is not locally installed. Calling $($Command.DisplayName)"
-                $CmdParam = @{} #add Target if Save
-                if($Command.Verb -eq 'Save')
-                {
-                    If(!(Test-Path $Path))
-                    {
-                        $null = New-Item -Path $Path -Force -ItemType Directory
-                    }
-                    $CmdParam.add('Path',$Path)
-                }
-                $ModuleToActOn | &$command @CmdParam
-            }
-
-            if($Dependency.AddToPath -and $Path -notin @('CurrentUser','AllUsers'))
-            {
-                Write-Debug "Ensuring '$Path' is in `$ENV:PSmodulePath"
-                Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path -Force).FullName
-            }
+            Write-Debug "Ensuring '$Path' is in `$ENV:PSmodulePath"
+            Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path -Force).FullName
         }
-        'import'
+    }
+    'import'
+    {
+        $ModuleToActOn | Import-Module -Force -Scope Global
+        if($Dependency.AddToPath -and $Path -notin @('CurrentUser','AllUsers'))
         {
-            $ModuleToActOn | Import-Module -Force -Scope Global
-            if($Dependency.AddToPath -and $Path -notin @('CurrentUser','AllUsers'))
-            {
-                #Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path -Force).FullName
-            }
+            Add-ToItemCollection -Reference Env:\PSModulePath -Item (Get-Item $path -Force).FullName
         }
     }
 }

@@ -28,7 +28,7 @@ InModuleScope 'PSDepend' {
 
         Context 'Installs Modules' {
             Mock Install-Module { Return $true }
-            
+
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.depend.psd1" -Force
 
             It 'Should execute Install-Module' {
@@ -42,7 +42,7 @@ InModuleScope 'PSDepend' {
 
         Context 'Saves Modules' {
             Mock Save-Module { Return $true }
-            
+
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends/savemodule.depend.psd1" -Force
 
             It 'Should execute Save-Module' {
@@ -68,6 +68,7 @@ InModuleScope 'PSDepend' {
             Mock Get-Module {
                 [pscustomobject]@{
                     Version = '1.2.5'
+                    Path = 'C:\somewhere'
                 }
             }
             Mock Find-Module
@@ -86,6 +87,7 @@ InModuleScope 'PSDepend' {
             Mock Get-Module {
                 [pscustomobject]@{
                     Version = '1.2.5'
+                    Path = 'C:\somewhere'
                 }
             }
             Mock Find-Module {
@@ -104,7 +106,7 @@ InModuleScope 'PSDepend' {
         }
 
         Context 'Test-Dependency' {
-            
+
             BeforeEach {
                 Mock Install-Module {}
                 Mock Find-Module {}
@@ -121,7 +123,7 @@ InModuleScope 'PSDepend' {
                 $Results.Count | Should be 1
                 $Results[0] | Should be $True
             }
-            
+
             It 'Returns $true when it finds an existing latest module' {
                 Mock Get-Module {
                     [pscustomobject]@{
@@ -183,12 +185,13 @@ InModuleScope 'PSDepend' {
                 $Results = Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.depend.psd1" | Import-Dependency @Verbose
                 Assert-MockCalled -CommandName Import-Module -Times 1 -Exactly
                 Assert-MockCalled -CommandName Install-Module -Times 0 -Exactly
-            }            
+            }
         }
 
         Context 'AddToPath on install of module to target folder' {
             It 'Adds folder to path' {
                 Mock Save-Module {$True}
+                Mock Find-Module { return @{Name='imaginary';version = '1.2.5'} }
                 Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.addtopath.depend.psd1" -Force -ErrorAction Stop
                 ($env:PSModulePath -split ([IO.Path]::PathSeparator)) -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath
@@ -243,7 +246,14 @@ InModuleScope 'PSDepend' {
         Context 'SkipPublisherCheck' {
             It 'Supplies switch to Install-Module' {
                 Mock Get-PSRepository { Return $true }
+                Mock Get-Command {
+                    @{
+                        Parameters = @('SkipPublisherCheck')
+                    }
+                } -ParameterFilter { $_ -eq 'Install-Module' }
                 Mock Install-Module {}
+                Mock Find-Module {return [PSCustomObject]@{Version='1.2.5'}}
+
                 Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.skippubcheck.depend.psd1" -Force -ErrorAction Stop
                 Assert-MockCalled -CommandName Install-Module -Times 1 -Exactly -ExclusiveFilter {
                     $SkipPublisherCheck -eq $true
@@ -279,7 +289,7 @@ InModuleScope 'PSDepend' {
             }
 
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\git.depend.psd1" -Force
-            
+
             It 'Invokes the Git dependency type' {
                 Assert-MockCalled -CommandName Invoke-ExternalCommand -Times 6 -Exactly
             }
@@ -291,7 +301,7 @@ InModuleScope 'PSDepend' {
             Mock Pop-Location {}
             Mock Set-Location {}
             Mock Invoke-ExternalCommand -ParameterFilter {$Arguments -contains 'checkout' -or $Arguments -contains 'clone'}
-            
+
 
             It 'Returns $false if git repo does not exist' {
                 Mock Test-Path { return $False } -ParameterFilter {$Path -match "PSDeploy$"}
@@ -330,7 +340,7 @@ InModuleScope 'PSDepend' {
             }
 
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\filedownload.depend.psd1" -Force
-            
+
             It 'Invokes the FileDownload dependency type' {
                 Assert-MockCalled Get-WebFile -Times 1 -Exactly
             }
@@ -365,7 +375,7 @@ InModuleScope 'PSDepend' {
             }
         }
     }
-    
+
     Describe "PSGalleryNuget Type PS$PSVersion" -Tag "WindowsOnly" {
 
         $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
@@ -374,7 +384,7 @@ InModuleScope 'PSDepend' {
             Mock Test-Path { Return $true } -ParameterFilter { $PathType -eq 'Container' }
             Mock Invoke-ExternalCommand { Return $true }
             Mock Find-NugetPackage { Return $true }
-            
+
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.depend.psd1" -Force
 
             It 'Should execute Invoke-ExternalCommand' {
@@ -447,7 +457,7 @@ InModuleScope 'PSDepend' {
                 $Results.Count | Should be 1
                 $Results[0] | Should be $True
             }
-            
+
             It 'Returns $true when it finds an existing latest module' {
                 Mock Import-LocalizedData {
                     [pscustomobject]@{
@@ -512,13 +522,13 @@ InModuleScope 'PSDepend' {
                 $Results = Get-Dependency @Verbose -Path "$TestDepends\psgallerynuget.depend.psd1" | Import-Dependency @Verbose
                 Assert-MockCalled -CommandName Import-Module -Times 1 -Exactly
                 Assert-MockCalled -CommandName Invoke-ExternalCommand -Times 0 -Exactly
-            }            
+            }
         }
 
         Context 'AddToPath on install of module to target folder' {
             It 'Adds folder to path' {
                 Mock Invoke-ExternalCommand {$True}
-                Mock Import-Module 
+                Mock Import-Module
                 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerynuget.addtopath.depend.psd1" -Force -ErrorAction Stop
                 $env:PSModulePath -split ([IO.Path]::PathSeparator) -contains $SavePath | Should Be $True
                 $ENV:PSModulePath = $ExistingPSModulePath
@@ -541,7 +551,7 @@ InModuleScope 'PSDepend' {
 
             Mock Test-Path {return $True} -ParameterFilter {$Path -match 'imaginary'}
             Mock Invoke-ExternalCommand {}
-            Mock Import-Module 
+            Mock Import-Module
             Mock Import-LocalizedData {
                 [pscustomobject]@{
                     ModuleVersion = '1.2.5'
@@ -588,7 +598,7 @@ InModuleScope 'PSDepend' {
             }
 
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\filesystem.depend.psd1" -Force
-            
+
             It 'Invokes the FileSystem dependency type' {
                 Assert-MockCalled Copy-Item -Times 1 -Exactly
             }
@@ -632,14 +642,14 @@ InModuleScope 'PSDepend' {
         # So... these didn't work with mocking.  Create function, define alias to override any function call, mock that.
         function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion)}
         function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion)}
-        
+
         <# Works, but waiting on https://github.com/pester/Pester/issues/604...
          # Got past Get-Package, but Install-Package is still giving the parameter error
         Context 'Installs Packages' {
             Mock Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
             Mock Get-Package
             Mock Install-Package { $True }
-            
+
             $Results = Invoke-PSDepend @Verbose -Path "$TestDepends\package.depend.psd1" -Force
 
             It 'Should execute Install-Package' {
@@ -662,11 +672,11 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Context 'Same package version exists' {    
+        Context 'Same package version exists' {
 
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
             function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
-            
+
             It 'Skips Install-Package' {
 
                 Mock Install-Package
@@ -685,7 +695,7 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Context 'Latest package required, and already installed' {    
+        Context 'Latest package required, and already installed' {
 
             <#
                 This test works on my machine but not in AppVeyor (!)
@@ -705,7 +715,7 @@ InModuleScope 'PSDepend' {
 
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
             function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
-            
+
             It 'Runs Get-Package and Find-Package, skips Install-Package' -Skip {
 
                 Mock Install-Package
@@ -729,7 +739,7 @@ InModuleScope 'PSDepend' {
         }
 
         Context 'Test-Dependency' {
-            
+
             if (-not (Get-Command Get-Package -Module PackageManagement)) {
             function Get-Package {[cmdletbinding()]param( $ProviderName, $Name, $RequiredVersion) write-verbose "WTF NOW"}
             }
@@ -742,7 +752,7 @@ InModuleScope 'PSDepend' {
                 Mock Install-Package {}
                 Mock Find-Package {}
             }
-            
+
             It 'Returns $true when it finds an existing module' {
                 Mock Get-Package {
                     [pscustomobject]@{
@@ -779,7 +789,7 @@ InModuleScope 'PSDepend' {
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
             }
-            
+
             It "Returns `$false when it finds an existing module with a lower version" {
                 Mock Get-Package {
                     [pscustomobject]@{
@@ -912,7 +922,7 @@ InModuleScope 'PSDepend' {
 
             It 'Does nothing if the .NET Core SDK is found' {
                 Mock Test-Dotnet { return $true }
-                Mock Install-Dotnet 
+                Mock Install-Dotnet
 
                 Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.complex.depend.psd1" -Force
                 Assert-MockCalled -CommandName Install-Dotnet -Times 0 -Exactly
@@ -948,7 +958,7 @@ InModuleScope 'PSDepend' {
             It 'Can add the Target of the .NET Core SDK to the PATH' {
                 Mock Test-Dotnet { return $true }
                 Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.complex.depend.psd1" -Force -Import -ErrorAction Stop
-                
+
                 ($env:PATH -split [IO.Path]::PathSeparator)[0] | Should -Be $SavePath
             }
             It 'Can add the global path of the .NET Core SDK to the PATH' {
@@ -959,7 +969,7 @@ InModuleScope 'PSDepend' {
             }
             It 'Throws if the path cannot be found' {
                 Mock Test-Dotnet { return $false }
-                { Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop } | 
+                { Invoke-PSDepend @Verbose -Path "$TestDepends\dotnetsdk.simple.depend.psd1" -Force -Import -ErrorAction Stop } |
                     Should -Throw -ExpectedMessage ".NET SDK cannot be located. Try installing using PSDepend."
             }
             AfterEach {
