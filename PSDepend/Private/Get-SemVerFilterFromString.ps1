@@ -7,7 +7,10 @@ function Get-SemVerFilterFromString
         [string]$Filter
     )
     # Let the Parser tokenize the string filter for us
-    $FilterSB = [Scriptblock]::Create($Filter)
+    $FilterString = $Filter
+    $Tokens = $null
+    $ParseErrors = $null
+    $null = [System.Management.Automation.Language.Parser]::ParseInput($Filter,[ref]$Tokens,[ref]$ParseErrors)
 
     $ConvertExpr = { # Converter of operator into first part of comparison statement
         Switch($Args[0])
@@ -39,34 +42,33 @@ function Get-SemVerFilterFromString
         }
     }
 
-    $allTokens = $FilterSB.Ast.FindAll( {$true},$true).Where{
-        $_ -is [System.Management.Automation.Language.ConstantExpressionAst] -or
-        $_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -or
-        $_ -is [System.Management.Automation.Language.ParameterAst] -or
-        $_ -is [System.Management.Automation.Language.CommandParameterAst]
+    $FilterToken = [System.Collections.ArrayList]::new()
+    foreach ($token in $tokens) {
+        switch -Regex ($token.text.Trim())
+        {
+            '-(lt|le|gt|ge|eq|ne)'
+            {
+                $null = $FilterToken.add((&$ConvertExpr $_))
+            }
+            "^(\`"|\')?\d+[\.\d]+(-.*)*(\+.*)*(\`"|\')?$"
+            {
+                $version = $_ -replace "^(\`"|\')",'' -replace "(\`"|\')?$"
+                $null = $FilterToken.add(("'"+$version+"'))"))
+            }
+            default
+            {
+                $null = $FilterToken.Add($_)
+            }
+        }
     }
+    $NewFilter = ($FilterToken -join ' ').Trim()
 
-    $offset = 0
-    foreach( $extent in $allTokens.extent)
-    {
-        if($extent.Text -in @('-gt','-ge','-lt','-le','-eq','-ne'))
-        {
-            $replaceWith = &$ConvertExpr $extent.text
-        }
-        elseif($extent.Text -in @('-or','-and'))
-        {
-            $replaceWith = "$($extent.text)"
-        }
-        else
-        {
-            $replaceWith = "'$($extent.text)'))"
-        }
 
-        $addOffset = $replaceWith.length - $extent.Text.Length
-        $Filter = $Filter.Remove(($extent.StartOffset + $offset), ($extent.Text.Length))
-        $Filter = $Filter.Insert(($extent.StartOffset + $offset),$replaceWith)
-        $offset += $addOffset
+    Write-Debug -Message $NewFilter
+    try {
+        [scriptblock]::Create($NewFilter)
     }
-    Write-Debug -Message $Filter
-    [scriptblock]::Create($Filter)
+    catch {
+        Throw "Could not parse '$FilterString'."
+    }
 }
