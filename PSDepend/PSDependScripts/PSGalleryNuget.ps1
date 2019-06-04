@@ -50,7 +50,7 @@
             }
         }
 
-        # Install the latest version of PSDeploy on an internal nuget feed, to C:\temp, 
+        # Install the latest version of PSDeploy on an internal nuget feed, to C:\temp,
 
 #>
 [cmdletbinding()]
@@ -93,7 +93,7 @@ param(
         return
     }
 
-if(-not (Get-Command Nuget.exe -ErrorAction SilentlyContinue))
+if(-not (Get-Command Nuget -ErrorAction SilentlyContinue))
 {
     Write-Error "PSGalleryNuget requires Nuget.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's NugetPath.  Skipping [$DependencyName]"
 }
@@ -121,7 +121,7 @@ if(Test-Path $ModulePath)
     $ManifestData = Import-LocalizedData -BaseDirectory $ModulePath -FileName "$Name.psd1"
     $ExistingVersion = $ManifestData.ModuleVersion
     $GetGalleryVersion = { ( Find-NugetPackage -Name $Name -PackageSourceUrl $Source -IsLatest ).Version }
-    
+
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
@@ -134,7 +134,7 @@ if(Test-Path $ModulePath)
         }
         return $null
     }
-    
+
     # latest, and we have latest
     if( $Version -and
         ($Version -eq 'latest' -or $Version -like '') -and
@@ -192,7 +192,8 @@ if($PSDependAction -contains 'Install')
         $NugetParams += '-version', $Version
     }
     $NugetParams = 'install', $Name + $NugetParams
-    Invoke-ExternalCommand nuget.exe -Arguments $NugetParams
+
+	Invoke-ExternalCommand nuget -Arguments $NugetParams
 }
 
 # Conditional import
