@@ -9,7 +9,8 @@
             Name: The name for this module
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
             Target: Used as 'Scope' for Install-Module.  If this is a path, we use Save-Module with this path.  Defaults to 'AllUsers'
-            AddToPath: If target is used as a path, prepend that path to ENV:PSModulePath
+			AddToPath: If target is used as a path, prepend that path to ENV:PSModulePath
+			Credential: The username and password used to authenticate against the private repository
 
         If you don't have the Nuget package provider, we install it for you
 
@@ -110,7 +111,9 @@ param(
     else
     {
         $Scope = $Dependency.Target
-    }
+	}
+
+	$Credential = $Dependency.Credential
 
     if('AllUsers', 'CurrentUser' -notcontains $Scope)
     {
@@ -156,6 +159,11 @@ if( $Version -and $Version -ne 'latest')
     $Params.add('RequiredVersion',$Version)
 }
 
+if($Credential)
+{
+	$Params.add('Credential', $Credential)
+}
+
 # This code works for both install and save scenarios.
 if($command -eq 'Save')
 {
@@ -194,9 +202,13 @@ if($Existing)
     $FindModuleParams = @{Name = $Name}
     if($Repository) {
         $FindModuleParams.Add('Repository',$Repository)
-    }
+	}
+	if($Credential)
+	{
+		$FindModuleParams.Add('Credential', $Credential)
+	}
 
-    $GetGalleryVersion = { Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
+    $GetGalleryVersion = { Find-Module @FindModuleParams -Verbose | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)

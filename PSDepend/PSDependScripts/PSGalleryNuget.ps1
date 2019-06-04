@@ -91,7 +91,9 @@ param(
     {
         Write-Error "PSGalleryNuget requires a Dependency Target. Skipping [$DependencyName]"
         return
-    }
+	}
+
+	$Credential = $Dependency.Credential
 
 if(-not (Get-Command Nuget -ErrorAction SilentlyContinue))
 {
@@ -120,7 +122,7 @@ if(Test-Path $ModulePath)
     # Thanks to Brandon Padgett!
     $ManifestData = Import-LocalizedData -BaseDirectory $ModulePath -FileName "$Name.psd1"
     $ExistingVersion = $ManifestData.ModuleVersion
-    $GetGalleryVersion = { ( Find-NugetPackage -Name $Name -PackageSourceUrl $Source -IsLatest ).Version }
+    $GetGalleryVersion = { (Find-NugetPackage -Name $Name -PackageSourceUrl $Source -Credential $Credential -IsLatest).Version }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
