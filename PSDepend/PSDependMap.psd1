@@ -69,7 +69,7 @@
     PSGalleryNuget = @{
         Script = 'PSGalleryNuget.ps1'
         Description = 'Install a PowerShell module from the PowerShell Gallery without the PowerShellGet dependency'
-        Supports = 'windows'
+        Supports = 'windows', 'core', 'macos', 'linux'
     }
 
     Task = @{
