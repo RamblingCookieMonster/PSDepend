@@ -251,6 +251,8 @@ function Get-Dependency {
             $DependencyHash = $Dependencies.$Dependency
             $DependencyType = Get-GlobalOption -Name DependencyType
 
+			$CredentialName = Get-GlobalOption -Name Credential
+
             # Look simple syntax with helpers in the key first
             If( $DependencyHash -is [string] -and
                 $Dependency -match '::' -and
@@ -298,6 +300,7 @@ function Get-Dependency {
                     DependsOn = Get-GlobalOption -Name DependsOn
                     PreScripts =  Get-GlobalOption -Name PreScripts
                     PostScripts =  Get-GlobalOption -Name PostScripts
+					Credential = Resolve-Credential -Name $CredentialName
                     PSDependOptions = $PSDependOptions
                     Raw = $null
                 }
@@ -392,6 +395,7 @@ function Get-Dependency {
                     $DependencyType = $DependencyHash.DependencyType
                 }
 
+				$CredentialName = Get-GlobalOption -Name Credential -Prefer $DependencyHash.Credential
                 [pscustomobject]@{
                     PSTypeName = 'PSDepend.Dependency'
                     DependencyFile = $DependencyFile
@@ -407,7 +411,7 @@ function Get-Dependency {
                     DependsOn = Get-GlobalOption -Name DependsOn -Prefer $DependencyHash.DependsOn
                     PreScripts = Get-GlobalOption -Name PreScripts -Prefer $DependencyHash.PreScripts
                     PostScripts = Get-GlobalOption -Name PostScripts -Prefer $DependencyHash.PostScripts
-					Credential = Resolve-Credential -Name $Dependency
+					Credential = Resolve-Credential -Name $CredentialName
 					PSDependOptions = $PSDependOptions
                     Raw = $DependencyHash
                 }
