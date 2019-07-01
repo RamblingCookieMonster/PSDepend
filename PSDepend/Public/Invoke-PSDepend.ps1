@@ -44,7 +44,7 @@ Function Invoke-PSDepend {
 
     .PARAMETER Test
         Run tests for dependencies we find.
-        
+
         Appends a 'DependencyExists' property indicating whether the dependency exists by default
         Specify Quiet to simply return $true or $false depending on whether all dependencies exist
 
@@ -59,8 +59,18 @@ Function Invoke-PSDepend {
     .PARAMETER Target
         If specified, override the target in the PSDependOptions or Dependency.
 
-    .PARAMETER Import 
-        If the dependency supports it, import it
+    .PARAMETER Import
+		If the dependency supports it, import it
+
+	.PARAMETER Credentials
+		Specifies a hashtable of PSCredentials to use for each dependency that is served from a private feed.
+
+		For example:
+
+			-Credentials @{
+				PrivatePackage = $privateCredentials
+				AnotherPrivatePackage = $morePrivateCredenials
+			}
 
     .EXAMPLE
         Invoke-PSDepend
@@ -144,7 +154,11 @@ Function Invoke-PSDepend {
 
         [switch]$Force,
 
-        [String]$Target
+		[String]$Target,
+
+		[parameter(ParameterSetName = 'installimport-file')]
+        [parameter(ParameterSetName = 'installimport-hashtable')]
+        [hashtable]$Credentials
     )
     Begin
     {
@@ -198,7 +212,11 @@ Function Invoke-PSDepend {
         if($PSBoundParameters.ContainsKey('Tags'))
         {
             $GetPSDependParams.Add('Tags',$Tags)
-        }
+		}
+
+		if ($null -ne $Credentials) {
+			$GetPSDependParams.Add('Credentials', $Credentials)
+		}
 
         # Handle Dependencies
         $Dependencies = Get-Dependency @GetPSDependParams
