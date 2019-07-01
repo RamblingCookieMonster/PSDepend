@@ -208,7 +208,7 @@ if($Existing)
 		$FindModuleParams.Add('Credential', $Credential)
 	}
 
-    $GetGalleryVersion = { Find-Module @FindModuleParams -Verbose | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
+    $GetGalleryVersion = { Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
