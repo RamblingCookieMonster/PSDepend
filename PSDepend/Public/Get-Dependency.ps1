@@ -428,7 +428,12 @@ function Get-Dependency {
 
 		$credential = $null
 		if (($null -ne $Name) -and ($null -ne $Credentials)) {
-			$Credential = $Credentials[$Name]
+
+			if ($Credentials.ContainsKey($Name)) {
+				$credential = $Credentials[$Name]
+			} else {
+				Write-Warning "No credential found for the specified name $Name. Was the dependency misconfigured?"
+			}
 		}
 
 		return $credential
