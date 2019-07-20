@@ -227,7 +227,7 @@ if($Existing)
     # latest, and we have latest
     if( $Version -and
         ($Version -eq 'latest' -or $Version -like '') -and
-        ($GalleryVersion = (& $GetGalleryVersion)) -le $ExistingVersion
+        [System.Version]($GalleryVersion = (& $GetGalleryVersion)) -le [System.Version]$ExistingVersion
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
