@@ -63,9 +63,17 @@ Function Invoke-PSDepend {
         If the dependency supports it, import it
 
     .PARAMETER Credentials
-        Specifies a hashtable of PSCredentials to use for each dependency that is served from a private feed.
+        Specifies a hashtable of PSCredentials to use for each dependency that is served from a private feed. The key of the hashtable must match the Credential property value in the dependency.
 
         For example:
+
+        @{
+            dependency_name = @{
+                ...
+                Credential = 'PrivatePackage'
+                ...
+            }
+        }
 
         -Credentials @{
                 PrivatePackage = $privateCredentials
