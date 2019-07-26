@@ -60,17 +60,17 @@ Function Invoke-PSDepend {
         If specified, override the target in the PSDependOptions or Dependency.
 
     .PARAMETER Import
-		If the dependency supports it, import it
+        If the dependency supports it, import it
 
-	.PARAMETER Credentials
-		Specifies a hashtable of PSCredentials to use for each dependency that is served from a private feed.
+    .PARAMETER Credentials
+        Specifies a hashtable of PSCredentials to use for each dependency that is served from a private feed.
 
-		For example:
+        For example:
 
-			-Credentials @{
-				PrivatePackage = $privateCredentials
-				AnotherPrivatePackage = $morePrivateCredenials
-			}
+        -Credentials @{
+                PrivatePackage = $privateCredentials
+                AnotherPrivatePackage = $morePrivateCredenials
+        }
 
     .EXAMPLE
         Invoke-PSDepend
@@ -154,9 +154,9 @@ Function Invoke-PSDepend {
 
         [switch]$Force,
 
-		[String]$Target,
+        [String]$Target,
 
-		[parameter(ParameterSetName = 'installimport-file')]
+        [parameter(ParameterSetName = 'installimport-file')]
         [parameter(ParameterSetName = 'installimport-hashtable')]
         [hashtable]$Credentials
     )
@@ -212,11 +212,11 @@ Function Invoke-PSDepend {
         if($PSBoundParameters.ContainsKey('Tags'))
         {
             $GetPSDependParams.Add('Tags',$Tags)
-		}
+        }
 
-		if ($null -ne $Credentials) {
-			$GetPSDependParams.Add('Credentials', $Credentials)
-		}
+        if ($null -ne $Credentials) {
+            $GetPSDependParams.Add('Credentials', $Credentials)
+        }
 
         # Handle Dependencies
         $Dependencies = Get-Dependency @GetPSDependParams
