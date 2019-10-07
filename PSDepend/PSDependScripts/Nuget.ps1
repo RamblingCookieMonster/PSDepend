@@ -52,36 +52,17 @@
                 DependencyType = 'Nuget'
                 Target = ".\Staging"
             }
-            'BouncyCastle' = 'latest'
-            'Google.Apis' = 'latest'
-            'Google.Apis.Admin.DataTransfer.datatransfer_v1' = 'latest'
-            'Google.Apis.Admin.Directory.directory_v1' = 'latest'
-            'Google.Apis.Admin.Reports.reports_v1' = 'latest'
-            'Google.Apis.Auth' = 'latest'
-            'Google.Apis.Auth.PlatformServices' = 'latest'
-            'Google.Apis.Calendar.v3' = 'latest'
-            'Google.Apis.Classroom.v1' = 'latest'
-            'Google.Apis.Core' = 'latest'
-            'Google.Apis.Docs.v1' = 'latest'
-            'Google.Apis.Drive.v3' = 'latest'
-            'Google.Apis.DriveActivity.v2' = 'latest'
-            'Google.Apis.Gmail.v1' = 'latest'
-            'Google.Apis.Groupssettings.v1' = 'latest'
-            'Google.Apis.HangoutsChat.v1' = 'latest'
-            'Google.Apis.Licensing.v1' = 'latest'
-            'Google.Apis.Oauth2.v2' = 'latest'
-            'Google.Apis.PeopleService.v1' = 'latest'
-            'Google.Apis.PlatformServices' = 'latest'
-            'Google.Apis.Script.v1' = 'latest'
-            'Google.Apis.Sheets.v4' = 'latest'
-            'Google.Apis.Slides.v1' = 'latest'
-            'Google.Apis.Tasks.v1' = 'latest'
-            'Google.Apis.Urlshortener.v1' = 'latest'
+            'Portable.BouncyCastle' = @{
+                Version = 'latest'
+                Parameters = @{
+                    DllName = 'BouncyCastle.Crypto'
+                }
+            }
             'MimeKit' = 'latest'
             'Newtonsoft.Json' = 'latest'
         }
 
-        # Installs the list of Nuget packages from Nuget.org using the Global PSDependOptions to limit repetition. Packages will be downloaded to the Staging directory in the current working directory.
+        # Installs the list of Nuget packages from Nuget.org using the Global PSDependOptions to limit repetition. Packages will be downloaded to the Staging directory in the current working directory. Since the DLL included with Portable.BouncyCastle is actually named 'BouncyCastle.Crypto', we specify that in the parameters.
 
 #>
 [cmdletbinding()]
@@ -92,7 +73,9 @@ param(
     [switch]$Force,
 
     [ValidateSet('Test', 'Install')]
-    [string[]]$PSDependAction = @('Install')
+    [string[]]$PSDependAction = @('Install'),
+
+    [string]$DllName
 )
 # Extract data from Dependency
     $DependencyName = $Dependency.DependencyName
@@ -134,19 +117,26 @@ Write-Verbose -Message "Getting dependency [$name] from Nuget source [$Source]"
 # This code works for both install and save scenarios.
 $PackagePath =  Join-Path $Target $Name
 
+$DllNameIs = if ($DllName) {
+    $DllName
+}
+else {
+    $Name
+}
+
 if(Test-Path $PackagePath)
 {
-    if($null -eq (Get-ChildItem $PackagePath -Filter "$($Name).dll" -Recurse))
+    if($null -eq (Get-ChildItem $PackagePath -Filter "$($DllNameIs).dll" -Recurse))
     {
         # For now, skip if we don't find a DLL matching the expected name
-        Write-Error "Could not existing DLL for dependency [$Name] in package path [$PackagePath]"
+        Write-Error "Could not find existing DLL for dependency [$Name] in package path [$PackagePath]"
         return
     }
 
     Write-Verbose "Found existing package [$Name]"
 
     # Thanks to Brandon Padgett!
-    $dllPath = (Get-ChildItem $PackagePath -Filter "$($Name).dll" -Recurse | Select-Object -First 1).FullName
+    $dllPath = (Get-ChildItem $PackagePath -Filter "$($DllNameIs).dll" -Recurse | Select-Object -First 1).FullName
     $ExistingVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).FileVersion
     $GetGalleryVersion = { (Find-NugetPackage -Name $Name -PackageSourceUrl $Source -Credential $Credential -IsLatest).Version }
 
