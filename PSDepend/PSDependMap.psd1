@@ -54,6 +54,12 @@
         Supports = 'windows', 'core', 'macos', 'linux'
     }
 
+    Nuget = @{
+        Script = 'Nuget.ps1'
+        Description = 'Install a Nuget package from a Nuget feed'
+        Supports = 'windows', 'core', 'macos', 'linux'
+    }
+
     Package = @{
         Script = 'Package.ps1'
         Description = 'EXPERIMENTAL: Install a package via PackageManagement Install-Package'

@@ -1,4 +1,9 @@
-﻿param ($Task = 'Default')
+﻿[CmdletBinding()]
+param (
+    [parameter(Position = 0)]
+    [ValidateSet('Default','Init','Test','Build','Deploy')]
+    $Task = 'Default'
+)
 
 # Grab nuget bits, install modules, set build variables, start build.
 Get-PackageProvider -Name NuGet -ForceBootstrap | Out-Null
