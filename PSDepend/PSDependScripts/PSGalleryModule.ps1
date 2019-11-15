@@ -22,6 +22,9 @@
     .PARAMETER AllowClobber
         Allow installation of modules that clobber existing commands.  Defaults to $True
 
+    .PARAMETER AcceptLicense
+        Accepts the license agreement during installation. Defaults to $True
+
     .PARAMETER Import
         If specified, import the module in the global scope
 
@@ -81,6 +84,8 @@ param(
     [bool]$SkipPublisherCheck, # From Parameters...
 
     [bool]$AllowClobber = $True,
+
+    [bool]$AcceptLicense = $True,
 
     [switch]$Import,
 
@@ -143,6 +148,7 @@ $params = @{
     Name               = $Name
     SkipPublisherCheck = $SkipPublisherCheck
     AllowClobber       = $AllowClobber
+    AcceptLicense      = $AcceptLicense
     Verbose            = $VerbosePreference
     Force              = $True
 }
