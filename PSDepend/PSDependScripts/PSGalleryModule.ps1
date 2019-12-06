@@ -168,7 +168,7 @@ if ($Dependency.Credential)
 	$moduleSplat.add('Credential', $Dependency.Credential)
 }
 
-if ($Dependency.Version)
+if ($Dependency.Version -and $Dependency.Version -ne 'latest')
 {
     $Version = $Dependency.Version
     $moduleSplat.add('RequiredVersion',$Version)
@@ -222,7 +222,7 @@ if ($PSDependAction -contains 'Install')
         }
     }
     
-    if ($existingModules -and ($existingModules | Foreach-Object {$_.Version.ToString()}) -notcontains $Version)
+    if (($existingModules -and ($existingModules | Foreach-Object {$_.Version.ToString()}) -notcontains $Version) -or -not $existingModules)
     {
         if (-not $install)
         {

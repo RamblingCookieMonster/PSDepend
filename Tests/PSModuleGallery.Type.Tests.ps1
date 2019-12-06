@@ -50,6 +50,7 @@ InModuleScope 'PSDepend' {
 
 		Context 'Installs Modules with credentials' {
 			Mock Install-Module { Return $true }
+            Mock Find-Module { return @{Version = '1.0'} }
 
 			 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.withcredentials.depend.psd1" -Force -Credentials $Credentials
 
@@ -64,6 +65,7 @@ InModuleScope 'PSDepend' {
 
 		Context 'Installs Modules with multiple credentials' {
 			Mock Install-Module { Return $true }
+            Mock Find-Module { return @{Version = '1.0'} }
 
 			 $Results = Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.multiplecredentials.depend.psd1" -Force -Credentials $Credentials
 
