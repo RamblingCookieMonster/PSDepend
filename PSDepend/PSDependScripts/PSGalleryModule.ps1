@@ -35,6 +35,9 @@
         Install: Install the dependency
         Import: Import the dependency
 
+    .PARAMETER Clean
+        Deletes existing versions of the module before installing/saving desired version
+
     .EXAMPLE
         @{
             BuildHelpers = 'latest'
@@ -86,43 +89,51 @@ param(
     [switch]$Import,
 
     [ValidateSet('Test', 'Install', 'Import')]
-    [string[]]$PSDependAction = @('Install')
+    [string[]]$PSDependAction = @('Install'),
+
+    [switch]$Clean
 )
 
 # Extract data from Dependency
-    $DependencyName = $Dependency.DependencyName
-    $Name = $Dependency.Name
-    if(-not $Name)
-    {
-        $Name = $DependencyName
-    }
+$Name = $Dependency.Name
+if(-not $Name)
+{
+    $Name = $Dependency.DependencyName
+}
 
-    $Version = $Dependency.Version
-    if(-not $Version)
-    {
-        $Version = 'latest'
-    }
+$findModuleSplat = @{
+    Name = $Name
+}
 
-    # We use target as a proxy for Scope
-    if(-not $Dependency.Target)
+$moduleSplat = @{
+    Name               = $Name
+    Verbose            = $VerbosePreference
+    Force              = $True
+}
+
+# We use target as a proxy for Scope
+$install = $True
+if($Dependency.Target -and 'AllUsers', 'CurrentUser' -notcontains $Dependency.Target)
+{
+    $install = $false
+    $moduleFullname =  Join-Path -Path $Dependency.Target -ChildPath $Name
+}
+else
+{
+    if ($Dependency.Target)
     {
-        $Scope = 'AllUsers'
+        $scope = $Dependency.Target
     }
     else
     {
-        $Scope = $Dependency.Target
-	}
-
-	$Credential = $Dependency.Credential
-
-    if('AllUsers', 'CurrentUser' -notcontains $Scope)
-    {
-        $command = 'save'
+        $scope = 'AllUsers'
     }
-    else
-    {
-        $command = 'install'
-    }
+
+    $moduleFullname = $Name
+    $moduleSplat['AllowClobber'] = $AllowClobber
+    $moduleSplat['SkipPublisherCheck'] = $SkipPublisherCheck
+    $moduleSplat['Scope'] = $scope
+}
 
 if(-not (Get-PackageProvider -Name Nuget))
 {
@@ -134,140 +145,116 @@ Write-Verbose -Message "Getting dependency [$name] from PowerShell repository [$
 
 # Validate that $target has been setup as a valid PowerShell repository,
 #   but allow to rely on all PS repos registered.
-if($Repository) {
-    $validRepo = Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue
-        if (-not $validRepo) {
-            Write-Error "[$Repository] has not been setup as a valid PowerShell repository."
-            return
-        }
-}
-
-$params = @{
-    Name               = $Name
-    SkipPublisherCheck = $SkipPublisherCheck
-    AllowClobber       = $AllowClobber
-    Verbose            = $VerbosePreference
-    Force              = $True
-}
-
-if($Repository) {
-    $params.Add('Repository',$Repository)
-}
-
-if( $Version -and $Version -ne 'latest')
+if($Repository)
 {
-    $Params.add('RequiredVersion',$Version)
+    if (-not (Get-PSRepository -Name $Repository -Verbose:$false -ErrorAction SilentlyContinue))
+    {
+        Write-Error "[$Repository] has not been setup as a valid PowerShell repository."
+        return
+    }
 }
 
-if($Credential)
+if ($Repository)
 {
-	$Params.add('Credential', $Credential)
+    $findModuleSplat.Add('Repository',$Repository)
+    $moduleSplat.Add('Repository',$Repository)
 }
 
-# This code works for both install and save scenarios.
-if($command -eq 'Save')
+if ($Dependency.Credential)
 {
-    $ModuleName =  Join-Path $Scope $Name
-    $Params.Remove('AllowClobber')
-    $Params.Remove('SkipPublisherCheck')
+	$findModuleSplat.Add('Credential', $Dependency.Credential)
+	$moduleSplat.add('Credential', $Dependency.Credential)
 }
-elseif ($Command -eq 'Install')
+
+if ($Dependency.Version)
 {
-    $ModuleName = $Name
+    $Version = $Dependency.Version
+    $moduleSplat.add('RequiredVersion',$Version)
 }
+else
+{
+    $Version = (Find-Module @findModuleSplat).Version.ToString()
+}
+
+Write-Verbose "Targetting module '$Name' Version: $Version"
 
 # Only use "SkipPublisherCheck" (and other) parameter if "Install-Module" supports it
 $availableParameters = (Get-Command "Install-Module").Parameters
-$tempParams = $Params.Clone()
-foreach($thisParameter in $Params.Keys)
+$tempmoduleSplat = $moduleSplat.Clone()
+foreach($thisParameter in $moduleSplat.Keys)
 {
     if(-Not ($availableParameters.ContainsKey($thisParameter)))
     {
         Write-Verbose -Message "Removing parameter [$thisParameter] from [Install-Module] as it is not available"
-        $tempParams.Remove($thisParameter)
+        $tempmoduleSplat.Remove($thisParameter)
     }
 }
-$Params = $tempParams.Clone()
 
+$moduleSplat = $tempmoduleSplat.Clone()
 Add-ToPsModulePathIfRequired -Dependency $Dependency -Action $PSDependAction
 
-$Existing = $null
-$Existing = Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue
-
-if($Existing)
+$existingModules = $null
+$existingModules = Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue
+ 
+if ($PSDependAction -contains 'Install')
 {
-    Write-Verbose "Found existing module [$Name]"
-    # Thanks to Brandon Padgett!
-    $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
-    $FindModuleParams = @{Name = $Name}
-    if($Repository) {
-        $FindModuleParams.Add('Repository',$Repository)
-	}
-	if($Credential)
-	{
-		$FindModuleParams.Add('Credential', $Credential)
-	}
-
-    $GetGalleryVersion = { Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
-
-    # Version string, and equal to current
-    if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
+    # If Clean is set to $true, cleanup any existing versions of the module
+    if ($PSDependAction -notcontains 'Test' -and $Clean -and $existingModules)
     {
-        Write-Verbose "You have the requested version [$Version] of [$Name]"
-        # Conditional import
-        Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $ExistingVersion
-
-        if($PSDependAction -contains 'Test')
+        Write-Verbose "Parameter 'Clean' set to 'true', removing existing versions..."
+        foreach ($existingModule in $existingModules)
         {
-            return $True
+            $existingVersion = $existingModule.Version.ToString()
+            Write-Verbose "Found existing module: '$Name' Version: $existingVersion"
+            $differentModulePath = (Get-Item -Path $existingModule.ModuleBase).Parent.FullName -ne $moduleFullname
+            if (($existingVersion -ne $Version -and $Target.Location -and $differentModulePath) -or $existingVersion -ne $Version)
+            {
+                # Remove module from session just in case
+                Write-Verbose "Removing existing module: '$($existingModule.Name)' Version: $existingVersion"
+                Remove-Module -Name $existingModule.Name -Force -ErrorAction SilentlyContinue -Verbose:$false
+                
+                # Pause to give the module a chance to be fully removed from session
+                Start-Sleep -Seconds 1
+                Remove-Item -Path $existingModule.ModuleBase -Force -Recurse         
+            }
         }
-        return $null
     }
-
-    # latest, and we have latest
-    if( $Version -and
-        ($Version -eq 'latest' -or $Version -like '') -and
-        [System.Version]($GalleryVersion = (& $GetGalleryVersion)) -le [System.Version]$ExistingVersion
-    )
+    
+    if (-not $install)
     {
-        Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
-        # Conditional import
-        Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $ExistingVersion
-
-        if($PSDependAction -contains 'Test')
+        if (-not (Test-Path -Path $moduleFullname -ErrorAction SilentlyContinue))
         {
-            return $True
+            Write-Verbose "Creating directory path to '$moduleFullname'"
+            $null = New-Item -ItemType Directory -Path $moduleFullname -Force -ErrorAction SilentlyContinue
         }
-        return $null
-    }
-    Write-Verbose "Continuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion]"
-}
 
-#No dependency found, return false if we're testing alone...
-if( $PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
-{
-    return $False
-}
-
-if($PSDependAction -contains 'Install')
-{
-    if('AllUsers', 'CurrentUser' -contains $Scope)
-    {
-        Write-Verbose "Installing [$Name] with scope [$Scope]"
-        Install-Module @params -Scope $Scope
+        $modulePath = Join-Path -Path $moduleFullname -ChildPath $Version
+        if(-not (Test-Path -Path $modulePath -ErrorAction SilentlyContinue))
+        {
+            Write-Verbose "Saving '$Name' with path '$moduleFullname'"
+            Save-Module @moduleSplat -Path (Split-Path -Path $moduleFullname -Parent)
+        }
     }
     else
     {
-        Write-Verbose "Saving [$Name] with path [$Scope]"
-        Write-Verbose "Creating directory path to [$Scope]"
-        if(-not (Test-Path $Scope -ErrorAction SilentlyContinue))
-        {
-            $Null = New-Item -ItemType Directory -Path $Scope -Force -ErrorAction SilentlyContinue
-        }
-        Save-Module @params -Path $Scope
+        Write-Verbose "Installing [$Name] with scope [$Scope]"
+        Install-Module @moduleSplat
     }
 }
 
-# Conditional import
-$importVs = $params['RequiredVersion']
-Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $importVs
+if ($PSDependAction -contains 'Import')
+{
+    Write-Verbose "You have the requested version [$Version] of [$Name]"
+    # Conditional import
+    Import-PSDependModule -Name $moduleFullname -Action $PSDependAction -Version $Version
+
+    if($PSDependAction -contains 'Test')
+    {
+        return $True
+    }
+}
+
+if ($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
+{
+    return ($existingModules | Foreach-Object {$_.Version.ToString()}) -contains $Version
+}
