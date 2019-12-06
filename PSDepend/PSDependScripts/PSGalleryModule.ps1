@@ -135,6 +135,8 @@ else
     $moduleSplat['Scope'] = $scope
 }
 
+$Credential = $Dependency.Credential
+
 if(-not (Get-PackageProvider -Name Nuget))
 {
     # Grab nuget bits.
@@ -220,25 +222,28 @@ if ($PSDependAction -contains 'Install')
         }
     }
     
-    if (-not $install)
+    if ($existingModules -and ($existingModules | Foreach-Object {$_.Version.ToString()}) -notcontains $Version)
     {
-        if (-not (Test-Path -Path $moduleFullname -ErrorAction SilentlyContinue))
+        if (-not $install)
         {
-            Write-Verbose "Creating directory path to '$moduleFullname'"
-            $null = New-Item -ItemType Directory -Path $moduleFullname -Force -ErrorAction SilentlyContinue
-        }
+            if (-not (Test-Path -Path $moduleFullname -ErrorAction SilentlyContinue))
+            {
+                Write-Verbose "Creating directory path to '$moduleFullname'"
+                $null = New-Item -ItemType Directory -Path $moduleFullname -Force -ErrorAction SilentlyContinue
+            }
 
-        $modulePath = Join-Path -Path $moduleFullname -ChildPath $Version
-        if(-not (Test-Path -Path $modulePath -ErrorAction SilentlyContinue))
-        {
-            Write-Verbose "Saving '$Name' with path '$moduleFullname'"
-            Save-Module @moduleSplat -Path (Split-Path -Path $moduleFullname -Parent)
+            $modulePath = Join-Path -Path $moduleFullname -ChildPath $Version
+            if(-not (Test-Path -Path $modulePath -ErrorAction SilentlyContinue))
+            {
+                Write-Verbose "Saving '$Name' with path '$moduleFullname'"
+                Save-Module @moduleSplat -Path (Split-Path -Path $moduleFullname -Parent)
+            }
         }
-    }
-    else
-    {
-        Write-Verbose "Installing [$Name] with scope [$Scope]"
-        Install-Module @moduleSplat
+        else
+        {
+            Write-Verbose "Installing [$Name] with scope [$Scope]"
+            Install-Module @moduleSplat
+        }
     }
 }
 
