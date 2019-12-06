@@ -307,7 +307,7 @@ InModuleScope 'PSDepend' {
         }
 
         Context 'Clean' {
-            
+           
             Mock Remove-Module {}
             Mock Remove-Item {}
             Mock Save-Module {}            
