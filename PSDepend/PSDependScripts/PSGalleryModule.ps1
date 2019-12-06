@@ -261,5 +261,12 @@ if ($PSDependAction -contains 'Import')
 
 if ($PSDependAction -contains 'Test' -and $PSDependAction.count -eq 1)
 {
-    return ($existingModules | Foreach-Object {$_.Version.ToString()}) -contains $Version
+    if ($existingModules)
+    {
+        return ($existingModules | Foreach-Object {$_.Version.ToString()}) -contains $Version
+    }
+    else
+    {
+        return $false
+    }
 }
