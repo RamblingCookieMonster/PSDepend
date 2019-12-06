@@ -33,7 +33,7 @@ InModuleScope 'PSDepend' {
     Describe "PSGalleryModule Type PS$PSVersion" {
 
         $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
-
+        
         Context 'Installs Modules' {
             Mock Install-Module { Return $true }
 
@@ -305,8 +305,80 @@ InModuleScope 'PSDepend' {
                 }
             }
         }
-    }
 
+        Context 'Clean' {
+            
+            Mock Remove-Module {}
+            Mock Remove-Item {}
+            Mock Save-Module {}            
+            
+            It 'Deletes older version of module' {
+                Mock Get-Item {return $true}
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Name    = 'Pester'
+                        Version = '4.9.0'
+                        ModuleBase = 'TestDrive:\PSDependPesterTest'
+                    }
+                }
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.clean.depend.psd1" -Force -ErrorAction Stop
+                Assert-MockCalled -CommandName Remove-Module -Times 1 -Exactly -Scope It
+                Assert-MockCalled -CommandName Remove-Item -Times 1 -Exactly -Scope It
+                Assert-MockCalled -CommandName Save-Module -Times 1 -Exactly -Scope It
+            }
+
+            It 'Deletes older version of module without target' {
+                Mock Get-Item {return $true}
+                Mock Install-Module {}
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Name    = 'Pester'
+                        Version = '4.9.0'
+                        ModuleBase = 'TestDrive:\PSDependPesterTest'
+                    }
+                }
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.cleannotarget.depend.psd1" -Force -ErrorAction Stop
+                Assert-MockCalled -CommandName Remove-Module -Times 1 -Exactly -Scope It
+                Assert-MockCalled -CommandName Remove-Item -Times 1 -Exactly -Scope It
+                Assert-MockCalled -CommandName Install-Module -Times 1 -Exactly -Scope It
+            }
+
+            It 'Does not delete targetted version of module' {
+                Mock Get-Item {return $true}
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Name    = 'Pester'
+                        Version = '4.1.0'
+                        ModuleBase = 'TestDrive:\PSDependPesterTest'
+                    }
+                }
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.clean.depend.psd1" -Force -ErrorAction Stop
+                Assert-MockCalled -CommandName Remove-Module -Times 0 -Exactly -Scope It
+                Assert-MockCalled -CommandName Remove-Item -Times 0 -Exactly -Scope It
+                Assert-MockCalled -CommandName Save-Module -Times 0 -Exactly -Scope It
+            }
+
+            It 'Does not delete when Test is used' {
+                Mock Get-Item {return $true}
+                    Mock Get-Module {
+                        [pscustomobject]@{
+                            Name    = 'Pester'
+                            Version = '4.1.0'
+                            ModuleBase = 'TestDrive:\PSDependPesterTest'
+                        }
+                    }
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.clean.depend.psd1" -Test -Force -ErrorAction Stop
+                Assert-MockCalled -CommandName Remove-Module -Times 0 -Exactly -Scope It
+                Assert-MockCalled -CommandName Remove-Item -Times 0 -Exactly -Scope It
+                Assert-MockCalled -CommandName Save-Module -Times 0 -Exactly -Scope It
+            }
+        }
+    }
+    
     Describe "Git Type PS$PSVersion"  -Tag "WindowsOnly" {
 
         $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
@@ -705,7 +777,7 @@ InModuleScope 'PSDepend' {
                 $Results | Should be $True
             }
         }
-        #>
+        #>        
 
         Context 'PackageSource does not Exist' {
             Mock Install-Package
@@ -754,9 +826,9 @@ InModuleScope 'PSDepend' {
                 at line: 188 in C:\projects\psdepend\psdepend\Public\Invoke-DependencyScript.ps1"
 
                 See build logs: https://ci.appveyor.com/project/RamblingCookieMonster/psdepend/build/1.0.124
-
+            
             #>
-
+            
 
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
             function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }

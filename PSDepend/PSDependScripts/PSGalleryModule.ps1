@@ -135,8 +135,6 @@ else
     $moduleSplat['Scope'] = $scope
 }
 
-$Credential = $Dependency.Credential
-
 if(-not (Get-PackageProvider -Name Nuget))
 {
     # Grab nuget bits.
@@ -208,8 +206,12 @@ if ($PSDependAction -contains 'Install')
         {
             $existingVersion = $existingModule.Version.ToString()
             Write-Verbose "Found existing module: '$Name' Version: $existingVersion"
-            $differentModulePath = (Get-Item -Path $existingModule.ModuleBase).Parent.FullName -ne $moduleFullname
-            if (($existingVersion -ne $Version -and $Target.Location -and $differentModulePath) -or $existingVersion -ne $Version)
+            if ($existingModule.ModuleBase)
+            {
+                $differentModulePath = (Get-Item -Path $existingModule.ModuleBase).Parent.FullName -ne $moduleFullname
+            }
+
+            if (($existingVersion -ne $Version -and $Dependency.Target -and $differentModulePath) -or $existingVersion -ne $Version)
             {
                 # Remove module from session just in case
                 Write-Verbose "Removing existing module: '$($existingModule.Name)' Version: $existingVersion"
