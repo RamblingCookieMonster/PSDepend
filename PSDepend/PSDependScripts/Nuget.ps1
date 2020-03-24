@@ -55,7 +55,7 @@
             'Portable.BouncyCastle' = @{
                 Version = 'latest'
                 Parameters = @{
-                    DllName = 'BouncyCastle.Crypto'
+                    Name = 'BouncyCastle.Crypto'
                 }
             }
             'MimeKit' = 'latest'
@@ -75,14 +75,13 @@ param(
     [ValidateSet('Test', 'Install')]
     [string[]]$PSDependAction = @('Install'),
 
-    [string]$DllName
+    [string]$Name
 )
 # Extract data from Dependency
     $DependencyName = $Dependency.DependencyName
-    $Name = $Dependency.Name
-    if(-not $Name)
+    if ($null -ne $Dependency.Name)
     {
-        $Name = $DependencyName
+        $DependencyName = $Dependency.Name
     }
 
     $Version = $Dependency.Version
@@ -112,38 +111,38 @@ if(-not (Get-Command Nuget -ErrorAction SilentlyContinue))
     Write-Error "Nuget requires Nuget.exe.  Ensure this is in your path, or explicitly specified in $ModuleRoot\PSDepend.Config's NugetPath.  Skipping [$DependencyName]"
 }
 
-Write-Verbose -Message "Getting dependency [$name] from Nuget source [$Source]"
+Write-Verbose -Message "Getting dependency [$DependencyName] from Nuget source [$Source]"
 
 # This code works for both install and save scenarios.
-$PackagePath =  Join-Path $Target $Name
+$PackagePath =  Join-Path $Target $DependencyName
 
-$DllNameIs = if ($DllName) {
-    $DllName
+$NameIs = if ($PSBoundParameters.ContainsKey('Name')) {
+    $Name
 }
 else {
-    $Name
+    $DependencyName
 }
 
 if(Test-Path $PackagePath)
 {
-    if($null -eq (Get-ChildItem $PackagePath -Filter "$($DllNameIs).dll" -Recurse))
+    if($null -eq (Get-ChildItem $PackagePath -Filter "$NameIs*" -Include '*.exe', '*.dll' -Recurse))
     {
         # For now, skip if we don't find a DLL matching the expected name
-        Write-Error "Could not find existing DLL for dependency [$Name] in package path [$PackagePath]"
+        Write-Error "Could not find existing DLL for dependency [$DependencyName] in package path [$PackagePath]"
         return
     }
 
-    Write-Verbose "Found existing package [$Name]"
+    Write-Verbose "Found existing package [$DependencyName]"
 
     # Thanks to Brandon Padgett!
-    $dllPath = (Get-ChildItem $PackagePath -Filter "$($DllNameIs).dll" -Recurse | Select-Object -First 1).FullName
-    $ExistingVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).FileVersion
-    $GetGalleryVersion = { (Find-NugetPackage -Name $Name -PackageSourceUrl $Source -Credential $Credential -IsLatest).Version }
+    $Path = (Get-ChildItem $PackagePath -Filter "$NameIs*" -Include '*.exe', '*.dll' -Recurse | Select-Object -First 1).FullName
+    $ExistingVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($Path).FileVersion
+    $GetGalleryVersion = { (Find-NugetPackage -Name $DependencyName -PackageSourceUrl $Source -Credential $Credential -IsLatest).Version }
 
     # Version string, and equal to current
     if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
-        Write-Verbose "You have the requested version [$Version] of [$Name]"
+        Write-Verbose "You have the requested version [$Version] of [$DependencyName]"
         if($PSDependAction -contains 'Test')
         {
             return $True
@@ -157,7 +156,7 @@ if(Test-Path $PackagePath)
         ($GalleryVersion = [System.Version](& $GetGalleryVersion)) -le [System.Version]$ExistingVersion
     )
     {
-        Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and Source version [$GalleryVersion]"
+        Write-Verbose "You have the latest version of [$DependencyName], with installed version [$ExistingVersion] and Source version [$GalleryVersion]"
         if($PSDependAction -contains 'Test')
         {
             return $True
@@ -165,7 +164,7 @@ if(Test-Path $PackagePath)
         return $null
     }
 
-    Write-Verbose "Removing existing [$PackagePath]`nContinuing to install [$Name]: Requested version [$version], existing version [$ExistingVersion]"
+    Write-Verbose "Removing existing [$PackagePath]`nContinuing to install [$DependencyName]: Requested version [$version], existing version [$ExistingVersion]"
     if($PSDependAction -contains 'Install')
     {
         if($Force)
@@ -174,7 +173,7 @@ if(Test-Path $PackagePath)
         }
         else
         {
-            Write-Verbose "Use -Force to remove existing [$PackagePath]`nSkipping install of [$Name]: Requested version [$version], existing version [$ExistingVersion]"
+            Write-Verbose "Use -Force to remove existing [$PackagePath]`nSkipping install of [$DependencyName]: Requested version [$version], existing version [$ExistingVersion]"
             if( $PSDependAction -contains 'Test')
             {
                 return $false
@@ -194,7 +193,7 @@ if($PSDependAction -contains 'Install')
 {
     $TargetExists = Test-Path $Target -PathType Container
 
-    Write-Verbose "Saving [$Name] with path [$Target]"
+    Write-Verbose "Saving [$DependencyName] with path [$Target]"
     $NugetParams = '-Source', $Source, '-ExcludeVersion', '-NonInteractive', '-OutputDirectory', $Target
     if(-not $TargetExists)
     {
@@ -205,7 +204,7 @@ if($PSDependAction -contains 'Install')
     {
         $NugetParams += '-version', $Version
     }
-    $NugetParams = 'install', $Name + $NugetParams
+    $NugetParams = 'install', $DependencyName + $NugetParams
 
-	Invoke-ExternalCommand nuget -Arguments $NugetParams
+	Invoke-ExternalCommand Nuget -Arguments $NugetParams
 }
