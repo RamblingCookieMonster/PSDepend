@@ -75,6 +75,7 @@ param(
     [ValidateSet('Test', 'Install')]
     [string[]]$PSDependAction = @('Install'),
 
+    [Alias('DLLName')]
     [string]$Name
 )
 # Extract data from Dependency
