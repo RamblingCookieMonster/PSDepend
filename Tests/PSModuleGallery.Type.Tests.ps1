@@ -1020,4 +1020,109 @@ InModuleScope 'PSDepend' {
             }
         }
     }
+
+    Describe "Chocolatey Type PS$PSVersion" -Tag 'Chocolatey', "WindowsOnly" {
+
+        $SavePath = (New-Item 'TestDrive:/PSDependPesterTest' -ItemType Directory -Force).FullName
+
+        # So... these didn't work with mocking.  Create function, define alias to override any function call, mock that.
+        function Invoke-ChocoInstallPackage
+        {
+            [cmdletbinding()]param($Name, $Version, $Source, $Force, $Credential)
+        }
+        function Get-ChocoLatestPackage
+        {
+            [cmdletbinding()]param( $Source, $Name, $RequiredVersion)
+        }
+
+        function Get-ChocoInstalledPackage
+        {
+            [cmdletbinding()]param($Name)
+        }
+
+        Context 'Chocolatey is not installed' {
+
+            It 'installs Chocolatey' {
+                Mock Get-Command -ParameterFilter { $Name -eq 'choco.exe' } -MockWith { return $false }
+                Mock Invoke-WebRequest
+
+                # this will throw as the source is invalid - lets catch that
+                { Invoke-PSDepend @Verbose -Path "$TestDepends\chocolatey.specificversionrequested.depend.psd1" -Force -ErrorAction Stop } | Should -Throw
+
+                Assert-MockCalled Get-Command -Times 1 -Exactly
+                Assert-MockCalled Invoke-WebRequest -Times 1 -Exactly
+            }
+        }
+
+        Context 'Source does not exist' {
+
+            It 'Does not throw if the Source cannot be found' {
+                { Invoke-PSDepend -Path "$TestDepends\chocolatey.dummysource.depend.psd1" -Force -ErrorAction Stop } | Should -Not -Throw
+            }
+        }
+
+        Context 'Package version installed is what is requested' {
+
+            It 'skips installing the package' {
+
+                Mock Get-ChocoInstalledPackage { @{ Name = $Name; Version = '1.0' } }
+                Mock Get-ChocoLatestPackage
+                Mock Invoke-ChocoInstallPackage
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\chocolatey.specificversionrequested.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-ChocoInstalledPackage -Times 1 -Exactly
+                Assert-MockCalled Get-ChocoLatestPackage -Times 0 -Exactly
+                Assert-MockCalled Invoke-ChocoInstallPackage -Times 0 -Exactly
+            }
+        }
+
+        Context 'Package version installed is latest' {
+
+            It 'skips installing the package' {
+
+                Mock Get-ChocoInstalledPackage { @{ Name = $Name; Version = '2.0' } }
+                Mock Get-ChocoLatestPackage { @{ Name = $Name; Version = '2.0' } }
+                Mock Invoke-ChocoInstallPackage
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\chocolatey.latestversionrequested.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-ChocoInstalledPackage -Times 1 -Exactly
+                Assert-MockCalled Get-ChocoLatestPackage -Times 1 -Exactly
+                Assert-MockCalled Invoke-ChocoInstallPackage -Times 0 -Exactly
+            }
+        }
+
+        Context 'Package requested is latest and version installed is newer than available in source' {
+
+            It 'skips installing the package' {
+
+                Mock Get-ChocoInstalledPackage { @{ Name = $Name; Version = '2.0' } }
+                Mock Get-ChocoLatestPackage { @{ Name = $Name; Version = '1.0' } }
+                Mock Invoke-ChocoInstallPackage
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\chocolatey.latestversionrequested.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-ChocoInstalledPackage -Times 1 -Exactly
+                Assert-MockCalled Get-ChocoLatestPackage -Times 1 -Exactly
+                Assert-MockCalled Invoke-ChocoInstallPackage -Times 0 -Exactly
+            }
+        }
+
+        Context 'Package requested is latest and version installed is older than available in source' {
+
+            It 'installs the package' {
+
+                Mock Get-ChocoInstalledPackage { @{ Name = $Name; Version = '1.0' } }
+                Mock Get-ChocoLatestPackage { @{ Name = $Name; Version = '2.0' } }
+                Mock Invoke-ChocoInstallPackage
+
+                Invoke-PSDepend @Verbose -Path "$TestDepends\chocolatey.latestversionrequested.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-ChocoInstalledPackage -Times 1 -Exactly
+                Assert-MockCalled Get-ChocoLatestPackage -Times 1 -Exactly
+                Assert-MockCalled Invoke-ChocoInstallPackage -Times 1 -Exactly
+            }
+        }
+    }
 }

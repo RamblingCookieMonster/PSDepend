@@ -6,6 +6,12 @@
 
 # In some cases, it may be beneficial to include 'aliases'.  Just add nodes for these.
 @{
+    Chocolatey = @{
+        Script = 'Chocolatey.ps1'
+        Description = 'Install a Chocolatey package from a Chocolatey feed'
+        Supports = 'windows'
+    }
+    
     Command = @{
         Script = 'Command.ps1'
         Description = 'Invoke a command in PowerShell'
