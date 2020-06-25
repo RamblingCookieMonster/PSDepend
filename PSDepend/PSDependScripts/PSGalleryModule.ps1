@@ -83,6 +83,8 @@ param(
 
     [bool]$AllowClobber = $True,
 
+    [bool]$AllowPrerelease,
+
     [switch]$Import,
 
     [ValidateSet('Test', 'Install', 'Import')]
@@ -146,6 +148,7 @@ $params = @{
     Name               = $Name
     SkipPublisherCheck = $SkipPublisherCheck
     AllowClobber       = $AllowClobber
+    AllowPrerelease    = $AllowPrerelease
     Verbose            = $VerbosePreference
     Force              = $True
 }
@@ -227,7 +230,7 @@ if($Existing)
     # latest, and we have latest
     if( $Version -and
         ($Version -eq 'latest' -or $Version -like '') -and
-        [System.Version]($GalleryVersion = (& $GetGalleryVersion)) -le [System.Version]$ExistingVersion
+        [System.Management.Automation.SemanticVersion]($GalleryVersion = (& $GetGalleryVersion)) -le [System.Management.Automation.SemanticVersion]$ExistingVersion
     )
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
