@@ -23,6 +23,13 @@
     .PARAMETER AllowClobber
         Allow installation of modules that clobber existing commands.  Defaults to $True
 
+    .PARAMETER AllowPrerelease
+        If specified, allow for prerelease. Defaults to $false
+
+        If specified along with version 'latest', a prerelease will be selected if it is the latest version
+
+        Sorting assumes you name prereleases appropriately (i.e. alpha < beta < gamma)
+
     .PARAMETER Import
         If specified, import the module in the global scope
 
@@ -70,6 +77,16 @@
         # No version is specified - we assume latest in this case.
 
         # * Perhaps you use this https://github.com/PowerShell/PSPrivateGallery, or Artifactory, ProGet, etc.
+    
+    .EXAMPLE
+        @{
+            'vmware.powercli' = @{
+                Parameters = @{
+                    AllowPrerelease = $True
+                }
+            }
+        }
+        # Install the latest version of PowerCLI, allowing for prerelease
 #>
 [cmdletbinding()]
 param(
