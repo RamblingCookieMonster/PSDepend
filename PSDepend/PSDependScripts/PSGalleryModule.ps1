@@ -249,15 +249,19 @@ if($Existing)
     $GalleryVersion = Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
     [System.Version]$parsedVersion = $null
     [System.Management.Automation.SemanticVersion]$parsedSemanticVersion = $null
-    $isGalleryVersionGreater = if ([System.Management.Automation.SemanticVersion]::TryParse($GalleryVersion, [ref]$parsedSemanticVersion)) {
-        $GalleryVersion -gt $parsedSemanticVersion
+    [System.Management.Automation.SemanticVersion]$parsedTempSemanticVersion = $null
+    $isGalleryVersionLessEquals = if (
+        [System.Management.Automation.SemanticVersion]::TryParse($ExistingVersion, [ref]$parsedSemanticVersion) -and
+        [System.Management.Automation.SemanticVersion]::TryParse($GalleryVersion, [ref]$parsedTempSemanticVersion)
+    ) {
+        $GalleryVersion -le $parsedSemanticVersion
     }
-    elseif ([System.Version]::TryParse($GalleryVersion, [ref]$parsedVersion)) {
-        $GalleryVersion -gt $parsedVersion
+    elseif ([System.Version]::TryParse($ExistingVersion, [ref]$parsedVersion)) {
+        $GalleryVersion -le $parsedVersion
     }
 
     # latest, and we have latest
-    if( $Version -and ($Version -eq 'latest' -or $Version -eq '') -and $isGalleryVersionGreater)
+    if( $Version -and ($Version -eq 'latest' -or $Version -eq '') -and $isGalleryVersionLessEquals)
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
         # Conditional import
