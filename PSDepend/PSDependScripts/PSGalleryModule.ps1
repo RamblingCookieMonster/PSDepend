@@ -157,9 +157,9 @@ if($Repository) {
     $params.Add('Repository',$Repository)
 }
 
-if( $Version -and $Version -ne 'latest')
+if($Version -and $Version -ne 'latest')
 {
-    $Params.add('RequiredVersion',$Version)
+    $Params.add('RequiredVersion', $Version)
 }
 
 if($Credential)
@@ -204,17 +204,19 @@ if($Existing)
     $ExistingVersion = $Existing | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
     $FindModuleParams = @{Name = $Name}
     if($Repository) {
-        $FindModuleParams.Add('Repository',$Repository)
+        $FindModuleParams.Add('Repository', $Repository)
 	}
 	if($Credential)
 	{
 		$FindModuleParams.Add('Credential', $Credential)
+    }
+    if($AllowPrerelease)
+	{
+		$FindModuleParams.Add('AllowPrerelease', $AllowPrerelease)
 	}
 
-    $GetGalleryVersion = { Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum }
-
     # Version string, and equal to current
-    if( $Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
+    if($Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
     {
         Write-Verbose "You have the requested version [$Version] of [$Name]"
         # Conditional import
@@ -222,16 +224,23 @@ if($Existing)
 
         if($PSDependAction -contains 'Test')
         {
-            return $True
+            return $true
         }
         return $null
     }
 
+    $GalleryVersion = Find-Module @FindModuleParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    [System.Version]$parsedVersion = $null
+    [System.Management.Automation.SemanticVersion]$parsedSemanticVersion = $null
+    $isGalleryVersionGreater = if ([System.Management.Automation.SemanticVersion]::TryParse($GalleryVersion, [ref]$parsedSemanticVersion)) {
+        $GalleryVersion -gt $parsedSemanticVersion
+    }
+    elseif ([System.Version]::TryParse($GalleryVersion, [ref]$parsedVersion)) {
+        $GalleryVersion -gt $parsedVersion
+    }
+
     # latest, and we have latest
-    if( $Version -and
-        ($Version -eq 'latest' -or $Version -like '') -and
-        [System.Management.Automation.SemanticVersion]($GalleryVersion = (& $GetGalleryVersion)) -le [System.Management.Automation.SemanticVersion]$ExistingVersion
-    )
+    if( $Version -and ($Version -eq 'latest' -or $Version -eq '') -and $isGalleryVersionGreater)
     {
         Write-Verbose "You have the latest version of [$Name], with installed version [$ExistingVersion] and PSGallery version [$GalleryVersion]"
         # Conditional import
