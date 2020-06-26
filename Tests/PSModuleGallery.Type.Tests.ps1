@@ -77,7 +77,6 @@ InModuleScope 'PSDepend' {
 			}
 		}
 
-
         Context 'Saves Modules' {
             Mock Save-Module { Return $true }
 
@@ -106,7 +105,6 @@ InModuleScope 'PSDepend' {
 			}
 		}
 
-
         Context 'Repository does not Exist' {
             Mock Install-Module { throw "Unable to find repository 'Blah'" } -ParameterFilter { $Repository -eq 'Blah'}
 
@@ -116,7 +114,7 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Context 'Same module version exists' {
+        Context 'Same module version exists (Version)' {
             Mock Install-Module {}
             Mock Get-Module {
                 [pscustomobject]@{
@@ -134,7 +132,25 @@ InModuleScope 'PSDepend' {
             }
         }
 
-        Context 'Latest module required, and already installed' {
+        Context 'Same module version exists (SemVersion)' {
+            Mock Install-Module {}
+            Mock Get-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5-preview0002'
+                }
+            }
+            Mock Find-Module
+
+            It 'Skips Install-Module' {
+                Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.SameSemanticVersion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-Module -Times 1 -Exactly
+                Assert-MockCalled Find-Module -Times 0 -Exactly
+                Assert-MockCalled Install-Module -Times 0 -Exactly
+            }
+        }
+
+        Context 'Latest module required, and already installed (version)' {
             Mock Install-Module {}
             Mock Get-Module {
                 [pscustomobject]@{
@@ -156,6 +172,28 @@ InModuleScope 'PSDepend' {
             }
         }
 
+        Context 'Latest module required, and already installed (SemVersion)' {
+            Mock Install-Module {}
+            Mock Get-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5-preview0002'
+                }
+            }
+            Mock Find-Module {
+                [pscustomobject]@{
+                    Version = '1.2.5-preview0002'
+                }
+            }
+
+            It 'Skips Install-Module' {
+                Invoke-PSDepend @Verbose -Path "$TestDepends/psgallerymodule.latestversion.depend.psd1" -Force -ErrorAction Stop
+
+                Assert-MockCalled Get-Module -Times 1 -Exactly
+                Assert-MockCalled Find-Module -Times 1 -Exactly
+                Assert-MockCalled Install-Module -Times 0 -Exactly
+            }
+        }
+
         Context 'Test-Dependency' {
 
             BeforeEach {
@@ -163,7 +201,7 @@ InModuleScope 'PSDepend' {
                 Mock Find-Module {}
             }
 
-            It 'Returns $true when it finds an existing module' {
+            It 'Returns $true when it finds an existing module (Version)' {
                 Mock Get-Module {
                     [pscustomobject]@{
                         Version = '1.2.5'
@@ -175,7 +213,19 @@ InModuleScope 'PSDepend' {
                 $Results[0] | Should be $True
             }
 
-            It 'Returns $true when it finds an existing latest module' {
+            It 'Returns $true when it finds an existing module (SemVersion)' {
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5-preview0002'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.SameSemanticVersion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+
+            It 'Returns $true when it finds an existing latest module (Version)' {
                 Mock Get-Module {
                     [pscustomobject]@{
                         Version = '1.2.5'
@@ -192,14 +242,40 @@ InModuleScope 'PSDepend' {
                 $Results[0] | Should be $True
             }
 
-            It "Returns `$false when it doesn't find an existing module" {
+            It 'Returns $true when it finds an existing latest module (SemVersion)' {
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5-preview0002'
+                    }
+                }
+                Mock Find-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5-preview0002'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.latestversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $True
+            }
+
+            It "Returns `$false when it doesn't find an existing module (Version)" {
                 Mock Get-Module { $null }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.sameversion.depend.psd1" |
                         Test-Dependency -Quiet )
                 $Results.Count | Should be 1
                 $Results[0] | Should be $False
             }
-            It "Returns `$false when it finds an existing module with a lower version" {
+
+            It "Returns `$false when it doesn't find an existing module (SemVersion)" {
+                Mock Get-Module { $null }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.SameSemanticVersion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+
+            It "Returns `$false when it finds an existing module with a lower version (Version)" {
                 Mock Get-Module {
                     [pscustomobject]@{
                         Version = '1.2.4'
@@ -211,7 +287,31 @@ InModuleScope 'PSDepend' {
                 $Results[0] | Should be $False
             }
 
-            It "Returns `$false when it finds an existing module with a lower version than latest" {
+            It 'Returns $false when it finds an existing module with a lower version (SemVersion)' {
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5-preview0001'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.SameSemanticVersion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+
+            It 'Returns $false when it finds an existing module with a lower version (SemVersion-Version)' {
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.4'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.SameSemanticVersion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+
+            It 'Returns $false when it finds an existing module with a lower version than latest (Version)' {
                 Mock Get-Module {
                     [pscustomobject]@{
                         Version = '1.2.4'
@@ -220,6 +320,23 @@ InModuleScope 'PSDepend' {
                 Mock Find-Module {
                     [pscustomobject]@{
                         Version = '1.2.5'
+                    }
+                }
+                $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.latestversion.depend.psd1" |
+                        Test-Dependency -Quiet )
+                $Results.Count | Should be 1
+                $Results[0] | Should be $False
+            }
+
+            It 'Returns $false when it finds an existing module with a lower version than latest (SemVersion)' {
+                Mock Get-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5-preview0001'
+                    }
+                }
+                Mock Find-Module {
+                    [pscustomobject]@{
+                        Version = '1.2.5-preview0002'
                     }
                 }
                 $Results = @( Get-Dependency @Verbose -Path "$TestDepends/psgallerymodule.latestversion.depend.psd1" |
@@ -292,14 +409,25 @@ InModuleScope 'PSDepend' {
                 ($env:PSModulePath -split ([IO.Path]::PathSeparator)) -contains $SavePath | Should Be $True
             }
         }
-
+#>
         Context 'SkipPublisherCheck' {
-            It 'Supplies switch to Install-Module' {
+            It 'Supplies SkipPublisherCheck switch to Install-Module' {
                 Mock Get-PSRepository { Return $true }
                 Mock Install-Module {}
                 Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.skippubcheck.depend.psd1" -Force -ErrorAction Stop
                 Assert-MockCalled -CommandName Install-Module -Times 1 -Exactly -ExclusiveFilter {
                     $SkipPublisherCheck -eq $true
+                }
+            }
+        }
+
+        Context 'AllowPrerelease' {
+            It 'Supplies AllowPrerelease switch to Install-Module' {
+                Mock Get-PSRepository { Return $true }
+                Mock Install-Module {}
+                Invoke-PSDepend @Verbose -Path "$TestDepends\psgallerymodule.AllowPrerelease.depend.psd1" -Force -ErrorAction Stop
+                Assert-MockCalled -CommandName Install-Module -Times 1 -Exactly -ExclusiveFilter {
+                    $AllowPrerelease -eq $true
                 }
             }
         }
@@ -338,6 +466,7 @@ InModuleScope 'PSDepend' {
             }
 
         }
+
         Context 'Tests dependency' {
             Mock New-Item { return $true }
             Mock Push-Location {}
@@ -704,7 +833,6 @@ InModuleScope 'PSDepend' {
             }
         }
         #>
-
         Context 'PackageSource does not Exist' {
             Mock Install-Package
             Mock Get-PackageSource
@@ -754,7 +882,6 @@ InModuleScope 'PSDepend' {
                 See build logs: https://ci.appveyor.com/project/RamblingCookieMonster/psdepend/build/1.0.124
 
             #>
-
 
             function Install-Package {[cmdletbinding()]param( $Source, $Name, $RequiredVersion, $Force)}
             function Get-PackageSource { @([pscustomobject]@{Name = 'chocolatey'; ProviderName = 'chocolatey'}) }
