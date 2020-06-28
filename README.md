@@ -331,9 +331,6 @@ DependencyName    Status                 BoundParameters                        
 ExampleDependency Invoking Import action {StringParameter, PSDependAction, Dependency} Version [1]
 ```
 
-
-
-
 ## Notes
 
 Major props to Michael Willis for the idea - check out his [PSRequire](https://github.com/Xainey/PSRequire), a similar but more feature-full solution.
