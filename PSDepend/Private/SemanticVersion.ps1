@@ -687,4 +687,6 @@ namespace System.Management.Automation
 }
 '@
 
-Add-Type -TypeDefinition $code
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+  Add-Type -TypeDefinition $code
+}
