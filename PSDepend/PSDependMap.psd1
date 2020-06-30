@@ -39,7 +39,7 @@
     Git = @{
         Script = 'Git.ps1'
         Description = 'Clone a git repository'
-        Supports = 'windows'
+        Supports = 'windows', 'core', 'macos', 'linux'
     }
 
     GitHub = @{
