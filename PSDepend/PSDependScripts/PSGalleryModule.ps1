@@ -24,10 +24,10 @@
         Allow installation of modules that clobber existing commands.  Defaults to $True
 
     .PARAMETER AcceptLicense
-        Accepts the license agreement during installation. Defaults to $True
+        Accepts the license agreement during installation.
         
     .PARAMETER AllowPrerelease
-        If specified, allow for prerelease. Defaults to $false
+        If specified, allow for prerelease.
 
         If specified along with version 'latest', a prerelease will be selected if it is the latest version
 
@@ -103,7 +103,7 @@ param(
 
     [bool]$AllowClobber = $True,
 
-    [bool]$AcceptLicense = $True,
+    [bool]$AcceptLicense,
 
     [bool]$AllowPrerelease,
 
@@ -170,10 +170,16 @@ $params = @{
     Name               = $Name
     SkipPublisherCheck = $SkipPublisherCheck
     AllowClobber       = $AllowClobber
-    AcceptLicense      = $AcceptLicense
-    AllowPrerelease    = $AllowPrerelease
     Verbose            = $VerbosePreference
     Force              = $True
+}
+
+if($PSBoundParameters.ContainsKey('AllowPrerelease')){
+    $params.Add('AllowPrerelease', $AllowPrerelease)
+}
+
+if($PSBoundParameters.ContainsKey('AcceptLicense')){
+    $params.Add('AcceptLicense', $AcceptLicense)
 }
 
 if($Repository) {
@@ -228,15 +234,15 @@ if($Existing)
     $FindModuleParams = @{Name = $Name}
     if($Repository) {
         $FindModuleParams.Add('Repository', $Repository)
-	}
-	if($Credential)
-	{
-		$FindModuleParams.Add('Credential', $Credential)
+    }
+    if($Credential)
+    {
+        $FindModuleParams.Add('Credential', $Credential)
     }
     if($AllowPrerelease)
-	{
-		$FindModuleParams.Add('AllowPrerelease', $AllowPrerelease)
-	}
+    {
+        $FindModuleParams.Add('AllowPrerelease', $AllowPrerelease)
+    }
 
     # Version string, and equal to current
     if($Version -and $Version -ne 'latest' -and $Version -eq $ExistingVersion)
