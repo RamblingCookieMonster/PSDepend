@@ -6,6 +6,12 @@
 
 # In some cases, it may be beneficial to include 'aliases'.  Just add nodes for these.
 @{
+    Chocolatey = @{
+        Script = 'Chocolatey.ps1'
+        Description = 'Install a Chocolatey package from a Chocolatey feed'
+        Supports = 'windows'
+    }
+    
     Command = @{
         Script = 'Command.ps1'
         Description = 'Invoke a command in PowerShell'
@@ -33,7 +39,7 @@
     Git = @{
         Script = 'Git.ps1'
         Description = 'Clone a git repository'
-        Supports = 'windows'
+        Supports = 'windows', 'core', 'macos', 'linux'
     }
 
     GitHub = @{
@@ -54,6 +60,12 @@
         Supports = 'windows', 'core', 'macos', 'linux'
     }
 
+    Nuget = @{
+        Script = 'Nuget.ps1'
+        Description = 'Install a Nuget package from a Nuget feed'
+        Supports = 'windows', 'core', 'macos', 'linux'
+    }
+
     Package = @{
         Script = 'Package.ps1'
         Description = 'EXPERIMENTAL: Install a package via PackageManagement Install-Package'
@@ -69,7 +81,7 @@
     PSGalleryNuget = @{
         Script = 'PSGalleryNuget.ps1'
         Description = 'Install a PowerShell module from the PowerShell Gallery without the PowerShellGet dependency'
-        Supports = 'windows'
+        Supports = 'windows', 'core', 'macos', 'linux'
     }
 
     Task = @{

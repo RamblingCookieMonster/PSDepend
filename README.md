@@ -160,6 +160,38 @@ Note that we replace certain strings in Target and Source fields:
 * If you call Invoke-PSDepend -Target $Something, we override any value for target
 * Thanks to Mike Walker for the idea!
 
+### Repository Credentials
+
+If you are using a PowerShell module repository that requires authentication then add those to your dependency. When working with credentials there are two parts we need to consider:
+
+* Credential property of our dependency.
+* Credentials parameter for Invoke-PSDepend.
+
+```powershell
+@{
+    psdeploy = 'latest'
+
+    buildhelpers_0_0_20 = @{
+        Name = 'buildhelpers'
+        DependencyType = 'PSGalleryModule'
+        Parameters = @{
+            Repository = 'PSGallery'
+            SkipPublisherCheck = $true
+        }
+        Version = '0.0.20'
+        Credential = 'must_match'
+    }
+}
+```
+
+Now create a `PSCredential` object with the credentials to access the repository and run it:
+
+```powershell
+Invoke-PSDepend -Path C:\requirements.psd1 -Credentials @{ 'must_match' = $creds }
+```
+
+Make sure whatever you use as `must_match` is the same in the dependency as it is in the hashtable you pass to the Credentials parameter.
+
 ## Exploring and Getting Help
 
 Each DependencyType - PSGalleryModule, FileDownload, Task, etc. - might treat these standard properties differently, and may include their own Parameters.  For example, in the BuildHelpers node above, we specified a Repository and SkipPublisherCheck parameters.
@@ -330,9 +362,6 @@ DependencyName    Status                 BoundParameters                        
 --------------    ------                 ---------------                               -------
 ExampleDependency Invoking Import action {StringParameter, PSDependAction, Dependency} Version [1]
 ```
-
-
-
 
 ## Notes
 

@@ -1,10 +1,15 @@
-﻿param ($Task = 'Default')
+﻿[CmdletBinding()]
+param (
+    [parameter(Position = 0)]
+    [ValidateSet('Default','Init','Test','Build','Deploy')]
+    $Task = 'Default'
+)
 
 # Grab nuget bits, install modules, set build variables, start build.
 Get-PackageProvider -Name NuGet -ForceBootstrap | Out-Null
 
 Install-Module Psake, PSDeploy, BuildHelpers -force -AllowClobber -Scope CurrentUser
-Install-Module Pester -MinimumVersion 4.1 -Force -AllowClobber -SkipPublisherCheck -Scope CurrentUser
+Install-Module Pester -RequiredVersion 4.10.1 -Force -AllowClobber -SkipPublisherCheck -Scope CurrentUser
 Import-Module Psake, BuildHelpers
 
 Set-BuildEnvironment -ErrorAction SilentlyContinue

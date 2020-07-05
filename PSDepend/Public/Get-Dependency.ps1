@@ -108,7 +108,17 @@ function Get-Dependency {
                 BuildHelpers = 'latest'
                 PSDeploy = 'latest'
                 InvokeBuild = 'latest'
-            }
+			}
+
+	.PARAMETER Credentials
+		Specifies a hashtable of PSCredentials to use for each dependency that is served from a private feed.
+
+		For example:
+
+			-Credentials @{
+				PrivatePackage = $privateCredentials
+				AnotherPrivatePackage = $morePrivateCredenials
+			}
 
     .LINK
         about_PSDepend
@@ -142,14 +152,17 @@ function Get-Dependency {
         [switch]$Recurse,
 
         [parameter(ParameterSetName='Hashtable')]
-        [hashtable[]]$InputObject
+        [hashtable[]]$InputObject,
 
+		[parameter(ParameterSetName='File')]
+		[parameter(ParameterSetName='Hashtable')]
+		[hashtable]$Credentials
     )
 
     # Helper to pick from global psdependoptions, or return a default
     function Get-GlobalOption {
         param(
-            $Options = $PSDependOptions,
+			$Options = $PSDependOptions,
             $Name,
             $Prefer,
             $Default = $null
@@ -171,12 +184,12 @@ function Get-Dependency {
                 $Output = $Default
             }
         }
-        
+
         # Inject variables
         if( $Name -eq 'Target' -or
             $Name -eq 'Source' -or
             $Name -eq 'PreScripts' -or
-            $Name -eq 'PostScripts')
+			$Name -eq 'PostScripts')
         {
             $Output = Inject-Variable $Output
         }
@@ -238,6 +251,7 @@ function Get-Dependency {
             $DependencyHash = $Dependencies.$Dependency
             $DependencyType = Get-GlobalOption -Name DependencyType
 
+			$CredentialName = Get-GlobalOption -Name Credential
 
             # Look simple syntax with helpers in the key first
             If( $DependencyHash -is [string] -and
@@ -259,8 +273,8 @@ function Get-Dependency {
                     Tags = Get-GlobalOption -Name Tags
                     DependsOn = Get-GlobalOption -Name DependsOn
                     PreScripts =  Get-GlobalOption -Name PreScripts
-                    PostScripts =  Get-GlobalOption -Name PostScripts
-                    PSDependOptions = $PSDependOptions
+					PostScripts =  Get-GlobalOption -Name PostScripts
+					PSDependOptions = $PSDependOptions
                     Raw = $null
                 }
             }
@@ -286,6 +300,7 @@ function Get-Dependency {
                     DependsOn = Get-GlobalOption -Name DependsOn
                     PreScripts =  Get-GlobalOption -Name PreScripts
                     PostScripts =  Get-GlobalOption -Name PostScripts
+					Credential = Resolve-Credential -Name $CredentialName
                     PSDependOptions = $PSDependOptions
                     Raw = $null
                 }
@@ -355,7 +370,7 @@ function Get-Dependency {
                         ($Dependency -match '/' -and -not $Dependency.Name -and
                             ($Dependency -is [string] -and $Dependency.split('/').count -eq 2)
                         ) -or
-                        ($DependencyHash.Name -match '/' -and 
+                        ($DependencyHash.Name -match '/' -and
                             ($DependencyHash -is [string] -and $DependencyHash.split('/').count -eq 2)
                         )
                     )
@@ -380,6 +395,7 @@ function Get-Dependency {
                     $DependencyType = $DependencyHash.DependencyType
                 }
 
+				$CredentialName = Get-GlobalOption -Name Credential -Prefer $DependencyHash.Credential
                 [pscustomobject]@{
                     PSTypeName = 'PSDepend.Dependency'
                     DependencyFile = $DependencyFile
@@ -395,12 +411,33 @@ function Get-Dependency {
                     DependsOn = Get-GlobalOption -Name DependsOn -Prefer $DependencyHash.DependsOn
                     PreScripts = Get-GlobalOption -Name PreScripts -Prefer $DependencyHash.PreScripts
                     PostScripts = Get-GlobalOption -Name PostScripts -Prefer $DependencyHash.PostScripts
-                    PSDependOptions = $PSDependOptions
+					Credential = Resolve-Credential -Name $CredentialName
+					PSDependOptions = $PSDependOptions
                     Raw = $DependencyHash
                 }
             }
         }
-    }
+	}
+
+	# Heleper to retrieve the credential for a dependency
+	function Resolve-Credential  {
+		[CmdletBinding()]
+		param (
+			[string]$Name
+		)
+
+		$credential = $null
+		if (($null -ne $Name) -and ($null -ne $Credentials)) {
+
+			if ($Credentials.ContainsKey($Name)) {
+				$credential = $Credentials[$Name]
+			} else {
+				Write-Warning "No credential found for the specified name $Name. Was the dependency misconfigured?"
+			}
+		}
+
+		return $credential
+	}
 
     if($PSCmdlet.ParameterSetName -eq 'File')
     {
