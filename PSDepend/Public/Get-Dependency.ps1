@@ -427,7 +427,7 @@ function Get-Dependency {
 		)
 
 		$credential = $null
-		if (($null -ne $Name) -and ($null -ne $Credentials)) {
+		if (![string]::IsNullOrEmpty($Name) -and ($null -ne $Credentials)) {
 
 			if ($Credentials.ContainsKey($Name)) {
 				$credential = $Credentials[$Name]
