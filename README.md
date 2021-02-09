@@ -122,6 +122,14 @@ What else can we put in a dependency?  Here's an example using a more flexible s
         Source = 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
         Target = 'C:\nuget.exe'
     }
+
+    # Module names containing a period must be surrounded by single quotes
+    'imaginary.module' = @{
+        Version = 'latest'
+        Parameters = @{
+            AllowPrerelease = $true
+        }
+    }
 }
 ```
 
