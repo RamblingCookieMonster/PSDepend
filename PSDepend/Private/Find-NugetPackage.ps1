@@ -22,17 +22,17 @@ function Find-NugetPackage {
     if($IsLatest)
     {
         Write-Verbose "Searching for latest [$name] module"
-        $URI = "${PackageSourceUrl}Packages?`$filter=Id eq '$name' and IsLatestVersion"
+        $URI = "${PackageSourceUrl}Packages()?`$filter=Id eq '$name' and IsLatestVersion"
     }
     elseif($PSBoundParameters.ContainsKey($Version))
     {
         Write-Verbose "Searching for version [$version] of [$name]"
-        $URI = "${PackageSourceUrl}Packages?`$filter=Id eq '$name' and Version eq '$Version'"
+        $URI = "${PackageSourceUrl}Packages()?`$filter=Id eq '$name' and Version eq '$Version'"
     }
     else
     {
         Write-Verbose "Searching for all versions of [$name] module"
-        $URI = "${PackageSourceUrl}Packages?`$filter=Id eq '$name'"
+        $URI = "${PackageSourceUrl}Packages()?`$filter=Id eq '$name'"
     }
 
     $headers = @{}
