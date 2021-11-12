@@ -100,6 +100,8 @@ param(
 
     [bool]$NoPathUpdate,
 
+    [bool]$IncludeDependencies,
+
     [switch]$Import,
 
     [ValidateSet('Test', 'Install', 'Import')]
@@ -241,7 +243,8 @@ if($Existing)
     {
         Write-Verbose "You have the requested version [$Version] of [$Name]"
         # Conditional import
-        Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $ExistingVersion
+        # @matthewjdegarmo doesn't think this is needed for scripts
+        # Import-PSDependModule -Name $ModuleName -Action $PSDependAction -Version $ExistingVersion
 
         if($PSDependAction -contains 'Test')
         {
@@ -292,7 +295,21 @@ if($PSDependAction -contains 'Install')
     if('AllUsers', 'CurrentUser' -contains $Scope)
     {
         Write-Verbose "Installing [$Name] with scope [$Scope]"
-        Install-Script @params -Scope $Scope
+        #Account for [-IncludeDependencies] on Find-Script. This is dependency mapping outside of the PSDepend file.
+        if($IncludeDependencies)
+        {
+            $FindScriptParams.Add('IncludeDependencies', $IncludeDependencies)
+            $FindScriptParams.Add('RequiredVersion', $Version)
+
+            # Need to remove Name and RequiredVersion, that info is coming across the Pipeline.
+            $InstallParams = $params.clone()
+            $InstallParams.Remove('Name')
+            $InstallParams.Remove('RequiredVersion')
+            
+            Find-Script @FindScriptParams | Install-Script @InstallParams -Scope $Scope
+        } Else {
+            Install-Script @params -Scope $Scope
+        }
     }
     else
     {
