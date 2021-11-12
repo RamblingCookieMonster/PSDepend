@@ -250,7 +250,7 @@ if($Existing)
         return $null
     }
 
-    $GalleryVersion = Find-Module @FindScriptParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
+    $GalleryVersion = Find-Script @FindScriptParams | Measure-Object -Property Version -Maximum | Select-Object -ExpandProperty Maximum
     [System.Version]$parsedVersion = $null
     [System.Management.Automation.SemanticVersion]$parsedSemanticVersion = $null
     [System.Management.Automation.SemanticVersion]$parsedTempSemanticVersion = $null
