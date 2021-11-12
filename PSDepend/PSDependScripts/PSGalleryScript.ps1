@@ -102,8 +102,6 @@ param(
 
     [bool]$IncludeDependencies,
 
-    [switch]$Import,
-
     [ValidateSet('Test', 'Install', 'Import')]
     [string[]]$PSDependAction = @('Install')
 )
