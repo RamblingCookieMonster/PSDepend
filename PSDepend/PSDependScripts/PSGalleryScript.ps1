@@ -1,15 +1,14 @@
 <#
     .SYNOPSIS
-        Installs a module from a PowerShell repository like the PowerShell Gallery.
+        Installs a script from a PowerShell repository like the PowerShell Gallery.
 
     .DESCRIPTION
-        Installs a module from a PowerShell repository like the PowerShell Gallery.
+        Installs a script from a PowerShell repository like the PowerShell Gallery.
 
         Relevant Dependency metadata:
-            Name: The name for this module
+            Name: The name for this script
             Version: Used to identify existing installs meeting this criteria, and as RequiredVersion for installation.  Defaults to 'latest'
-            Target: Used as 'Scope' for Install-Module.  If this is a path, we use Save-Module with this path.  Defaults to 'AllUsers'
-			AddToPath: If target is used as a path, prepend that path to ENV:PSModulePath
+            Target: Used as 'Scope' for Install-Script.  If this is a path, we use Save-Script with this path.  Defaults to 'AllUsers'
 			Credential: The username and password used to authenticate against the private repository
 
         If you don't have the Nuget package provider, we install it for you
@@ -27,13 +26,8 @@
 
         Sorting assumes you name prereleases appropriately (i.e. alpha < beta < gamma)
 
-    .PARAMETER Import
-        If specified, import the module in the global scope
-
-        Deprecated.  Moving to PSDependAction
-
     .PARAMETER PSDependAction
-        Test, Install, or Import the module.  Defaults to Install
+        Test, Install, or Import the script.  Defaults to Install
 
         Test: Return true or false on whether the dependency is in place
         Install: Install the dependency
@@ -45,49 +39,52 @@
 
     .EXAMPLE
         @{
-            BuildHelpers = 'latest'
-            PSDeploy = ''
-            InvokeBuild = '3.2.1'
+            'Get-CurrentUser' = @{
+                Version = 'latest'
+                Parameters = @{
+                    NoPathUpdate = $true
+                }
+            'Get-RemoteProgram' = ''
+            'Update-Windows' = '1.1.0'
         }
 
         # From the PSGallery repository (PowerShellGallery.com)...
-            # Install the latest BuildHelpers and PSDeploy ('latest' and '' both evaluate to latest)
-            # Install version 3.2.1
+            # Install the latest Get-CurrentUser and Get-RemoteProgram scripts ('latest' and '' both evaluate to latest)
+            # Install version 1.1.0 of Update-Windows script
 
     .EXAMPLE
         @{
-            BuildHelpers = @{
-                Target = 'C:\Build'
+            'Get-CurrentUser' = @{
+                Target = 'C:\test'
             }
         }
 
-        # Install the latest BuildHelpers module from PSGallery to C:\Build (i.e. C:\Build\BuildHelpers will be the module folder)
+        # Install the latest Get-CurrentUser script from PSGallery to C:\test (i.e. C:\test\Get-CurrentUser.ps1 will be the script)
         # No version is specified - we assume latest in this case.
 
     .EXAMPLE
         @{
-            BuildHelpers = @{
+            'Get-CurrentUser' = @{
                 Parameters @{
                     Repository = 'PSPrivateGallery'
-                    SkipPublisherCheck = $true
                 }
             }
         }
 
-        # Install the latest BuildHelpers module from a custom gallery* that you registered, and bypass the catalog signing check
+        # Install the latest Get-CurrentUser script from a custom gallery* that you registered
         # No version is specified - we assume latest in this case.
 
         # * Perhaps you use this https://github.com/PowerShell/PSPrivateGallery, or Artifactory, ProGet, etc.
     
     .EXAMPLE
         @{
-            'vmware.powercli' = @{
+            'Get-CurrentUser' = @{
                 Parameters = @{
-                    AllowPrerelease = $True
+                    NoPathUpdate = $true
                 }
             }
         }
-        # Install the latest version of PowerCLI, allowing for prerelease
+        # Install the latest version of Get-CurrentUser script, disabling the path update.
 #>
 [cmdletbinding()]
 param(
@@ -195,6 +192,7 @@ if($Credential)
 if($command -eq 'Save')
 {
     $ModuleName =  Join-Path $Scope $Name
+    $Params.Remove('NoPathUpdate')
 }
 elseif ($Command -eq 'Install')
 {
