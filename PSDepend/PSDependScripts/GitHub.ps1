@@ -181,6 +181,7 @@ $DependencyID = $Dependency.DependencyName
 $DependencyVersion = $Dependency.Version
 $DependencyTarget = $Dependency.Target
 $DependencyName = $DependencyID.Split("/")[1]
+$DependencyCredential = $null
 
 # Translate "" to "latest"
 if($DependencyVersion -eq "")
@@ -210,6 +211,11 @@ if($script:IsWindows)
 else
 {
     $AllUsersPath = [System.Management.Automation.Platform]::SelectProductNameForDirectory('SHARED_MODULES')
+}
+
+# Convert credential to a Basic auth string
+if($Dependency.Credential){
+    $DependencyCredential = "Basic " + ([System.Convert]::ToBase64String([System.Text.ASCIIEncoding]::ASCII.GetBytes("$($Dependency.Credential.UserName):$($Dependency.Credential.GetNetworkCredential().Password)")))
 }
 
 # Check if the MyDocuments folder path is accessible
@@ -345,7 +351,12 @@ if($ShouldInstall)
         {
             $Page++
             [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-            $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyID/tags?per_page=100&page=$Page"
+            $GitHubTags = $null
+            if($DependencyCredential){
+                $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyID/tags?per_page=100&page=$Page" -Headers @{Authorization = $DependencyCredential}
+            }else{
+                $GitHubTags = Invoke-RestMethod -Uri "https://api.github.com/repos/$DependencyID/tags?per_page=100&page=$Page"
+            }
 
             if($GitHubTags)
             {
@@ -445,7 +456,11 @@ if(($PSDependAction -contains 'Install') -and $ShouldInstall)
     $OutPath = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().guid)
     New-Item -ItemType Directory -Path $OutPath -Force | Out-Null
     $OutFile = Join-Path $OutPath "$DependencyVersion.zip"
-    Invoke-RestMethod -Uri $URL -OutFile $OutFile
+    if($DependencyCredential){
+        Invoke-RestMethod -Uri $URL -OutFile $OutFile -Headers @{Authorization = $DependencyCredential}
+    }else{
+        Invoke-RestMethod -Uri $URL -OutFile $OutFile
+    }
 
     if(-not (Test-Path $OutFile))
     {
